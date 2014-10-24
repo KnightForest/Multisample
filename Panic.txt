@@ -1,0 +1,8 @@
+[Panicswitch]
+panic=0
+
+
+
+
+
+
