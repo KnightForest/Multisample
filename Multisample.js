@@ -1,3 +1,5 @@
+//    Copyright 2013-2014 Joost Ridderbos
+
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
 //    the Free Software Foundation, either version 3 of the License, or
@@ -10,6 +12,28 @@
 
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+// Future plans:
+// - Change procedure text/behaviour
+// - Add dynamic WF size compatbility --> Working areas?
+// - Build in more abort buttons
+// - Drive z motor to 10.000 after patterning finishes
+// - Add check for design pathlength limit of 100 chars
+// - Allow for aperture/voltage change
+// 		-> Save WF parameters per beam setting
+//		-> Save and load column parameters
+//		-> Load dataset from positionlist?
+// - Add options to read everything except UV alignment from file
+// - Separate markertypes/procedures in separate files (for editing by users)
+// - Add more checks for user input
+// - Add time estimation calculation
+// - Add logdata:
+//		-> Layer61 scan results
+//		-> Progress bar (together with time estimation)
+//		-> If 
+// - ? Fix SetSvars function
+// - Add noise cancelling 
+// - For personal version: change position EBL markers to 2nd row
 
 
 function Succes(beamoffflag)                                                       //-- Called if function 'write' was successful
