@@ -20,7 +20,7 @@ function Succes(beamoffflag)                                                    
    Stage.JoystickEnabled = true;                                        //Turns joystick back on
    App.SetFloatVariable("AlignWriteField.AutoMarksFailed", 0);          //Resets failed automarks counter
    App.SetVariable("Adjust.MinAutoMarks","3");                          //Resets MinAutoMarks back to 3 (from 2)
-   App.ErrMsg(EC_INFO, 0, "Great Succes!");                                       //Displays succes message
+   App.ErrMsg(EC_INFO, 0, "Great Succes!");                                       //Displays success message ;)
 }
 
 function isEven(n)
@@ -52,18 +52,25 @@ function MeasBeamCurrent()
 
 function StepsizeDwelltime()
 {
-    var msg26="Set AREA stepsize for patterning in nm";
-	var msg27="Will be rounded up to a multiple of ";
-	var msg28="Set LINE stepsize in nm";
-	var msg29="nm: (Must be at least higher than ";
+    var msg_setareastepsize = "Set AREA stepsize for patterning in nm";
+
+	var msg_rounding = "Will be rounded up to a multiple of ";
+
+	var msg_setlinestepsize = "Set LINE stepsize in nm";
+
+	var msg_higherthan = "nm: (Must be at least higher than ";
+
 	var beamspeed = new Array();
 	minstepsize=App.GetSysVariable("Beamcontrol.WFBasicStepSize1000");
 	advisedbeamspeed = 0.003;                                             //Sets the advised beamspeed in m/s
     areaminstepsize = minstepsize*1000*Math.ceil(App.GetVariable("Beamcurrent.BeamCurrent")/(advisedbeamspeed*App.GetVariable("Exposure.ResistSensitivity")*Math.pow(10,-2))/(minstepsize*1000)); //Calculates advised minumum area stepsize based on beamspeed and dose
-    stepsize = (minstepsize*Math.ceil(App.InputMsg(msg26, msg27 + minstepsize*1000 + msg29 + areaminstepsize + "nm)", areaminstepsize)/(1000*minstepsize))).toString(); //Asks user to set stepsize for patterning
+    
+    stepsize = (minstepsize*Math.ceil(App.InputMsg(msg_setareastepsize, msg_rounding + minstepsize*1000 + msg_higherthan + areaminstepsize + "nm)", areaminstepsize)/(1000*minstepsize))).toString(); //Asks user to set stepsize for patterning
+    
     if (stepsize < minstepsize) stepsize=minstepsize;                    //If the user set stepsize is smaller than the minimum stepsize, it is return to this minimum value
-    stepsizeline=(minstepsize*Math.ceil(App.InputMsg(msg28, msg27 + minstepsize*1000 + "nm:", minstepsize*1000)/(1000*minstepsize))).toString(); //Asks user to set stepsize for patterning
-    if (stepsizeline < minstepsize) stepsizeline = minstepsize;          //If the user set stepsize is smaller than the minimum stepsize, it is return to this minimum value
+    	stepsizeline=(minstepsize*Math.ceil(App.InputMsg(msg_setlinestepsize, msg_rounding + minstepsize*1000 + "nm:", minstepsize*1000)/(1000*minstepsize))).toString(); //Asks user to set stepsize for patterning
+    if (stepsizeline < minstepsize) 
+    	stepsizeline = minstepsize;          //If the user set stepsize is smaller than the minimum stepsize, it is return to this minimum value
     App.SetVariable("Exposure.CurveDose", "150");                        //Sets curve dose to 150 (generally not used)
     App.SetVariable("Exposure.DotDose", "0.01");                          //Sets dot dose to 0.1
     App.SetVariable("Exposure.ResistSensitivity", "150");                 //Sets area dose to 150
@@ -310,7 +317,7 @@ function CollectSD(st)
 				if (S45 === "") S45 = currstruct
 			}
 			
-			S104 = parseInt(App.InputMsg("Select WF alignment marker procedure", "Select 1 for Photo-markers, 2 for EBL markers, 3 for no WF align", "1"));
+			S104 = parseInt(App.InputMsg("Select WF alignment marker procedure", "Select 1 for Photo-markers, 2 for Photo+EBL markers, 3 for no WF align, 4 for Photo+EBL on first device only", "1"));
 			if (App.ErrMsg(4,0,"Do you want to use layer 61 (GDSII autoscans)?")==EA_YES)
 			{
 				tl = App.InputMsg("Select layer", "Select layer(s) to use together with layer 61 (separate by ';')","")
@@ -608,11 +615,11 @@ function InstallWFAlign(markertype, threshold)
 	App.Exec("ResetModule(Scan Manager)");
 }
 
-function AutoWFAlign(markertype)
+function AutoWFAlign(markertype) 
 {
 	WF = Column.GetWriteField();
   
-	if (markertype == 11)
+	if (markertype == 11) //Definition of photomarkers
 	{
 	   SizeU = 10.000000
 	   SizeV = 1.000000
@@ -628,8 +635,8 @@ function AutoWFAlign(markertype)
 	   MarkOffsetV = 7 + ""
 	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + ""
 	   MarkPlaceV = MarkPlaceU
-	   Upos = 0 + ""
-	   Vpos = 0 + ""
+	   Upos = 0.06650 + ""
+	   Vpos = 0.06650 + ""
 	}
 	if (markertype == 12)
 	{
@@ -647,8 +654,8 @@ function AutoWFAlign(markertype)
 	   MarkOffsetV = -7 + ""
 	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + ""
 	   MarkPlaceV = MarkPlaceU
-	   Upos = 0 + ""
-	   Vpos = 1.396 + ""
+	   Upos = -0.06650 + ""
+	   Vpos = 0.06650 + ""
 	}
 	if (markertype == 13)
 	{
@@ -666,16 +673,16 @@ function AutoWFAlign(markertype)
 	   MarkOffsetV = -7 + ""
 	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + ""
 	   MarkPlaceV = MarkPlaceU
-	   Upos = 1.396 + ""
-	   Vpos = 1.396 + ""
+	   Upos = -0.06650 + ""
+	   Vpos = -0.06650 + ""
 	}
 	if (markertype == 11 || markertype == 12 || markertype == 13)
 	{
-		threshold = "Mode:0,L1:45,L2:55,Profile:1,Min:3800.0,Max:4700.0,LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0"; //Defines threshold algorithm parameters
+		threshold = "Mode:0,L1:45,L2:55,Profile:1,Min:3500.0,Max:4700.0,LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0"; //Defines threshold algorithm parameters
 		//threshold = "Mode:0,L1:45,L2:55,Profile:1,Min:1.0,Max:10000.0,LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0"; //Defines threshold algorithm parameters
 	}
 	
-	if (markertype == 21)
+	if (markertype == 21) //Definition of EBL markers
 	{
 	   SizeU = 3.000000
 	   SizeV = 1.000000
@@ -691,8 +698,8 @@ function AutoWFAlign(markertype)
 	   MarkOffsetV = 1.5 + ""
 	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + ""
 	   MarkPlaceV = MarkPlaceU
-	   Upos = 0.060 + ""
-	   Vpos = 0.060 + ""
+	   Upos = 0.0200 + ""
+	   Vpos = 0.0250 + ""
 	}
 	if (markertype == 22)
 	{
@@ -710,8 +717,8 @@ function AutoWFAlign(markertype)
 	   MarkOffsetV = 1.5 + ""
 	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + ""
 	   MarkPlaceV = MarkPlaceU
-	   Upos = 0.060 + ""
-	   Vpos = 1.340 + ""
+	   Upos = -0.0200 + ""
+	   Vpos = 0.0250 + ""
 	}
 	if (markertype == 23)
 	{
@@ -729,8 +736,8 @@ function AutoWFAlign(markertype)
 	   MarkOffsetV = 1.5 + ""
 	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + ""
 	   MarkPlaceV = MarkPlaceU
-	   Upos = 1.340 + ""
-	   Vpos = 1.340 + ""
+	   Upos = -0.0200 + ""
+	   Vpos = -0.0250 + ""
 	}
 	if (markertype == 21 || markertype == 22 || markertype == 23)
 	{
@@ -768,18 +775,9 @@ function AutoWFAlign(markertype)
 function SetSvars(S,i, st)
 {
 	GDSpath = S[3][5][i]
-//	App.Errmsg(0,0,GDSpath)
-//	filepath = GDSpath.substring(0, GDSpath.lastIndexOf("\\"));
-//  App.Errmsg(0,0,filepath)		
-//	database = GDSpath.substring(GDSpath.lastIndexOf("\\") + 1, GDSpath.length-4);
-//	App.Errmsg(0,0,database)
-//	App.SetPathVariable("GDSII.DataPath", filepath);  
+
 	App.Exec("OpenDatabase(" + S[3][5][i] + ")");
 	App.Exec("ViewStructure(" + S[4][5][i] + ")");
-//	if (st == 3 || st == 4)
-//	{
-//		Column.SetWriteField(S[1][5][i], true)
-//	}
 }
 
 function WriteMatrix(S, i)
@@ -801,7 +799,7 @@ function AlignWF(markprocedure, logWFflag, i, j, k)
 	m = j + 1
 	n = k + 1
 	switch(markprocedure)
-	{
+	{	//photomarkers
 		case 1: amf1 = createArray(3);
 				amf1[1] = AutoWFAlign(11);
 				Panicbutton();
@@ -823,7 +821,7 @@ function AlignWF(markprocedure, logWFflag, i, j, k)
 				}
 				Panicbutton();
 				break; 
-	   
+	   //photo+ebl markers
 		case 2: amf1 = createArray(3);
 				amf1[1] = AutoWFAlign(11);
 				Panicbutton();
@@ -866,13 +864,61 @@ function AlignWF(markprocedure, logWFflag, i, j, k)
 				}
 				Panicbutton();
 				break; 
-				
-		case 3: break;
-				
+		//no wfalign evarrr
+		case 3: break; 
+		// only do a writefield alignment on the very first device
+		case 4:
+				//new option: 4, for aligning writefield on photo, and then, ebl markers on the first device
+				if ((j == 0) && (k == 0)){
+				      App.Errmsg(EC_YESNO, 0 , "On first device?")
+									 	amf1 = createArray(3);
+										amf1[1] = AutoWFAlign(11);
+										Panicbutton();
+										if (amf1[1] > 0) 
+										{
+											amf1[2] = AutoWFAlign(12);
+											Panicbutton();
+										}
+										if (amf1[2] > 0) 
+										{
+											amf1[3] = AutoWFAlign(13)
+										}
+										if (logWFflag == 1)
+										{
+											logfile = App.OpenInifile(Glogfilename[1] + Glogfilename[2]);
+											logfile.WriteString("Failed markers S" + i,"Markprocedure", "Photo + EBL markers");
+											logstring = "Mark1=" + amf1[1] + ", Mark2 =" + amf1[2] + ", Mark3 =" + amf1[3]
+											logfile.WriteString("Failed markers S" + i,"D" + m + ";" + n + " (Photomarkers)", logstring);
+										}
+										Panicbutton();
+										
+										amf2 = createArray(3);
+										amf2[1] = AutoWFAlign(21);
+										Panicbutton();
+										if (amf2[1] > 0) 
+										{
+											amf2[2] = AutoWFAlign(22);
+											Panicbutton();
+										}
+										if (amf2[2] > 0) 
+										{
+											amf2[3] = AutoWFAlign(23)
+										}
+										if (logWFflag == 1)
+										{
+											logfile = App.OpenInifile(Glogfilename[1] + Glogfilename[2]);
+											logfile.WriteString("Failed markers S" + i,"Markprocedure", "Photo + EBL markers");
+											logstring = "Mark1=" + amf2[1] + ", Mark2 =" + amf2[2] + ", Mark3 =" + amf2[3]
+											logfile.WriteString("Failed markers S" + i,"D" + m + ";" + n + " (EBL markers)", logstring);
+										}
+										Panicbutton();
+										}
+					
+				break;
 		}
 }
 
-function Write(S, i, st, testmode)
+function Write(S, i, st, testmode) //S-matrix, n-th chip, type of writing (single,multiple..etc), testmode ornot
 {
 	N = WriteMatrix(S, i);
 	meander = 1;
@@ -894,7 +940,7 @@ function Write(S, i, st, testmode)
 			Stage.DriveUV(N[mj+1][k+1][1], N[mj+1][k+1][2]);
 			Stage.LocalAlignment();
 			OriginCorrection();
-			if (S[12][4][i] != -1)
+			if (S[12][4][i] != -1) //if the to be exposed layer is not empty
 			{
 				AlignWF(S[10][4][i], 1, i, mj, k);
 				InstallWFAlign(61);
@@ -910,9 +956,10 @@ function Write(S, i, st, testmode)
 				}
 				App.Exec("Exposure");
 			}
-			if (S[1][4][i] != -1)
+			if (S[1][4][i] != -1) //what does this do? Layer to be written also in global alignment?
 			{
-				AlignWF(S[10][4][i], 1, i, j, k);
+				AlignWF(S[10][4][i], 1, i, j, k); //align a writefield or not depending on S[10][4][i]
+				
 				App.Exec("UnSelectAllExposedLayer()");                      //Deselects al exposed layers
 				App.Exec("SelectExposedLayer(" + S[1][4][i] + ")");
 				if (testmode != 1) App.Exec("Exposure");
@@ -980,6 +1027,8 @@ function Start()
 		Panicbutton();
 		AlignUV(S, i, st);
 		SetSvars(S, i, st);
+		
+		//todo: make option for alignment on first device of new chip
 		Write(S, i, st, testmode);
     }
     if (beamoffflag == 1)                                                //5 lines: Turn off beam if option has been set.
