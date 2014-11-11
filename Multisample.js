@@ -341,7 +341,7 @@ function CollectSD(st)
 				if (S45 === "") S45 = currstruct
 			}
 			
-			S104 = parseInt(App.InputMsg("Select WF alignment marker procedure", "Select 1 for Photo-markers, 2 for Photo+EBL markers, 3 for no WF align, 4 for Photo+EBL on first device only", "1"));
+			S104 = parseInt(App.InputMsg("Select WF alignment marker procedure", "Select 1 for Photo-markers, 2 for Photo+EBL markers, 3 for Photo+EBL on first device only, 3 for no WF align", "1"));
 			if (App.ErrMsg(4,0,"Do you want to use layer 61 (GDSII autoscans)?")==EA_YES)
 			{
 				tl = App.InputMsg("Select layer", "Select layer(s) to use together with layer 61 (separate by ';')","")
@@ -889,9 +889,9 @@ function AlignWF(markprocedure, logWFflag, i, j, k)
 				Panicbutton();
 				break; 
 		//no wfalign evarrr
-		case 3: break; 
+		
 		// only do a writefield alignment on the very first device
-		case 4:
+		case 3:
 				//new option: 4, for aligning writefield on photo, and then, ebl markers on the first device
 				if ((j == 0) && (k == 0)) {
 					amf1 = createArray(3);
@@ -936,6 +936,7 @@ function AlignWF(markprocedure, logWFflag, i, j, k)
 					}
 					Panicbutton();
 					}
+		case 4: break; 		
 					
 				break;
 		}
