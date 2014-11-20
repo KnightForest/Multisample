@@ -1,19 +1,21 @@
 [GS]
 Procedure=2
-n-Samples=2
-[S1]
-ExpLayers=5
-Nx=1
-Ny=1
+n-Samples=1
+ExpLayers=0
+Nx=2
+Ny=2
 Sx=5
 Sy=5
 UuShift=0
 VvShift=0
-Name=sdf
+Name=wr
 Markprocedure=1
 L61=-1
-GDSII=C:\Design W4 1D05 RefDes PT Rev 10Design W4 1D05 RefDes PT Rev 10Design W4 1D05 RefDes PT Rev 10\PhotolithoConnect.csf
-Struct=Chip
+GDSII=d:\Joost\Dropbox\NW data\EBL patterns\Dose Test Super-Semi contacts\DoseTest.csf
+Struct=DoseTest
+WF=10
+ColMode=undefined
+[S1]
 U1=0
 V1=0
 WD1=5
@@ -35,43 +37,3 @@ X3=0
 Y3=0
 Z3=0
 MarkValid3=0
-[S2]
-ExpLayers=5
-Nx=1
-Ny=1
-Sx=5
-Sy=5
-UuShift=0
-VvShift=0
-Name=sdgdg
-Markprocedure=1
-L61=-1
-GDSII=D:\Joost\Dropbox\NW data\SiGe NW Samples\W4 1D05 colloidal\Design W4 1D05 RefDes PT Rev 10\PhotolithoConnect.csf
-Struct=Chip
-U1=0
-V1=0
-WD1=5
-X1=0
-Y1=0
-Z1=0
-MarkValid1=0
-U2=0
-V2=0
-WD2=5
-X2=0
-Y2=0
-Z2=0
-MarkValid2=0
-U3=0
-V3=0
-WD3=5
-X3=0
-Y3=0
-Z3=0
-MarkValid3=0
-[Failed markers S1]
-Markprocedure=Photomarkers
-D1;1 (Photomarkers)=Mark1=4, Mark2 =4, Mark3 =4
-[Failed markers S2]
-Markprocedure=Photomarkers
-D1;1 (Photomarkers)=Mark1=4, Mark2 =4, Mark3 =1
