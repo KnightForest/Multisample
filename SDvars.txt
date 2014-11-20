@@ -1,0 +1,18 @@
+[GS]
+Procedure=2
+n-Samples=1
+ExpLayers=0
+Nx=2
+Ny=2
+Sx=5
+Sy=5
+UuShift=0
+VvShift=0
+Name=wr
+Markprocedure=1
+L61=-1
+GDSII=d:\Joost\Dropbox\NW data\EBL patterns\Dose Test Super-Semi contacts\DoseTest.csf
+Struct=DoseTest
+WF=10
+ColMode=undefined
+[S1]
