@@ -19,7 +19,7 @@
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-// Future plans:
+// Future plans (- = open, V = fixed, T = needs testing):
 // V Change procedure text/behaviour
 // T Add dynamic WF size compatbility 
 // -	--> Working areas?
@@ -37,7 +37,6 @@
 // - Add logdata:
 //		-> Layer61 scan results
 //		-> Progress bar (together with time estimation)
-//		-> If 
 // T Fix SetSvars function
 // - For personal version: change position EBL markers to 2nd row
 // - Add comments :)
@@ -46,6 +45,11 @@
 // - Sort order of writing chip by aperture size
 // - Fix GDSII layer 61 scan InstallWF. Use functionality from QDAuto113
 // - Add stepsize/beamcurrent to S[5][x][i] column and improve functionality
+// 		-> Also add to Load and Log function
+// - Load differen designs/layers per UV alignment
+// - Add ability to do only a GDSII scan on the first device on a sample (one UV alignment)
+// - Add ability to load writematrix from file (for unevenly spaced devices on a sample)
+// 		-> Combine this with loading different designs/layers per UV alignment
 
 
 function Succes(beamoffflag)                                            //-- Called if function 'write' was successful
@@ -945,7 +949,7 @@ function ActivateColdata(i)
 function SetSvars(i, st, WFflag)
 {
 	//Add activation of WF and Column as defined
-	if (parseFloat(S[1][5][i]) != parseFloat(Column.GetWriteField())
+	if (parseFloat(S[1][5][i]) != parseFloat(Column.GetWriteField()))
 	{
 		Column.SetWriteField(S[1][5][i], true);	
 	}
