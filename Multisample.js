@@ -50,9 +50,17 @@
 // - Add ability to do only a GDSII scan on the first device on a sample (one UV alignment)
 // - Add ability to load writematrix from file (for unevenly spaced devices on a sample)
 // 		-> Combine this with loading different designs/layers per UV alignment
+var Gsn = "Multisample";
+var Gsnl = parseInt(Gsn.length);
+var Gfilepath = ExpandPath("%userroot%\Script\\" + Gsn + "\\");
+var Glogfilename = createArray(3);
+Glogfilename[1] = Gfilepath + "\\Logs\\";
+var Glib = Gfilepath + "\\Lib\\";
+var Gsampleini = App.OpenInifile(Gfilepath + "Multisample.txt");
+var S = createArray(1,1,1);
+var Gnums = -1;
 
-
-function Succes(beamoffflag)                                            //-- Called if function 'write' was successful
+function Succes()			                                            //-- Called if function 'write' was successful
 {
 //   App.Exec("OpenDatabase(PhotolithoConnect)");                       //Opens the GDSII database
 //   OriginCorrection()                                                 //Runs function OriginCorrection() defined below
@@ -65,7 +73,7 @@ function Succes(beamoffflag)                                            //-- Cal
 
 function isEven(n)														//Function to check if number is odd or even
 {
-	if (parseInt(n)%2 !=0)
+	if (parseInt(n, 8)%2 !==0)
 	{
 		n = 0;
 	}
@@ -73,34 +81,36 @@ function isEven(n)														//Function to check if number is odd or even
 	{
 		n = 1;
 	}
-	return(n)
+	return n;
 }
 
 function ReplaceStarbymu(str)
 {
-	str = str.replace(/@/g,"µ")
-	return strr
+	str = str.replace(/@/g,"µ");
+	return str;
 }
 
 function LastDatasettoColset()
 {
+	var dataset, splitdataset, splitdataset2, partonecolset, parttwocolset, colset;
+
 	dataset = (App.GetSysVariable("Vicol.LastDataset"));
 	splitdataset = dataset.split("(");
-	splitdataset2 = splitdataset[1].substring(0, splitdataset[1].length - 1)
-	partonecolset = splitdataset2
-	parttwocolset = splitdataset[0].substring(0, splitdataset[0].length - 1)
+	splitdataset2 = splitdataset[1].substring(0, splitdataset[1].length - 1);
+	partonecolset = splitdataset2;
+	parttwocolset = splitdataset[0].substring(0, splitdataset[0].length - 1);
 	colset = partonecolset + ": " + parttwocolset;
-	return colset
+	return colset;
 }
 
 function MeasBeamCurrent()												//Measures beam current
 {
-   if (App.ErrMsg(EC_YESNO, 0, "Do you want to measure the beam current?") == EA_YES)                        //Asks user to perform beam current measurement + dwelltime corrections
+   if (App.ErrMsg(EC_YESNO, 0, "Do you want to measure the beam current?") === EA_YES)                        //Asks user to perform beam current measurement + dwelltime corrections
       {
       if ( Column.CheckConnection() )                                   //If answer is YES, measurement is performed
          {
-		 Stage.X = -30 													//Sets stage coörds to 30,30 (saves time when driving back)
-		 Stage.Y = 30 
+		 Stage.X = -30; 													//Sets stage coörds to 30,30 (saves time when driving back)
+		 Stage.Y = 30; 
 		 Stage.WaitPositionReached(); 
          BeamCurrent(true, true);                                       //Saves value and returns result in a popup
          }
@@ -109,11 +119,12 @@ function MeasBeamCurrent()												//Measures beam current
 
 function StepsizeDwelltime()
 {
-    var msg_setareastepsize = "Set AREA stepsize for patterning in nm";
-	var msg_rounding = "Will be rounded up to a multiple of ";
-	var msg_setlinestepsize = "Set LINE stepsize in nm";
-	var msg_higherthan = "nm: (recommended higher than ";
-	var beamspeed = new Array();
+    var msg_setareastepsize, msg_rounding, msg_setlinestepsize, msg_higherthan, beamspeed, minstepsize, advisedbeamspeed, areaminstepsize, stepsize, stepsizeline, criticalbeamspeed, bflag;
+    msg_setareastepsize = "Set AREA stepsize for patterning in nm";
+	msg_rounding = "Will be rounded up to a multiple of ";
+	msg_setlinestepsize = "Set LINE stepsize in nm";
+	msg_higherthan = "nm: (recommended higher than ";
+	beamspeed = new Array();
 	Column.SetWriteField(S[1][5][i], true); 	
 	App.Exec("SetMagnification(" + mag + ")");
 
@@ -205,6 +216,7 @@ function Abort()                                                        //-- Abo
 
 function Detectnums()
 {
+	var Gnums2;
 	Gnums2 = Gsampleini.ReadString("GS", "n-Samples", -1)
 	for (i = 1; i <= 10; i++)
 	{
@@ -1229,16 +1241,6 @@ function Start()
 		App.ProtocolEvent(30, 0, 0, "Beam shutdown.");
     }
 }
-
-var Gsn = "Multisample";
-var Gsnl = parseInt(Gsn.length);
-var Gfilepath = ExpandPath("%userroot%\Script\\" + Gsn + "\\");
-var Glogfilename = createArray(3);
-Glogfilename[1] = Gfilepath + "\\Logs\\";
-var Glib = Gfilepath + "\\Lib\\";
-var Gsampleini = App.OpenInifile(Gfilepath + "Multisample.txt");
-var S = createArray(1,1,1);
-var Gnums = -1;
 
 //function Crap()
 // {
