@@ -1,4 +1,10 @@
+//-------------------------------------------------------------------
+//    SCRIPT NAME:      Multisample
+//    Internal version: 0.9e
+//    AUTHOR:           Joost Ridderbos
+// 	  Git hashkey: 		"value"
 //    Copyright 2013-2014 Joost Ridderbos
+//-------------------------------------------------------------------
 
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -15,15 +21,16 @@
 
 // Future plans:
 // V Change procedure text/behaviour
-// - Add dynamic WF size compatbility --> Working areas?
+// T Add dynamic WF size compatbility 
+// -	--> Working areas?
 // - Build in more abort buttons
 // - Drive z motor to 10.000 after patterning finishes
 // V Add check for design pathlength limit of 100 chars
-// - Allow for aperture/voltage change
-// 		-> Save WF parameters per beam setting
-//		-> Save and load column parameters
-//		-> Load dataset from positionlist?
-// V Add options to read everything except UV alignment from file
+// T Allow for aperture/voltage change
+// 		T-> Save WF parameters per beam setting
+//		T-> Save and load column parameters
+//		T-> Load dataset from positionlist
+// T Add options to read everything except UV alignment from file
 // - Separate markertypes/procedures in separate files (for editing by users)
 // - Add more checks for user input
 // - Add time estimation calculation
@@ -31,14 +38,14 @@
 //		-> Layer61 scan results
 //		-> Progress bar (together with time estimation)
 //		-> If 
-// - ? Fix SetSvars function
-// - Add noise cancelling 
+// T Fix SetSvars function
 // - For personal version: change position EBL markers to 2nd row
 // - Add comments :)
-// - Improve function StepsizeDwelltime
 // - Add initialisation to check if all files are present
 // - Set original magnifiction after AutoWFalign
 // - Sort order of writing chip by aperture size
+// - Fix GDSII layer 61 scan InstallWF. Use functionality from QDAuto113
+// - Add stepsize/beamcurrent to S[5][x][i] column and improve functionality
 
 
 function Succes(beamoffflag)                                            //-- Called if function 'write' was successful
@@ -63,6 +70,23 @@ function isEven(n)														//Function to check if number is odd or even
 		n = 1;
 	}
 	return(n)
+}
+
+function ReplaceStarbymu(str)
+{
+	str = str.replace(/@/g,"µ")
+	return strr
+}
+
+function LastDatasettoColset()
+{
+	dataset = (App.GetSysVariable("Vicol.LastDataset"));
+	splitdataset = dataset.split("(");
+	splitdataset2 = splitdataset[1].substring(0, splitdataset[1].length - 1)
+	partonecolset = splitdataset2
+	parttwocolset = splitdataset[0].substring(0, splitdataset[0].length - 1)
+	colset = partonecolset + ": " + parttwocolset;
+	return colset
 }
 
 function MeasBeamCurrent()												//Measures beam current
@@ -342,7 +366,7 @@ function Load(SDflag)
 	}
 	else
 	{
-		SetSvars(i,st)
+		SetSvars(i, st, 0)
 		S = CollectUV(st, 1);		
 	}
 
@@ -379,14 +403,14 @@ function CollectSD(st, GUIflag)
 			S84 = App.InputMsg("Sample name","Enter name for sample(s) (for log)","");
 			
 
-			if (GUIflag == 1)
-			{
-				App.ErrMsg(0,0, "Please activate desired column dataset.");
-				App.Exec("Halt()");
-			}
+			//if (GUIflag == 1)
+			//{
+			//	App.ErrMsg(0,0, "Please activate desired column dataset.");
+			//	App.Exec("Halt()");
+			//}
 			
-			S25 = App.GetSysVariable("ViCol.LastDataset");
-			S15 = parseInt(App.GetVariable("Variables.WritefieldHeight"));
+			//S25 = App.GetSysVariable("ViCol.LastDataset");
+			//S15 = parseInt(App.GetVariable("Variables.WritefieldHeight"));
 			
 			if (GUIflag == 2)
 			{
@@ -407,10 +431,12 @@ function CollectSD(st, GUIflag)
 					currstruct = App.GetVariable("Variables.StructureName");
 				}
 				S45 = App.InputMsg("Choose structure", "Type the name of the structure (case sensitive):", currstruct);
-				if (S45 === "") S45 = currstruct	
-			}
-			
-			
+				if (S45 === "") S45 = currstruct
+
+		    	S15 = App.InputMsg("Choose writefield in µm", "Select 200, 100, 50, 25 or 10", S15);
+				S25 = App.InputMsg("Column settings", "Type name of column dataset (format= group: name). Use '@' for 'µ' symbol.", S25);
+				S25 = ReplaceStarbymu(S25);
+    		}
 			
 			S104 = parseInt(App.InputMsg("Select AutoWFAlign scan procedure", "1: Use photo-markers, 2: Use photo + EBL markers,  3: Photo+EBL on first device only, 4: No WF align evarr", "1"));
 			
@@ -444,7 +470,7 @@ function CollectSD(st, GUIflag)
 			//S74 = 0;
 			S94 = st;
 				
-			if (st == 1 || st == 3) mflag = 1;
+			if (st == 1) mflag = 1;
 				
 		}
 		S[1][4][i] = S14 + "";
@@ -466,14 +492,15 @@ function CollectSD(st, GUIflag)
 		}
 		
 			
-		if (st == 3 || st == 4)
+		if (GUIflag == 2)
 		{
-		//S[2][5][i] = S25 + ""
+		S[1][5][i] = S15 + "";
+		S[2][5][i] = S25 + "";
 		S[3][5][i] = S35;
-		S[4][5][i] = S45 + "";
+		S[4][5][i] = S45;
 		}
 	}
-	SetSvars(S,i,st)
+	SetSvars(i, st, 0)
 	S = CollectUV(st, GUIflag);
 
  return(S)
@@ -481,30 +508,25 @@ function CollectSD(st, GUIflag)
 
 function CollectUV(st, GUIflag)
 {
-    //change loop if s=1 or s=2!!
-    if (GUIflag == 2)
-	{
-		S15 = App.InputMsg("Choose writefield in um", "Select 200, 100, 50, 25 or 10", S15);
-		S25 = App.InputMsg("Column settings", "Type name of column dataset. Format: name (group)", S25);
+	
+// Add loop so that this is only asked once if st == 1
+
+    if (GUIflag == 1)
+    {	
+    	App.ErrMsg(0,0,"Collecting three point alignments for all chips commences. Activate desired Column dataset and WriteField. USE GLOBAL ALIGNMENT!");
 	}
 
-	if (GUIflag == 1)
-		{
-			App.ErrMsg(0,0, "Please activate desired column dataset.");
-			App.Exec("Halt()");
-		}
-	
-	S25 = App.GetSysVariable("ViCol.LastDataset");
-	S15 = parseInt(App.GetVariable("Variables.WritefieldHeight"));
+	if (GUIflag == 2)
+    {	
+    	App.ErrMsg(0,0,"Collecting three point alignments for all chips commences. USE GLOBAL ALIGNMENT!");
+	}
 
-    App.ErrMsg(0,0,"Collecting three point alignments for all chips commences. Now, align the first chip. USE GLOBAL ALIGNMENT!");
 	for (i = 1; i <= Gnums; i++)
     {
-	    markprocedure = S[10][4][i];
 		Stage.GlobalAlignment();
 	    Stage.ResetAlignment();
 
-	    if (st == 1 || st == 2)
+	    if (GUIflag == 1)
 		{
 			if (App.ErrMsg(8,0,"Perform UV alignment on sample chip " + i + " of " + Gnums + ". The now opened GDSII file and structure are logged and used for exposure.") == 2)
 			{
@@ -512,29 +534,31 @@ function CollectUV(st, GUIflag)
 				Abort();
 			}
 		}
-		else
+		if (GUIflag == 2)
 		{
-			if (App.ErrMsg(8,0,"Perform UV alignment on sample chip " + i + " of " + Gnums + ".") == 2)
+			SetSvars(i, st, 0)
+			App.Exec("OpenDatabase(" + S[3][5][i] + ")");
+			App.Exec("ViewStructure(" + S[4][5][i] + ")");
+
+
+			if (App.ErrMsg(8,0,"Column and WrifeField set, now perform UV alignment on sample chip " + i + " of " + Gnums + ".") == 2)
 			{
 				Logdata(S, st);
 				Abort();
 			}		
 		}
-		
-		if (st == 3 || st == 4)
-		{	
-			App.Exec("OpenDatabase(" + S[3][5][i] + ")");
-			App.Exec("ViewStructure(" + S[4][5][i] + ")");
-		}
+
 	    App.Exec("Halt()");
 
-		AlignWF(markprocedure, 0);
+		AlignWF(S[10][4][i], 0);
 
 	    App.ErrMsg(0,0,"Check UV alignment + focus after WF change of sample chip " + i + " of " + Gnums);
 	    App.Exec("Halt()");
 		
-		if (st == 1)
+		if (GUIflag == 1)
 		{
+			S[1][5][i] = parseInt(App.GetVariable("Variables.WritefieldHeight"));
+			S[2][5][i] = LastDatasettoColset();
 			S[3][5][i] = App.GetVariable("GDSII.Database");
 			S[4][5][i] = App.GetVariable("Variables.StructureName");
 		}
@@ -722,6 +746,7 @@ function InstallWFAlign(markertype, threshold)
 			par = WFalignini.ReadString("Automatic procedure during exposure", parlist[q], "0");
 			scanini.WriteString("Automatic procedure during exposure", parlist[q], par);
 		}
+
 		threshold = "Mode:0,L1:45,L2:55,Profile:1,Min:150.0,Max:350.0,LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0";
 	}
 	else
@@ -905,21 +930,36 @@ function AutoWFAlign(markertype)
 	return(fmarkers)
 }
 
-function ActivateColdata()
+function ActivateColdata(i)
 {
-	multipls = App.OpenIniFile(Glib + "Multisample WF align.pls");
+	colset = S[5][2][i]
+	multipls = App.OpenIniFile(Glib + "ActivateColumnDataset.pls");
 	multipls.DeleteSection("DATA");
-	multipls.WriteString("DATA", "0,0.000000,0.000000,0.000000,0.000000,0.000000," + Upos + "," + Vpos + ",0.000000,LN,UV,Multisample WF align,STAY;,ALWF_AUTOLINE," + parlist[1] + "," + parlist[2] + "," + parlist[3] + "," + parlist[4] + ",U,16,,,,,,,,,,,,,,,,,,,,,,,0.0,15,0,1,", 0);	
+	multipls.WriteString("DATA", "0,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,VN,UV,set ViCol mode entry,STAY,VICOL,,,,,,,,,,," + colset + ",106,,,,,,,,,,,,,,,,", 0);
+	PList = OpenPositionList(Glib + "ActivateColumnDataset.pls")
+	App.Exec("ScanAllPositions()");
+	PList.Save();
+	PList.Close();
 }
 
-function SetSvars(i, st)
+function SetSvars(i, st, WFflag)
 {
-	GDSpath = S[3][5][i]
-	Column.SetWriteField(S[1][5][i]);
+	//Add activation of WF and Column as defined
+	if (parseFloat(S[1][5][i]) != parseFloat(Column.GetWriteField())
+	{
+		Column.SetWriteField(S[1][5][i], true);	
+	}
+	colset = LastDatasettoColset();
+	if (S[2][5][i] != colset)
+	{
+		ActivateColdata(S[2][5][i]);
+	} 
 	App.Exec("OpenDatabase(" + S[3][5][i] + ")");
 	App.Exec("ViewStructure(" + S[4][5][i] + ")");
-	App.Exec("SetCorrection(" + S[8][5][i] + ", " + S[9][5][i] + ", " + S[10][5][i] + ", " + S[11][5][i] + ", " + S[12][5][i] + ", " + S[13][5][i] + ")");
-
+	if (WFflag == 1)
+	{
+		App.Exec("SetCorrection(" + S[8][5][i] + ", " + S[9][5][i] + ", " + S[10][5][i] + ", " + S[11][5][i] + ", " + S[12][5][i] + ", " + S[13][5][i] + ")");	
+	}
 }
 
 function WriteMatrix(S, i)
@@ -1010,7 +1050,6 @@ function AlignWF(markprocedure, logWFflag, i, j, k)
 		
 		// only do a writefield alignment on the very first device
 		case 3:
-				//new option: 4, for aligning writefield on photo, and then, ebl markers on the first device
 				if ((j == 0) && (k == 0)) {
 					amf1 = createArray(3);
 					amf1[1] = AutoWFAlign(11);
@@ -1175,7 +1214,7 @@ function Start()
 	{
 		Panicbutton();
 		AlignUV(i, st);
-		SetSvars(i, st);
+		SetSvars(i, st, 1);
 		
 		//todo: make option for alignment on first device of new chip
 		Write(S, i, st, testmode);
