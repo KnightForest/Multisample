@@ -1,8 +1,2 @@
 [Panicswitch]
 panic=0
-
-
-
-
-
-

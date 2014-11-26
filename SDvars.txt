@@ -1,18 +1,21 @@
 [GS]
-Procedure=2
-n-Samples=1
-ExpLayers=0
-Nx=2
-Ny=2
-Sx=5
-Sy=5
-UuShift=0
-VvShift=0
-Name=wr
-Markprocedure=1
+Procedure=1
+n-Samples=3
+ExpLayers=0;3
+Nx=1
+Ny=1
+Sx=2
+Sy=2
+UuShift=0.1
+VvShift=0.3
+Name=sgga
+Markprocedure=2
 L61=-1
-GDSII=d:\Joost\Dropbox\NW data\EBL patterns\Dose Test Super-Semi contacts\DoseTest.csf
-Struct=DoseTest
 WF=10
-ColMode=undefined
-[S1]
+ColMode=60 um aperture /: 10 kV 60 µm 10 mm
+GDSII=d:\Joost\Dropbox\NW data\EBL patterns\S-STest (RefDes10)\PhotolithoConnect.csf
+Struct=Chip
+SSLine=undefined
+SSArea=undefined
+SSCurve=undefined
+

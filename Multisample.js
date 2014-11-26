@@ -21,44 +21,47 @@
 
 // Future plans (- = open, V = fixed, T = needs testing):
 // V Change procedure text/behaviour
-// T Add dynamic WF size compatbility 
+// V Add dynamic WF size compatbility 
 // -	--> Working areas?
 // - Build in more abort buttons
 // - Drive z motor to 10.000 after patterning finishes
 // V Add check for design pathlength limit of 100 chars
-// T Allow for aperture/voltage change
+// V Allow for aperture/voltage change
 // 		T-> Save WF parameters per beam setting
-//		T-> Save and load column parameters
-//		T-> Load dataset from positionlist
-// T Add options to read everything except UV alignment from file
+//		V-> Save and load column parameters
+//		V-> Load dataset from positionlist
+// V Add options to read everything except UV alignment from file
 // - Separate markertypes/procedures in separate files (for editing by users)
 // - Add more checks for user input
 // - Add time estimation calculation
 // - Add logdata:
 //		-> Layer61 scan results
 //		-> Progress bar (together with time estimation)
-// T Fix SetSvars function
+// V Fix SetSvars function
 // - For personal version: change position EBL markers to 2nd row
 // - Add comments :)
 // - Add initialisation to check if all files are present
 // - Set original magnifiction after AutoWFalign
 // - Sort order of writing chip by aperture size
 // - Fix GDSII layer 61 scan InstallWF. Use functionality from QDAuto113
-// - Add stepsize/beamcurrent to S[5][x][i] column and improve functionality
-// 		-> Also add to Load and Log function
+// T Add stepsize/beamcurrent to S[5][x][i] column and improve functionality
+// 		T-> Also add to Load and Log function
 // - Load differen designs/layers per UV alignment
 // - Add ability to do only a GDSII scan on the first device on a sample (one UV alignment)
 // - Add ability to load writematrix from file (for unevenly spaced devices on a sample)
 // 		-> Combine this with loading different designs/layers per UV alignment
+
 var Gsn = "Multisample";
-var Gsnl = parseInt(Gsn.length);
-var Gfilepath = ExpandPath("%userroot%\Script\\" + Gsn + "\\");
+//var Gsnl = parseInt(Gsn.length, 8);
+var Gfilepath = ExpandPath("%userroot%\\Script\\" + Gsn + "\\");
 var Glogfilename = createArray(3);
 Glogfilename[1] = Gfilepath + "\\Logs\\";
 var Glib = Gfilepath + "\\Lib\\";
 var Gsampleini = App.OpenInifile(Gfilepath + "Multisample.txt");
+var GSDini = App.OpenInifile(Gfilepath + "SDvars.txt");
 var S = createArray(1,1,1);
 var Gnums = -1;
+var i, st, beamoffflag;
 
 function Succes()			                                            //-- Called if function 'write' was successful
 {
@@ -84,9 +87,11 @@ function isEven(n)														//Function to check if number is odd or even
 	return n;
 }
 
-function ReplaceStarbymu(str)
+function ReplaceAtbymu(str)
 {
-	str = str.replace(/@/g,"µ");
+	str = str.replace(/@/g, "\u00B5");
+	//str = str.replace(/µ/g, "\u00B5");
+	//App.InputMsg("","",str)
 	return str;
 }
 
@@ -100,6 +105,7 @@ function LastDatasettoColset()
 	partonecolset = splitdataset2;
 	parttwocolset = splitdataset[0].substring(0, splitdataset[0].length - 1);
 	colset = partonecolset + ": " + parttwocolset;
+	colset = ReplaceAtbymu(colset);
 	return colset;
 }
 
@@ -117,31 +123,64 @@ function MeasBeamCurrent()												//Measures beam current
        }
 }
 
-function StepsizeDwelltime()
+function SetStepsizeDwelltime(i)
+{
+   	var stepsizeline, stepsize, stepsizec, beamcurrent;
+
+   	stepsizeline = S[1][6][i];
+   	stepsize = S[2][6][i];
+   	stepsizec = S[3][6][i];
+   	beamcurrent = S[7][6][i];
+
+	App.SetVariable("BeamCurrent.BeamCurrent", beamcurrent);
+
+	App.SetVariable("Variables.MetricStepSize", stepsize);               //Sets area stepsize y-direction to defined area stepsize
+    App.SetVariable("Variables.MetricLineSpacing", stepsize);            //Sets area stepsize x-direction to defined area stepsize
+    App.SetVariable("BeamControl.CurveStepSize", stepsizec);              //Sets curved element stepsize to defined area stepsize
+    App.SetVariable("BeamControl.CurveLineSpacing", stepsizec);           //Sets curved line stepsize to defined area stepsize
+    App.SetVariable("BeamControl.SplStepSize", stepsizeline);            //Sets line stepsize to defined area stepsize
+    App.Exec("SetExposureParameter()");                                  //Actually activates the previous defined settings
+    App.Exec("CorrectCurvedElementsDwellTime()");                        //Corrects curved elements dwelltimes
+    App.Exec("CorrectDotDwelltime()");                                   //Corrects dot dwelltimes
+    App.Exec("CorrectSPLDwelltime()");                                   //Corrects line dwelltimes
+	App.Exec("CorrectDwelltime()");                                      //Corrects area dwelltimes
+}
+
+function StepsizeDwelltime(i,GUIflag)
 {
     var msg_setareastepsize, msg_rounding, msg_setlinestepsize, msg_higherthan, beamspeed, minstepsize, advisedbeamspeed, areaminstepsize, stepsize, stepsizeline, criticalbeamspeed, bflag;
     msg_setareastepsize = "Set AREA stepsize for patterning in nm";
 	msg_rounding = "Will be rounded up to a multiple of ";
 	msg_setlinestepsize = "Set LINE stepsize in nm";
 	msg_higherthan = "nm: (recommended higher than ";
-	beamspeed = new Array();
-	Column.SetWriteField(S[1][5][i], true); 	
-	App.Exec("SetMagnification(" + mag + ")");
-
-	minstepsize=App.GetSysVariable("Beamcontrol.MetricBasicStepSize");
-	advisedbeamspeed = 0.005;                                             //Sets the advised beamspeed in m/s
-    areaminstepsize = minstepsize*1000*Math.ceil(App.GetVariable("Beamcurrent.BeamCurrent")/(advisedbeamspeed*App.GetVariable("Exposure.ResistSensitivity")*Math.pow(10,-2))/(minstepsize*1000)); //Calculates advised minumum area stepsize based on beamspeed and dose
-    
-    stepsize = (minstepsize*Math.ceil(App.InputMsg(msg_setareastepsize, msg_rounding + minstepsize*1000 + msg_higherthan + areaminstepsize + "nm)", areaminstepsize)/(1000*minstepsize))).toString(); //Asks user to set stepsize for patterning
-    
-    if (stepsize < minstepsize) stepsize=minstepsize;                    //If the user set stepsize is smaller than the minimum stepsize, it is return to this minimum value
-    	stepsizeline=(minstepsize*Math.ceil(App.InputMsg(msg_setlinestepsize, msg_rounding + minstepsize*1000 + "nm:", minstepsize*1000)/(1000*minstepsize))).toString(); //Asks user to set stepsize for patterning
-    if (stepsizeline < minstepsize) 
-    	stepsizeline = minstepsize;          //If the user set stepsize is smaller than the minimum stepsize, it is returned to this minimum value
-    App.SetVariable("Exposure.CurveDose", "150");                        //Sets curve dose to 150 (generally not used)
-    App.SetVariable("Exposure.DotDose", "0.01");                         //Sets dot dose to 0.1
+	
+	App.SetVariable("Exposure.CurveDose", "150");                        //Sets curve dose to 150 (generally not used)
+    App.SetVariable("Exposure.DotDose", "0.01");                         //Sets dot dose to 0.01
     App.SetVariable("Exposure.ResistSensitivity", "150");                //Sets area dose to 150
     App.SetVariable("Exposure.LineDose", "500");                         //Sets line dose to 500
+
+	//Column.SetWriteField(S[1][5][i], true); 
+	beamcurrent = App.GetVariable("BeamCurrent.BeamCurrent");
+	minstepsize=App.GetSysVariable("Beamcontrol.MetricBasicStepSize");
+	advisedbeamspeed = 0.008;                                             //Sets the advised beamspeed in m/s
+    areaminstepsize = minstepsize*1000*Math.ceil(beamcurrent/(advisedbeamspeed*App.GetVariable("Exposure.ResistSensitivity")*Math.pow(10,-2))/(minstepsize*1000)); //Calculates advised minumum area stepsize based on beamspeed and dose
+
+	if (GUIflag === 1)
+	{
+		stepsize = minstepsize;
+		stepsizeling = areaminstepsize;
+	}
+
+	if (GUIflag ===2)
+	{
+		stepsize = (minstepsize*Math.ceil(App.InputMsg(msg_setareastepsize, msg_rounding + minstepsize*1000 + msg_higherthan + areaminstepsize + "nm)", areaminstepsize)/(1000*minstepsize))).toString(); //Asks user to set stepsize for patterning
+    
+    	if (stepsize < minstepsize) stepsize=minstepsize;                   //If the user set stepsize is smaller than the minimum stepsize, it is return to this minimum value
+    	stepsizeline=(minstepsize*Math.ceil(App.InputMsg(msg_setlinestepsize, msg_rounding + minstepsize*1000 + "nm:", minstepsize*1000)/(1000*minstepsize))).toString(); //Asks user to set stepsize for patterning
+    	if (stepsizeline < minstepsize) stepsizeline = minstepsize; 		//If the user set stepsize is smaller than the minimum stepsize, it is returned to this minimum value   	        
+	}
+
+    
     App.SetVariable("Variables.MetricStepSize", stepsize);               //Sets area stepsize y-direction to defined area stepsize
     App.SetVariable("Variables.MetricLineSpacing", stepsize);            //Sets area stepsize x-direction to defined area stepsize
     App.SetVariable("BeamControl.CurveStepSize", stepsize);              //Sets curved element stepsize to defined area stepsize
@@ -153,34 +192,49 @@ function StepsizeDwelltime()
     App.Exec("CorrectSPLDwelltime()");                                   //Corrects line dwelltimes
 	App.Exec("CorrectDwelltime()");                                      //Corrects area dwelltimes
 			                                                                     
-                                                                        //Lines below calculate the resulting beam speed based on user stepsize
-//			beamspeed[0] = App.GetVariable("Beamcurrent.BeamCurrent")*Math.pow(10,-9)/(stepsize*Math.pow(10,-6)*App.GetVariable("Exposure.CurveDose")*Math.pow(10,-2));
-   beamspeed[1] = App.GetVariable("Beamcurrent.BeamCurrent")*Math.pow(10,-9)/(stepsize*Math.pow(10,-6)*App.GetVariable("Exposure.ResistSensitivity")*Math.pow(10,-2)); //Calculates area beamspeed
-   beamspeed[2] = App.GetVariable("Beamcurrent.BeamCurrent")*Math.pow(10,-9)/(App.GetVariable("Exposure.LineDose")*Math.pow(10,-10));  //Calculates line beamspeed
+	beamspeed = [];
+	beamspeed[0] = beamcurrent*Math.pow(10,-9)/(App.GetVariable("Exposure.LineDose")*Math.pow(10,-10));  //Calculates line beamspeed
+  	beamspeed[1] = beamcurrent*Math.pow(10,-9)/(stepsize*Math.pow(10,-6)*App.GetVariable("Exposure.ResistSensitivity")*Math.pow(10,-2)); //Calculates area beamspeed                                                                        //Lines below calculate the resulting beam speed based on user stepsize
+	beamspeed[2] = beamcurrent*Math.pow(10,-9)/(stepsize*Math.pow(10,-6)*App.GetVariable("Exposure.CurveDose")*Math.pow(10,-2));
 
+   	
 
-   criticalbeamspeed = 0.010;
-   bflag = 0;
-   if (beamspeed[0] > criticalbeamspeed)                                            //Next lines checks if the calculated beamspeed is not higher than 10 mm/s, else it gives a warning.
-      { 
-      App.Errmsg(EC_INFO ,0 , "WARNING! Curved Area beam speed greater than 10mm/s: " + beamspeed[0]*1000 + "mm/s, increase stepsize or reduce beamcurrent.");
-      bflag = 1;
-      }
-   if (beamspeed[1] > criticalbeamspeed) 
-      {
-      App.Errmsg(EC_INFO ,0 , "WARNING! Area beam speed greater than 10mm/s:    " + Math.ceil(beamspeed[1]*10000)/10 + "mm/s, increase stepsize or reduce beamcurrent.");
-      bflag = 1;
-      }
-   if (beamspeed[2] > criticalbeamspeed) 
-      {
-      App.Errmsg(EC_INFO ,0 , "WARNING! Line beam speed greater than 10mm/s:    " + Math.ceil(beamspeed[2]*10000)/10 + "mm/s, reduce beamcurrent.");
-      bflag = 1;
-      }
-   if (bflag == 1)                                                      //If one of the beamspeeds was too high, the user is asked if they want to continue anyway.
-      {
-      if (App.ErrMsg(EC_YESNO, 0, "Continue with high beamspeed? (Okay until ~11 mm/s)" ) == EA_NO) Abort();
-      }
-   bflag = 0; 
+   	if (GUIflag === 2)
+   	{
+   	 	criticalbeamspeed = 0.010;
+   		bflag = 0;
+   		
+   		if (beamspeed[0] > criticalbeamspeed) 
+      	{
+      		App.Errmsg(EC_INFO ,0 , "WARNING! Line beam speed greater than 10mm/s:    " + Math.ceil(beamspeed[2]*10000)/10 + "mm/s, reduce beamcurrent.");
+      		bflag = 1;
+      	}      	
+   		if (beamspeed[1] > criticalbeamspeed) 
+      	{
+      		App.Errmsg(EC_INFO ,0 , "WARNING! Area beam speed greater than 10mm/s:    " + Math.ceil(beamspeed[1]*10000)/10 + "mm/s, increase stepsize or reduce beamcurrent.");
+      		bflag = 1;
+      	}
+      	//if (beamspeed[2] > criticalbeamspeed)                                            //Next lines checks if the calculated beamspeed is not higher than 10 mm/s, else it gives a warning.
+      	//{ 
+      	//	App.Errmsg(EC_INFO ,0 , "WARNING! Curved Area beam speed greater than 10mm/s: " + beamspeed[0]*1000 + "mm/s, increase stepsize or reduce beamcurrent.");
+      	//	bflag = 1;
+      	//}
+
+   		if (bflag == 1)                                                      //If one of the beamspeeds was too high, the user is asked if they want to continue anyway.
+    	{
+	      	if (App.ErrMsg(EC_YESNO, 0, "Continue with high beamspeed? (Okay until ~11 mm/s)" ) == EA_NO) Abort();
+	    }
+   			bflag = 0; 
+   	}
+   	stepsizec = stepsize
+
+  	S[1][6][i] = stepsizeline;
+   	S[2][6][i] = stepsize;
+   	S[3][6][i] = stepsizec;
+   	S[4][6][i] = beamspeed[0]*1000;
+   	S[5][6][i] = beamspeed[1]*1000;
+   	S[6][6][i] = beamspeed[2]*1000;
+   	S[7][6][i] = beamcurrent;
 }
 
 function FileExists(filespec)
@@ -214,57 +268,72 @@ function Abort()                                                        //-- Abo
    throw new Error('Execution cancelled by user');                      //Interrupts script by trowing error
 }
 
-function Detectnums()
+function Detectnums(file, checkflag)
 {
-	var Gnums2;
-	Gnums2 = Gsampleini.ReadString("GS", "n-Samples", -1)
-	for (i = 1; i <= 10; i++)
-	{
-		var it = "S" + i
+	var Gnums2, i, it;
+	
+	Gnums2 = file.ReadString("GS", "n-Samples", -1);
 
-		if (Gsampleini.SectionExists(it)==false )
+	if (checkflag == 1)
+	{
+		for (i = 1; i <= 20; i++)
 		{
-		Gnums = parseInt(i - 1);
-		if (Gnums != Gnums2)
-		{
-			App.ErrMsg(0,0, "Inconsistency in Multisample.txt. Check n-Samples under [GS] and check sample entries")
+			it = "S" + i;
+			if (file.SectionExists(it)===false )
+			{
+			Gnums = parseInt(i - 1);
+			
+			if (Gnums != Gnums2)
+				{
+					App.ErrMsg(0, 0, "Inconsistency in Multisample.txt. Check n-Samples under [GS] and check sample entries.");
+					Abort();
+				}
+			else if	(App.ErrMsg(4, 0, Gnums + " chips are detected. Is this correct?")===7)
+				{
+					App.ErrMsg(0, 0, "Please do all kinds of stuff to make things not wrong.");
+					Abort();
+				}
+        	return(Gnums);
+        	}
 		}
-		else (App.ErrMsg(4, 0, Gnums + " chips are detected. Is this correct?")==7)
-		{
-			App.ErrMsg(0,0, "Please do all kinds of stuff to make things not wrong.");
-			Abort();
-		}
-        return(Gnums);
-		break;
-		}
+
 	}
+	else
+	{
+		Gnums = Gnums2;
+	}
+	return Gnums;
 }
 
 function ResetPanicbutton()
 {
-	var panicini = App.OpenInifile(Gfilepath + "Panic.txt");
-	var panicswitch = parseInt(panicini.WriteInteger("Panicswitch","panic",0));
+	var panicini;
+	
+	panicini = App.OpenInifile(Gfilepath + "Panic.txt");
+	parseInt(panicini.WriteInteger("Panicswitch","panic",0));
 }
 
 function Panicbutton()
 {
-	var panicini = App.OpenInifile(Gfilepath + "Panic.txt");
-	var panicswitch = parseInt(panicini.ReadInteger("Panicswitch","panic",0));
-	if (panicswitch != 0)
+	var panicini, panicswitch;
+	panicini = App.OpenInifile(Gfilepath + "Panic.txt");
+	panicswitch = parseInt(panicini.ReadInteger("Panicswitch","panic",0));
+	if (panicswitch !== 0)
 	{
 		App.ErrMsg(0,0,"Panic button initiated. Script execution terminated.");
 		Abort();
 	}
 }
 
-function createArray(length) {
+function createArray(length) 
+{
     var arr = new Array(length || 0),
         i = length;
 
     if (arguments.length > 1) {
         var args = Array.prototype.slice.call(arguments, 1);
         while(i--) arr[length-1 - i] = createArray.apply(this, args);
-    }
+}
 
     return arr;
 }
@@ -273,132 +342,179 @@ function CheckPathLength(str, sn)
 {
 	if (str.length>100)
 	{
-		App.ErrMsg(0,0,"GDSII datapath for sample " + sn + " is too long (100 characters is max, this path is " + str.length + " characters long), change location or pathnames. The script will abort.")
+		App.ErrMsg(0,0,"GDSII datapath for sample " + sn + " is too long (100 characters is max, this path is " + str.length + " characters long), change location or pathnames. The script will abort.");
 		Abort();
 	}
 }
 
 function Load(SDflag)
 {	   
-    var S = createArray(20,6,Gnums+1);
+    S = createArray(20,7,Gnums+1);
+    var inifile, st, it, j, colmode, GDSIIpath;
+    var flag = 0;
 	//First load the list of parameters applicable to all loaded samples:
-	if (SDflag == 0)
+	if (SDflag === 0) 
 	{
-		S[9][4][1] = parseFloat(Gsampleini.ReadString("GS","Procedure", "1"));
-		st = S[9][4][1]
-		S[11][4][1] = parseFloat(Gsampleini.ReadString("GS","n-Samples", "1"));		
+		inifile = Gsampleini;
 	}
-	else
+	if (SDflag === 1) 
 	{
-		SDini = App.OpenInifile(Gfilepath + "SDvars.txt");
-		S[9][4][1] = parseFloat(Gsampleini.ReadString("GS","Procedure", "1"));
-		st = S[9][4][1]
-		S[11][4][1] = parseFloat(Gsampleini.ReadString("GS","n-Samples", "1"));		
+		inifile = GSDini;
 	}
-
+	
+	S[9][4][1] = parseFloat(inifile.ReadString("GS","Procedure", "1"));
+	st = S[9][4][1];
+	S[11][4][1] = parseFloat(inifile.ReadString("GS","n-Samples", "1"));		
 	
     for (i = 1; i <= Gnums; i++)
     {
 		it = "S" + i; 
 		
-	    if (SDflag == 0)
+	    if (SDflag === 0)
 	    {
 	    	for (j=1; j <= 3; j++)
 			{
-				S[1][j][i] = parseFloat(Gsampleini.ReadString(it, "U" + j, "0"));
-				S[2][j][i] = parseFloat(Gsampleini.ReadString(it, "V" + j, "0"));
-				S[3][j][i] = parseFloat(Gsampleini.ReadString(it, "WD" + j, "0"));
-				S[4][j][i] = parseFloat(Gsampleini.ReadString(it, "X" + j, "0"));
-				S[5][j][i] = parseFloat(Gsampleini.ReadString(it, "Y" + j, "0"));
-				S[6][j][i] = parseFloat(Gsampleini.ReadString(it, "Z" + j, "0"));
-				S[7][j][i] = parseFloat(Gsampleini.ReadString(it, "MarkValid" + j, "0"));
+				S[1][j][i] = parseFloat(inifile.ReadString(it, "U" + j, "0"));
+				S[2][j][i] = parseFloat(inifile.ReadString(it, "V" + j, "0"));
+				S[3][j][i] = parseFloat(inifile.ReadString(it, "WD" + j, "0"));
+				S[4][j][i] = parseFloat(inifile.ReadString(it, "X" + j, "0"));
+				S[5][j][i] = parseFloat(inifile.ReadString(it, "Y" + j, "0"));
+				S[6][j][i] = parseFloat(inifile.ReadString(it, "Z" + j, "0"));
+				S[7][j][i] = parseFloat(inifile.ReadString(it, "MarkValid" + j, "0"));
 
-				S[8][5][i] = parseFloat(Gsampleini.ReadString(it, "WFZoomU", "0"));
-				S[9][5][i] = parseFloat(Gsampleini.ReadString(it, "WFZoomV", "0"));
-				S[10][5][i] = parseFloat(Gsampleini.ReadString(it, "WFShiftU", "0"));
-				S[11][5][i] = parseFloat(Gsampleini.ReadString(it, "WFShiftV", "0"));
-				S[12][5][i] = parseFloat(Gsampleini.ReadString(it, "WFRotU", "0"));
-				S[13][5][i] = parseFloat(Gsampleini.ReadString(it, "WFRotV", "0"));	
+				S[5][5][i] = parseFloat(inifile.ReadString(it, "WFZoomU", "0"));
+				S[6][5][i] = parseFloat(inifile.ReadString(it, "WFZoomV", "0"));
+				S[7][5][i] = parseFloat(inifile.ReadString(it, "WFShiftU", "0"));
+				S[8][5][i] = parseFloat(inifile.ReadString(it, "WFShiftV", "0"));
+				S[9][5][i] = parseFloat(inifile.ReadString(it, "WFRotU", "0"));
+				S[10][5][i] = parseFloat(inifile.ReadString(it, "WFRotV", "0"));	
 			}
 		}
 
 		if (st == 1)
 		{
-			S[1][4][i] = (Gsampleini.ReadString("GS","ExpLayers", "0"));
-			S[2][4][i] = parseInt(Gsampleini.ReadString("GS", "Nx", "0"));
-			S[3][4][i] = parseInt(Gsampleini.ReadString("GS", "Ny", "0"));
-			S[4][4][i] = parseFloat(Gsampleini.ReadString("GS", "Sx", "0"));
-			S[5][4][i] = parseFloat(Gsampleini.ReadString("GS", "Sy", "0"));
-			S[6][4][i] = parseFloat(Gsampleini.ReadString("GS", "UuShift", "0"));			
-			S[7][4][i] = parseFloat(Gsampleini.ReadString("GS", "VvShift", "0"));
-			S[8][4][i] = Gsampleini.ReadString("GS","Name", "0");
-			S[10][4][i] = parseFloat(Gsampleini.ReadString("GS", "Markprocedure", "1"));
-			S[12][4][i] = Gsampleini.ReadString("GS", "L61", "0"); 
-			S[1][5][i] = (Gsampleini.ReadString("GS", "WF", "0"));
-			S[2][5][i] = (Gsampleini.ReadString("GS", "ColMode", "0"));
-			str = (Gsampleini.ReadString("GS", "GDSII", "0"));
-			CheckPathLength(str, i);
-			S[3][5][i] = (Gsampleini.ReadString("GS", "GDSII", "0"));
-			S[4][5][i] = (Gsampleini.ReadString("GS", "Struct", "0"));
-			S[5][5][i] = (Gsampleini.ReadString("GS", "SSLine", "0"));
-			S[6][5][i] = (Gsampleini.ReadString("GS", "SSArea", "0"));
-			S[7][5][i] = (Gsampleini.ReadString("GS", "SSCurve", "0"));	
+			S[1][4][i] = (inifile.ReadString("GS","ExpLayers", "0"));
+			S[2][4][i] = parseInt(inifile.ReadString("GS", "Nx", "0"));
+			S[3][4][i] = parseInt(inifile.ReadString("GS", "Ny", "0"));
+			S[4][4][i] = parseFloat(inifile.ReadString("GS", "Sx", "0"));
+			S[5][4][i] = parseFloat(inifile.ReadString("GS", "Sy", "0"));
+			S[6][4][i] = parseFloat(inifile.ReadString("GS", "UuShift", "0"));			
+			S[7][4][i] = parseFloat(inifile.ReadString("GS", "VvShift", "0"));
+			S[8][4][i] = inifile.ReadString("GS","Name", "0");
+			S[10][4][i] = parseFloat(inifile.ReadString("GS", "Markprocedure", "1"));
+			S[12][4][i] = inifile.ReadString("GS", "L61", "0"); 
+			
+			S[1][5][i] = (inifile.ReadString("GS", "WF", "0"));
+			colmode = (inifile.ReadString("GS", "ColMode", "0"));
+			S[2][5][i] = ReplaceAtbymu(colmode);
+			GDSIIpath = (inifile.ReadString("GS", "GDSII", "0"));
+			CheckPathLength(GDSIIpath, i);
+			S[3][5][i] = (inifile.ReadString("GS", "GDSII", "0"));
+			S[4][5][i] = (inifile.ReadString("GS", "Struct", "0"));
+			
+			S[1][6][i] = (inifile.ReadString("GS", "SSLine", "0"));
+			S[2][6][i] = (inifile.ReadString("GS", "SSArea", "0"));
+			S[3][6][i] = (inifile.ReadString("GS", "SSCurve", "0"));
+			S[4][6][i] = (inifile.ReadString("GS", "LineBS", "0"));
+   			S[5][6][i] = (inifile.ReadString("GS", "AreaBS", "0"));
+   			S[6][6][i] = (inifile.ReadString("GS", "CurveBS", "0"));
+   			S[7][6][i] = (inifile.ReadString("GS", "BeamCurrent", "0"));	
 		}
   
 		if (st == 2)
 		{
-			S[1][4][i] = (Gsampleini.ReadString(it, "ExpLayers", "0"));
-			S[2][4][i] = parseInt(Gsampleini.ReadString(it, "Nx", "0"));
-			S[3][4][i] = parseInt(Gsampleini.ReadString(it, "Ny", "0"));
-			S[4][4][i] = parseFloat(Gsampleini.ReadString(it, "Sx", "0"));
-			S[5][4][i] = parseFloat(Gsampleini.ReadString(it, "Sy", "0"));
-			S[6][4][i] = parseFloat(Gsampleini.ReadString(it, "UuShift", "0"));			
-			S[7][4][i] = parseFloat(Gsampleini.ReadString(it, "VvShift", "0"));
-			S[8][4][i] = Gsampleini.ReadString(it, "Name", "0");
-			S[10][4][i] = parseFloat(Gsampleini.ReadString(it, "Markprocedure", "1"));
-			S[12][4][i] = Gsampleini.ReadString(it, "L61", "0");
-			S[1][5][i] = (Gsampleini.ReadString(it, "WF", "0"));
-			S[2][5][i] = (Gsampleini.ReadString(it, "ColMode", "0"));
-			str = (Gsampleini.ReadString(it, "GDSII", "0"));
-			CheckPathLength(str, i);
-			S[3][5][i] = (Gsampleini.ReadString(it, "GDSII", "0"));
-			S[4][5][i] = (Gsampleini.ReadString(it, "Struct", "0"));
-			S[5][5][i] = (Gsampleini.ReadString(it, "SSLine", "0"));
-			S[6][5][i] = (Gsampleini.ReadString(it, "SSArea", "0"));
-			S[7][5][i] = (Gsampleini.ReadString(it, "SSCurve", "0"));
-			S[8][5][i] = (Gsampleini.ReadString(it, "WFZoomU", "0"));
-			S[9][5][i] = (Gsampleini.ReadString(it, "WFZoomV", "0"));
-			S[10][5][i] = (Gsampleini.ReadString(it, "WFShiftU", "0"));
-			S[11][5][i] = (Gsampleini.ReadString(it, "WFShiftV", "0"));
-			S[12][5][i] = (Gsampleini.ReadString(it, "WFRotU", "0"));
-			S[13][5][i] = (Gsampleini.ReadString(it, "WFRotV", "0"));
+			S[1][4][i] = (inifile.ReadString(it, "ExpLayers", "0"));
+			S[2][4][i] = parseInt(inifile.ReadString(it, "Nx", "0"));
+			S[3][4][i] = parseInt(inifile.ReadString(it, "Ny", "0"));
+			S[4][4][i] = parseFloat(inifile.ReadString(it, "Sx", "0"));
+			S[5][4][i] = parseFloat(inifile.ReadString(it, "Sy", "0"));
+			S[6][4][i] = parseFloat(inifile.ReadString(it, "UuShift", "0"));			
+			S[7][4][i] = parseFloat(inifile.ReadString(it, "VvShift", "0"));
+			S[8][4][i] = inifile.ReadString(it, "Name", "0");
+			S[10][4][i] = parseFloat(inifile.ReadString(it, "Markprocedure", "1"));
+			S[12][4][i] = inifile.ReadString(it, "L61", "0");
+			
+			S[1][5][i] = (inifile.ReadString(it, "WF", "0"));
+			S[2][5][i] = (inifile.ReadString(it, "ColMode", "0"));
+			GDSIIpath = (inifile.ReadString(it, "GDSII", "0"));
+			CheckPathLength(GDSIIpath, i);
+			S[3][5][i] = (inifile.ReadString(it, "GDSII", "0"));
+			S[4][5][i] = (inifile.ReadString(it, "Struct", "0"));
+			S[5][5][i] = (inifile.ReadString(it, "WFZoomU", "0"));
+			S[6][5][i] = (inifile.ReadString(it, "WFZoomV", "0"));
+			S[7][5][i] = (inifile.ReadString(it, "WFShiftU", "0"));
+			S[8][5][i] = (inifile.ReadString(it, "WFShiftV", "0"));
+			S[9][5][i] = (inifile.ReadString(it, "WFRotU", "0"));
+			S[10][5][i] = (inifile.ReadString(it, "WFRotV", "0"));
+
+			S[1][6][i] = (inifile.ReadString(it, "SSLine", "0"));
+			S[2][6][i] = (inifile.ReadString(it, "SSArea", "0"));
+			S[3][6][i] = (inifile.ReadString(it, "SSCurve", "0"));
+			S[4][6][i] = (inifile.ReadString(it, "LineBS", "0"));
+   			S[5][6][i] = (inifile.ReadString(it, "AreaBS", "0"));
+   			S[6][6][i] = (inifile.ReadString(it, "CurveBS", "0"));
+   			S[7][6][i] = (inifile.ReadString(it, "BeamCurrent", "0"));	
 			
 		}
 	}
 	
-	if (SDflag == 0)
+	if (SDflag === 0)
 	{
-		App.ErrMsg(0,0,"Multisample.txt successfully loaded.")		
+		if (App.ErrMsg(4, 0,"Multisample.txt successfully loaded. Use pre-set beamcurrent and stepsize?") == 7);	
+		{
+    		if (st === 2)
+    		{
+    		App.ErrMsg(0, 0, "Column parameters will be sequentially activated for all samples. Measure beamcurrents and modify stepsizes.")
+    			for (i = 1; i <= Gnums; i++)
+    			{			
+	    			
+	    			Panicbutton();
+	    			SetSvars(i, 1, 1);
+	    			App.Exec("Halt()");
+	    			App.ErrMsg(0, 0, "Settings for sample " + i + " are now activated.")
+	    			Panicbutton();
+					if (st === 2 && i === 1) 
+					{
+						flag = 1;
+						MeasBeamCurrent();
+					}				
+					if (flag === 0)
+					{
+						if (st === 2 && S[2][5][i] != S[2][5][i-1]) MeasBeamCurrent();	
+					}
+					StepsizeDwelltime(i, 2)				
+				}    			
+    		}
+    		
+    		if (st === 1)
+			{
+				App.ErrMsg(0, 0, "Column parameters will be activated. Measure beamcurrent and modify stepsizes.")
+				Panicbutton();
+				ActivateColdata(S[2][5][1])
+				//SetSvars(1, 1, 1);
+				App.Exec("Halt()");
+				Panicbutton();
+				MeasBeamCurrent();
+	    		StepsizeDwelltime(1, 2);	
+			}
+		}
 	}
 	else
 	{
-		SetSvars(i, st, 0)
-		S = CollectUV(st, 1);		
+		App.ErrMsg(0, 0,"SDvars.txt successfully loaded, now perform required UV alignments.");
+		CollectUV(st, 2);  //After loading SDvars.txt, start collection of UV coords. Set GUIflag = 2 since all other variables are already loaded.	
 	}
-
-	
-
-    return(S)
+    return(S);
 }
 
 
 function CollectSD(st, GUIflag)
 {
-    var S = createArray(20,6,Gnums+1);
-	mflag = 0;
-	
+    var mflag = 0;
+	var i, it, S14, S24, S34, S44, S54, S64, S74, S84, S94, S104, S124, S15, S25, S35, S45, currpath, fex, currstruct, tl;
 	Gnums = App.InputMsg("Select amount of UV alignments (one additional alignment requirement per column change)", "Select a number 1-20", "1");
-    
+    S = createArray(20,7,Gnums+1);
+
 	if (Gnums != parseInt(Gnums) || Gnums > 20 || Gnums < 1)
 	{
 		App.ErrMsg(0,0,"Input is no integer or > 20.");
@@ -409,7 +525,7 @@ function CollectSD(st, GUIflag)
 	{
 		it = "chip " + i;
 		
-		if (i <= Gnums && mflag == 0)
+		if (i <= Gnums && mflag === 0)
 		{
 				
 			//if (mflag == 1) break;
@@ -417,16 +533,6 @@ function CollectSD(st, GUIflag)
 			if (st == 2) App.Errmsg(0,0, "Enter data for " + it + " in the following dialogue boxes.");
 			
 			S84 = App.InputMsg("Sample name","Enter name for sample(s) (for log)","");
-			
-
-			//if (GUIflag == 1)
-			//{
-			//	App.ErrMsg(0,0, "Please activate desired column dataset.");
-			//	App.Exec("Halt()");
-			//}
-			
-			//S25 = App.GetSysVariable("ViCol.LastDataset");
-			//S15 = parseInt(App.GetVariable("Variables.WritefieldHeight"));
 			
 			if (GUIflag == 2)
 			{
@@ -436,29 +542,29 @@ function CollectSD(st, GUIflag)
 				{
 					S35 = App.InputMsg("Select GDSII database file.", "Enter the full path", currpath);
 					CheckPathLength(S35, i);
-					if (S35 == "") Abort();
+					if (S35 === "") Abort();
 					fex = FileExists(S35);
 					
 					if (fex != 1)
 					{
-						App.Errmsg(0,0,"Please enter correct path")
+						App.Errmsg(0,0,"Please enter correct path");
 					}
-					if (S35 === "") S35 = currpath
+					if (S35 === "") S35 = currpath;
 					currstruct = App.GetVariable("Variables.StructureName");
 				}
 				S45 = App.InputMsg("Choose structure", "Type the name of the structure (case sensitive):", currstruct);
-				if (S45 === "") S45 = currstruct
+				if (S45 === "") S45 = currstruct;
 
-		    	S15 = App.InputMsg("Choose writefield in µm", "Select 200, 100, 50, 25 or 10", S15);
-				S25 = App.InputMsg("Column settings", "Type name of column dataset (format= group: name). Use '@' for 'µ' symbol.", S25);
-				S25 = ReplaceStarbymu(S25);
+		    	S15 = App.InputMsg("Choose writefield in µm", "Select 1000, 200, 100, 50, 25 or 1", S15);
+				S25 = App.InputMsg("Column settings", "Type name of column dataset (format= group: name). You can use '@' for '\u03BC' symbol.", LastDatasettoColset());
+				S25 = ReplaceAtbymu(S25);
     		}
 			
 			S104 = parseInt(App.InputMsg("Select AutoWFAlign scan procedure", "1: Use photo-markers, 2: Use photo + EBL markers,  3: Photo+EBL on first device only, 4: No WF align evarr", "1"));
 			
 			if (App.ErrMsg(4,0,"Do you want to use layer 61 (GDSII autoscans)?")==EA_YES)
 			{
-				tl = App.InputMsg("Select layer", "Select layer(s) to use together with layer 61 (separate by ';')","")
+				tl = App.InputMsg("Select layer", "Select layer(s) to use together with layer 61 (separate by ';')","");
 				S124 = 61 + ";" + tl;
 				if (App.ErrMsg(4,0,"Do you want to write other layers in a global alignment?")==EA_YES)
 				{
@@ -476,14 +582,14 @@ function CollectSD(st, GUIflag)
 			}
 			S24 = App.InputMsg("Define chip dimensions in x (U)", "Select number of structures: x (U)", "2");
 			S34 = App.InputMsg("Define chip dimensions in y (V)", "Select number of structures: y (V)", "2");
-			S44 = App.InputMsg("Define structure spacing in (U)", "Select structure spacing in mm: x (U)", "5");
-			S54 = App.InputMsg("Define structure spacing in (V)", "Select structure spacing in mm: y (V)", "5");
-			S64 = App.InputMsg("Define Global-Local shift (U) for 1st structure", "Select shift in mm: x (U)", "0");
-			S74 = App.InputMsg("Define Global-Local shift (V) for 1st structure", "Select shift in mm: v (V)", "0");
-			//S44 = 5;
-			//S54 = 5;
-			//S64 = 0;
-			//S74 = 0;
+			//S44 = App.InputMsg("Define structure spacing in (U)", "Select structure spacing in mm: x (U)", "5");
+			//S54 = App.InputMsg("Define structure spacing in (V)", "Select structure spacing in mm: y (V)", "5");
+			//S64 = App.InputMsg("Define Global-Local shift (U) for 1st structure", "Select shift in mm: x (U)", "0");
+			//S74 = App.InputMsg("Define Global-Local shift (V) for 1st structure", "Select shift in mm: v (V)", "0");
+			S44 = 5;
+			S54 = 5;
+			S64 = 0;
+			S74 = 0;
 			S94 = st;
 				
 			if (st == 1) mflag = 1;
@@ -516,15 +622,14 @@ function CollectSD(st, GUIflag)
 		S[4][5][i] = S45;
 		}
 	}
-	SetSvars(i, st, 0)
 	S = CollectUV(st, GUIflag);
 
- return(S)
+	return(S);
 }
 
 function CollectUV(st, GUIflag)
 {
-	
+	var i, j, m, maf, wd, colset;
 // Add loop so that this is only asked once if st == 1
 
     if (GUIflag == 1)
@@ -546,20 +651,21 @@ function CollectUV(st, GUIflag)
 		{
 			if (App.ErrMsg(8,0,"Perform UV alignment on sample chip " + i + " of " + Gnums + ". The now opened GDSII file and structure are logged and used for exposure.") == 2)
 			{
-				Logdata(S, st);
+				Logdata();
 				Abort();
 			}
 		}
 		if (GUIflag == 2)
 		{
-			SetSvars(i, st, 0)
+			SetSvars(i, 0, 0);
+				
 			App.Exec("OpenDatabase(" + S[3][5][i] + ")");
 			App.Exec("ViewStructure(" + S[4][5][i] + ")");
 
 
-			if (App.ErrMsg(8,0,"Column and WrifeField set, now perform UV alignment on sample chip " + i + " of " + Gnums + ".") == 2)
+			if (App.ErrMsg(8,0,"Column and writefield set, now perform UV alignment on sample chip " + i + " of " + Gnums + ".") == 2)
 			{
-				Logdata(S, st);
+				Logdata();
 				Abort();
 			}		
 		}
@@ -570,23 +676,16 @@ function CollectUV(st, GUIflag)
 
 	    App.ErrMsg(0,0,"Check UV alignment + focus after WF change of sample chip " + i + " of " + Gnums);
 	    App.Exec("Halt()");
-		
-		if (GUIflag == 1)
-		{
-			S[1][5][i] = parseInt(App.GetVariable("Variables.WritefieldHeight"));
-			S[2][5][i] = LastDatasettoColset();
-			S[3][5][i] = App.GetVariable("GDSII.Database");
-			S[4][5][i] = App.GetVariable("Variables.StructureName");
-		}
-		
-		App.Exec("GetCorrection()")
-		S[8][5][i] = App.GetVariable("Variables.ZoomX")
-		S[9][5][i] = App.GetVariable("Variables.ZoomY")
-		S[10][5][i] = App.GetVariable("Variables.ShiftX")
-		S[11][5][i] = App.GetVariable("Variables.ShiftY")
-		S[12][5][i] = App.GetVariable("Variables.RotX")
-		S[13][5][i] = App.GetVariable("Variables.RotY")
 
+	    if (st === 1 && i === 1) 
+	    {
+	    	MeasBeamCurrent();
+	    	StepsizeDwelltime(i, GUIflag);
+	    }
+		if (st === 2 && i === 1) MeasBeamCurrent();
+		if (st === 2 && S[2][5][i] != S[2][5][i-1]) MeasBeamCurrent();
+		if (st === 2) StepsizeDwelltime(i, GUIflag)
+		
 	    for (j = 1; j <= 3; j++)
 		{
 			m = App.GetVariable("GLOBALADJUST.Mark" + j).split(",");
@@ -601,15 +700,34 @@ function CollectUV(st, GUIflag)
 			S[6][j][i] = maf[2] + "";
 			S[7][j][i] = parseFloat(m[0]);
 	    }
+
+		if (GUIflag == 1)
+		{
+			S[1][5][i] = parseInt(App.GetVariable("Variables.WritefieldHeight"));
+			S[2][5][i] = LastDatasettoColset();
+			S[3][5][i] = App.GetVariable("GDSII.Database");
+			S[4][5][i] = App.GetVariable("Variables.StructureName");
+		}
+		
+		App.Exec("GetCorrection()");
+		S[5][5][i] = App.GetVariable("Variables.ZoomX");
+		S[6][5][i] = App.GetVariable("Variables.ZoomY");
+		S[7][5][i] = App.GetVariable("Variables.ShiftX");
+		S[8][5][i] = App.GetVariable("Variables.ShiftY");
+		S[9][5][i] = App.GetVariable("Variables.RotX");
+		S[10][5][i] = App.GetVariable("Variables.RotY");
 	}
-    return (S)
+    return (S);
 }
 
-function Logdata(S, st)
+function Logdata()
 {
+	var datesp, date, Glogini, it, j; 
+
+	st = S[9][4][1];
 	datesp = Date().split(":");
     date = datesp[0] + "." + datesp[1] + "." + datesp[2];
-	Glogfilename[2] = "Log " + date + ".txt"
+	Glogfilename[2] = "Log " + date + ".txt";
     Glogini = App.OpenInifile(Glogfilename[1] + Glogfilename[2]);
 	Glogini.Writestring("GS","Procedure", S[9][4][1]);
 	Glogini.Writestring("GS","n-Samples", S[11][4][1]);
@@ -626,19 +744,24 @@ function Logdata(S, st)
 		Glogini.Writestring("GS", "Name", S[8][4][1]);
 		Glogini.Writestring("GS", "Markprocedure", S[10][4][1]);
 		Glogini.Writestring("GS", "L61", S[12][4][1]);	
+		
 		Glogini.WriteString("GS", "WF", S[1][5][1] + "");
 		Glogini.WriteString("GS", "ColMode", S[2][5][1] + "");
 		Glogini.WriteString("GS", "GDSII", S[3][5][1] + "");
 		Glogini.WriteString("GS", "Struct", S[4][5][1] + "");
-		Glogini.WriteString("GS", "SSLine", S[5][5][i] + "");
-		Glogini.WriteString("GS", "SSArea", S[6][5][i] + "");
-		Glogini.WriteString("GS", "SSCurve", S[7][5][i] + "");
+		
+		Glogini.WriteString("GS", "SSLine", S[1][6][1] + "");
+		Glogini.WriteString("GS", "SSArea", S[2][6][1] + "");
+		Glogini.WriteString("GS", "SSCurve", S[3][6][1] + "");
+		Glogini.WriteString("GS", "LineBS", S[4][6][1] + "");
+		Glogini.WriteString("GS", "AreaBS", S[5][6][1] + "");
+		Glogini.WriteString("GS", "CurveBS", S[6][6][1] + "");
+		Glogini.WriteString("GS", "BeamCurrent", S[7][6][1] + "");
 	}	
 
     for (i = 1; i <= Gnums; i++)
     {
         it = "S" + i; 
-		
 		if (st == 2)
 		{	
 			Glogini.WriteString(it, "ExpLayers", S[1][4][i] + "");
@@ -655,15 +778,14 @@ function Logdata(S, st)
 			Glogini.WriteString(it,"ColMode", S[2][5][i] + "");
 			Glogini.WriteString(it,"GDSII", S[3][5][i] + "");
 			Glogini.WriteString(it,"Struct", S[4][5][i] + "");
-			Glogini.WriteString(it, "SSLine", S[5][5][i] + "");
-			Glogini.WriteString(it, "SSArea", S[6][5][i] + "");
-			Glogini.WriteString(it, "SSCurve", S[7][5][i] + "");
-			Glogini.WriteString(it, "WFZoomU", S[8][5][i] + "");
-			Glogini.WriteString(it, "WFZoomV", S[9][5][i] + "");
-			Glogini.WriteString(it, "WFShiftU", S[10][5][i] + "");
-			Glogini.WriteString(it, "WFShiftV", S[11][5][i] + "");
-			Glogini.WriteString(it, "WFRotU", S[12][5][i] + "");
-			Glogini.WriteString(it, "WFRotV", S[13][5][i] + "");
+
+			Glogini.WriteString(it, "SSLine", S[1][6][i] + "");
+			Glogini.WriteString(it, "SSArea", S[2][6][i] + "");
+			Glogini.WriteString(it, "SSCurve", S[3][6][i] + "");
+			Glogini.WriteString(it, "LineBS", S[4][6][1] + "");
+			Glogini.WriteString(it, "AreaBS", S[5][6][1] + "");
+			Glogini.WriteString(it, "CurveBS", S[6][6][1] + "");
+			Glogini.WriteString(it, "BeamCurrent", S[7][6][1] + "");
 		}
 		
 		for (j = 1; j <= 3; j++)
@@ -675,20 +797,19 @@ function Logdata(S, st)
 			Glogini.WriteString(it, "Y" + j, S[5][j][i] + "");
 			Glogini.WriteString(it, "Z" + j, S[6][j][i] + "");
 			Glogini.WriteString(it, "MarkValid" + j, S[7][j][i] + "");
-
-			Glogini.WriteString(it, "WFZoomU", S[8][5][i] + "");
-			Glogini.WriteString(it, "WFZoomV", S[9][5][i] + "");
-			Glogini.WriteString(it, "WFShiftU", S[10][5][i] + "");
-			Glogini.WriteString(it, "WFShiftV", S[11][5][i] + "");
-			Glogini.WriteString(it, "WFRotU", S[12][5][i] + "");
-			Glogini.WriteString(it, "WFRotV", S[13][5][i] + "");
 		}
-			
+		
+		Glogini.WriteString(it, "WFZoomU", S[5][5][i] + "");
+		Glogini.WriteString(it, "WFZoomV", S[6][5][i] + "");
+		Glogini.WriteString(it, "WFShiftU", S[7][5][i] + "");
+		Glogini.WriteString(it, "WFShiftV", S[8][5][i] + "");
+		Glogini.WriteString(it, "WFRotU", S[9][5][i] + "");
+		Glogini.WriteString(it, "WFRotV", S[10][5][i] + "");		
 	}	
-    return(Glogfilename)
+    return(Glogfilename);
 }
 
-function AlignUV(i, st)
+function AlignUV(i)
 {
 	Stage.ResetAlignment(); 
 	Stage.SetAlignPointUV(1, S[7][1][i], S[1][1][i], S[2][1][i])     ; 
@@ -725,32 +846,34 @@ function AlignUV(i, st)
 
 function Install(restoreflag)
 {
-	App.SetVariable("Automation/Links.0",Gfilepath + Gsn + ".js")
+	var fso, p1 , p2;
+	App.SetVariable("Automation/Links.0",Gfilepath + Gsn + ".js");
 	fso = new ActiveXObject("Scripting.FileSystemObject");
 	if (fso.FolderExists(Gfilepath))
 	{
 	}
 	else
 	{
-		fso.CreateFolder(Gfilepath)
+		fso.CreateFolder(Gfilepath);
 	}
-	p1 = ExpandPath("%userroot%\Record\\ScanMacros\\");
-	fso.CopyFile (Glib + "Multisample WF align.rec", p1, true);
-	p2 = ExpandPath("%root%\Lib\\System\\");
+	p1 = ExpandPath("%userroot%\\Record\\ScanMacros\\");
+	fso.CopyFile(Glib + "Multisample WF align.rec", p1, true);
+	p2 = ExpandPath("%root%\\Lib\\System\\");
 	if (restoreflag == 1)
 	{
-	fso.CopyFile (Glib + "AlignWForg\\AlignWFAuto.js", p2, true);
+		fso.CopyFile(Glib + "AlignWForg\\AlignWFAuto.js", p2, true);
 	}
 	else
 	{
-	fso.CopyFile (Glib + "AlignWFAuto.js", p2, true);
+		fso.CopyFile(Glib + "AlignWFAuto.js", p2, true);
 	}
 	fso.Close;
 }
 
 function InstallWFAlign(markertype, threshold)
 {	
-	p3 = ExpandPath("%userroot%\System\\");
+	var p3, WFalignini, par, parlist, scanini, q; 
+	p3 = ExpandPath("%userroot%\\System\\");
 	if (markertype == 61)
 	{
 		WFalignini = App.OpenIniFile(Glib + "GDSII Linescan.ini");
@@ -777,11 +900,11 @@ function InstallWFAlign(markertype, threshold)
 			scanini.WriteString("Multisample WF align", parlist[q], par);
 		}
 	}
-	var iniTest = App.OpenIniFile(ExpandPath("%userroot%\System\\LineScanFilter.ini"));//Opens .ini file threshold algorithm            
+	var iniTest = App.OpenIniFile(ExpandPath("%userroot%\\System\\LineScanFilter.ini"));//Opens .ini file threshold algorithm            
     
 	if (iniTest)                                                     //Loop deletes previous entry and enters 'threshold' in Writefield Alignment
     { 
-        if ( iniTest.SectionExists("Threshold")==true )                //If the header Threshold is found, it is deleted
+        if ( iniTest.SectionExists("Threshold")===true )                //If the header Threshold is found, it is deleted
         iniTest.DeleteKey("Threshold", "Align write field"); 
         iniTest.WriteString("Threshold", "Align write field", threshold);//The new values are entered from string 'threshold'  
     }
@@ -791,64 +914,66 @@ function InstallWFAlign(markertype, threshold)
 
 function AutoWFAlign(markertype) 
 {
+	var WF, SizeU, SizeV, StepU, StepV, PointsU, PointsV, MarkOffsetU, MarkOffsetV, MarkPlaceU, MarkPlaceV, Upos, Vpos, threshold, parlistname, parlist, multiini, multipls, PList, q, fmarkers;
+
 	WF = Column.GetWriteField();
   
 	if (markertype == 11) //Definition of photomarkers
 	{
-	   SizeU = 10.000000
-	   SizeV = 1.000000
-	   StepU = 0.00400
-	   StepV = 0.00400
-	   PointsU = SizeU / StepU
-	   PointsV = SizeV / StepV
-	   StepU = StepU + ""
-	   StepV = StepV + ""
-	   SizeU = SizeU + ""
-	   SizeV = SizeV + ""
-	   MarkOffsetU = 7 + ""
-	   MarkOffsetV = 7 + ""
-	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + ""
-	   MarkPlaceV = MarkPlaceU
-	   Upos = 0.06650 + ""
-	   Vpos = 0.06650 + ""
+	   SizeU = 10.000000;
+	   SizeV = 1.000000;
+	   StepU = 0.00400;
+	   StepV = 0.00400;
+	   PointsU = SizeU / StepU;
+	   PointsV = SizeV / StepV;
+	   StepU = StepU + "";
+	   StepV = StepV + "";
+	   SizeU = SizeU + "";
+	   SizeV = SizeV + "";
+	   MarkOffsetU = 7 + "";
+	   MarkOffsetV = 7 + "";
+	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + "";
+	   MarkPlaceV = MarkPlaceU;
+	   Upos = 0.06650 + "";
+	   Vpos = 0.06650 + "";
 	}
 	if (markertype == 12)
 	{
-	   SizeU = 12.000000
-	   SizeV = 1.000000
-	   StepU = 0.00400
-	   StepV = 0.00400
-	   PointsU = SizeU / StepU
-	   PointsV = SizeV / StepV
-	   StepU = StepU + ""
-	   StepV = StepV + ""
-	   SizeU = SizeU + ""
-	   SizeV = SizeV + ""
-	   MarkOffsetU = 7 + ""
-	   MarkOffsetV = -7 + ""
-	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + ""
-	   MarkPlaceV = MarkPlaceU
-	   Upos = -0.06650 + ""
-	   Vpos = 0.06650 + ""
+	   SizeU = 12.000000;
+	   SizeV = 1.000000;
+	   StepU = 0.00400;
+	   StepV = 0.00400;
+	   PointsU = SizeU / StepU;
+	   PointsV = SizeV / StepV;
+	   StepU = StepU + "";
+	   StepV = StepV + "";
+	   SizeU = SizeU + "";
+	   SizeV = SizeV + "";
+	   MarkOffsetU = 7 + "";
+	   MarkOffsetV = -7 + "";
+	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + "";
+	   MarkPlaceV = MarkPlaceU;
+	   Upos = -0.06650 + "";
+	   Vpos = 0.06650 + "";
 	}
 	if (markertype == 13)
 	{
-	   SizeU = 8.000000
-	   SizeV = 1.000000
-	   StepU = 0.00400
-	   StepV = 0.00400
-	   PointsU = SizeU / StepU
-	   PointsV = SizeV / StepV
-	   StepU = StepU + ""
-	   StepV = StepV + ""
-	   SizeU = SizeU + ""
-	   SizeV = SizeV + ""
-	   MarkOffsetU = -7 + ""
-	   MarkOffsetV = -7 + ""
-	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + ""
-	   MarkPlaceV = MarkPlaceU
-	   Upos = -0.06650 + ""
-	   Vpos = -0.06650 + ""
+	   SizeU = 8.000000;
+	   SizeV = 1.000000;
+	   StepU = 0.00400;
+	   StepV = 0.00400;
+	   PointsU = SizeU / StepU;
+	   PointsV = SizeV / StepV;
+	   StepU = StepU + "";
+	   StepV = StepV + "";
+	   SizeU = SizeU + "";
+	   SizeV = SizeV + "";
+	   MarkOffsetU = -7 + "";
+	   MarkOffsetV = -7 + "";
+	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + "";
+	   MarkPlaceV = MarkPlaceU;
+	   Upos = -0.06650 + "";
+	   Vpos = -0.06650 + "";
 	}
 	if (markertype == 11 || markertype == 12 || markertype == 13)
 	{
@@ -858,60 +983,60 @@ function AutoWFAlign(markertype)
 	
 	if (markertype == 21) //Definition of EBL markers
 	{
-	   SizeU = 3.000000
-	   SizeV = 1.000000
-	   StepU = 0.002000
-	   StepV = 0.002000
-	   PointsU = (SizeU / StepU)
-	   PointsV = (SizeV / StepV)
-	   StepU = StepU + ""
-	   StepV = StepV + ""
-	   SizeU = SizeU + ""
-	   SizeV = SizeV + ""
-	   MarkOffsetU = 1.5 + ""
-	   MarkOffsetV = 1.5 + ""
-	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + ""
-	   MarkPlaceV = MarkPlaceU
-	   Upos = 0.0200 + ""
-	   Vpos = 0.0250 + ""
+	   SizeU = 3.000000;
+	   SizeV = 1.000000;
+	   StepU = 0.002000;
+	   StepV = 0.002000;
+	   PointsU = (SizeU / StepU);
+	   PointsV = (SizeV / StepV);
+	   StepU = StepU + "";
+	   StepV = StepV + "";
+	   SizeU = SizeU + "";
+	   SizeV = SizeV + "";
+	   MarkOffsetU = 1.5 + "";
+	   MarkOffsetV = 1.5 + "";
+	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + "";
+	   MarkPlaceV = MarkPlaceU;
+	   Upos = 0.0200 + "";
+	   Vpos = 0.0250 + "";
 	}
 	if (markertype == 22)
 	{
-	   SizeU = 4.000000
-	   SizeV = 1.000000
-	   StepU = 0.002000
-	   StepV = 0.002000
-	   PointsU = (SizeU / StepU)
-	   PointsV = (SizeV / StepV)
-	   StepU = StepU + ""
-	   StepV = StepV + ""
-	   SizeU = SizeU + ""
-	   SizeV = SizeV + ""
-	   MarkOffsetU = 1.5 + ""
-	   MarkOffsetV = 1.5 + ""
-	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + ""
-	   MarkPlaceV = MarkPlaceU
-	   Upos = -0.0200 + ""
-	   Vpos = 0.0250 + ""
+	   SizeU = 4.000000;
+	   SizeV = 1.000000;
+	   StepU = 0.002000;
+	   StepV = 0.002000;
+	   PointsU = (SizeU / StepU);
+	   PointsV = (SizeV / StepV);
+	   StepU = StepU + "";
+	   StepV = StepV + "";
+	   SizeU = SizeU + "";
+	   SizeV = SizeV + "";
+	   MarkOffsetU = 1.5 + "";
+	   MarkOffsetV = 1.5 + "";
+	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + "";
+	   MarkPlaceV = MarkPlaceU;
+	   Upos = -0.0200 + "";
+	   Vpos = 0.0250 + "";
 	}
 	if (markertype == 23)
 	{
-	   SizeU = 2.000000
-	   SizeV = 1.000000
-	   StepU = 0.002000
-	   StepV = 0.002000
-	   PointsU = (SizeU / StepU)
-	   PointsV = (SizeV / StepV)
-	   StepU = StepU + ""
-	   StepV = StepV + ""
-	   SizeU = SizeU + ""
-	   SizeV = SizeV + ""
-	   MarkOffsetU = 1.5 + ""
-	   MarkOffsetV = 1.5 + ""
-	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + ""
-	   MarkPlaceV = MarkPlaceU
-	   Upos = -0.0200 + ""
-	   Vpos = -0.0250 + ""
+	   SizeU = 2.000000;
+	   SizeV = 1.000000;
+	   StepU = 0.002000;
+	   StepV = 0.002000;
+	   PointsU = (SizeU / StepU);
+	   PointsV = (SizeV / StepV);
+	   StepU = StepU + "";
+	   StepV = StepV + "";
+	   SizeU = SizeU + "";
+	   SizeV = SizeV + "";
+	   MarkOffsetU = 1.5 + "";
+	   MarkOffsetV = 1.5 + "";
+	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + "";
+	   MarkPlaceV = MarkPlaceU;
+	   Upos = -0.0200 + "";
+	   Vpos = -0.0250 + "";
 	}
 	if (markertype == 21 || markertype == 22 || markertype == 23)
 	{
@@ -938,29 +1063,32 @@ function AutoWFAlign(markertype)
 	multipls.WriteString("DATA", "0,0.000000,0.000000,0.000000,0.000000,0.000000," + Upos + "," + Vpos + ",0.000000,LN,UV,Multisample WF align,STAY;,ALWF_AUTOLINE," + parlist[1] + "," + parlist[2] + "," + parlist[3] + "," + parlist[4] + ",U,16,,,,,,,,,,,,,,,,,,,,,,,0.0,15,0,1,", 0);
 
 	InstallWFAlign(markertype, threshold);
-	PList = OpenPositionList(Glib + "Multisample WF align.pls")
+	PList = OpenPositionList(Glib + "Multisample WF align.pls");
 	App.Exec("ScanAllPositions()");
 	PList.Save();
 	PList.Close();
-	fmarkers = App.GetVariable("AlignWriteField.AutoMarksFailed")
-	return(fmarkers)
+	fmarkers = App.GetVariable("AlignWriteField.AutoMarksFailed");
+	return(fmarkers);
 }
 
-function ActivateColdata(i)
+function ActivateColdata(colset)
 {
-	colset = S[5][2][i]
+	var multipls, PList;
+
 	multipls = App.OpenIniFile(Glib + "ActivateColumnDataset.pls");
 	multipls.DeleteSection("DATA");
 	multipls.WriteString("DATA", "0,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,VN,UV,set ViCol mode entry,STAY,VICOL,,,,,,,,,,," + colset + ",106,,,,,,,,,,,,,,,,", 0);
-	PList = OpenPositionList(Glib + "ActivateColumnDataset.pls")
+	PList = OpenPositionList(Glib + "ActivateColumnDataset.pls");
 	App.Exec("ScanAllPositions()");
 	PList.Save();
 	PList.Close();
 }
 
-function SetSvars(i, st, WFflag)
+function SetSvars(i, WFflag, msflag)
 {
+	var colset, ZoomX, ZoomY, ShiftX, ShiftY, RotX, RotY, corrZoomX, corrZoomY, corrShiftX, corrShiftY, corrRotX, corrRotY;
 	//Add activation of WF and Column as defined
+
 	if (parseFloat(S[1][5][i]) != parseFloat(Column.GetWriteField()))
 	{
 		Column.SetWriteField(S[1][5][i], true);	
@@ -974,12 +1102,34 @@ function SetSvars(i, st, WFflag)
 	App.Exec("ViewStructure(" + S[4][5][i] + ")");
 	if (WFflag == 1)
 	{
-		App.Exec("SetCorrection(" + S[8][5][i] + ", " + S[9][5][i] + ", " + S[10][5][i] + ", " + S[11][5][i] + ", " + S[12][5][i] + ", " + S[13][5][i] + ")");	
+		App.Exec("GetCorrection()");
+		ZoomX = App.GetVariable("Variables.ZoomX");
+		ZoomY = App.GetVariable("Variables.ZoomY");
+		ShiftX = App.GetVariable("Variables.ShiftX");
+		ShiftY = App.GetVariable("Variables.ShiftY");
+		RotX = App.GetVariable("Variables.RotX");
+		RotY = App.GetVariable("Variables.RotY");
+
+		corrZoomX = S[5][5][i] / ZoomX;
+		corrZoomY = S[6][5][i] / ZoomY;
+		corrShiftX = S[7][5][i] - ShiftX;
+		corrShiftY = S[8][5][i] - ShiftY;
+		corrRotX = S[9][5][i] - RotX;
+		corrRotY = S[10][5][i] - RotY;
+
+		App.Exec("SetCorrection(" + corrZoomX + ", " + corrZoomY + ", " + corrShiftX + ", " + corrShiftY + ", " + corrRotX + ", " + corrRotY + ")");	
 	}
+	if (msflag === 0)
+	{
+		SetStepsizeDwelltime(i);	
+	}
+	
 }
 
 function WriteMatrix(S, i)
 {
+	var N, k, j;
+
 	N = createArray(S[2][4][i]+1,S[3][4][i]+1,2);
 	for (k = 0; k <= S[3][4][i]-1; k++)
 	{
@@ -989,13 +1139,15 @@ function WriteMatrix(S, i)
 		N[j+1][k+1][2] = parseFloat((k * S[5][4][i]) + S[7][4][i]);
 		}
 	}
-	return(N)	
+	return(N);	
 }
 
 function AlignWF(markprocedure, logWFflag, i, j, k)
 {
-	m = j + 1
-	n = k + 1
+	var m, n, amf1, amf2, logfile, logstring;
+
+	m = j + 1;
+	n = k + 1;
 	switch(markprocedure)
 	{	//photomarkers
 		case 1: amf1 = createArray(3);
@@ -1008,13 +1160,13 @@ function AlignWF(markprocedure, logWFflag, i, j, k)
 				}
 				if (amf1[2] > 0) 
 				{
-					amf1[3] = AutoWFAlign(13)
+					amf1[3] = AutoWFAlign(13);
 				}
 				if (logWFflag == 1)
 				{
 					logfile = App.OpenInifile(Glogfilename[1] + Glogfilename[2]);
 					logfile.WriteString("Failed markers S" + i,"Markprocedure", "Photomarkers");
-					logstring = "Mark1=" + amf1[1] + ", Mark2 =" + amf1[2] + ", Mark3 =" + amf1[3]
+					logstring = "Mark1=" + amf1[1] + ", Mark2 =" + amf1[2] + ", Mark3 =" + amf1[3];
 					logfile.WriteString("Failed markers S" + i,"D" + m + ";" + n + " (Photomarkers)", logstring);
 				}
 				Panicbutton();
@@ -1030,13 +1182,13 @@ function AlignWF(markprocedure, logWFflag, i, j, k)
 				}
 				if (amf1[2] > 0) 
 				{
-					amf1[3] = AutoWFAlign(13)
+					amf1[3] = AutoWFAlign(13);
 				}
 				if (logWFflag == 1)
 				{
 					logfile = App.OpenInifile(Glogfilename[1] + Glogfilename[2]);
 					logfile.WriteString("Failed markers S" + i,"Markprocedure", "Photo + EBL markers");
-					logstring = "Mark1=" + amf1[1] + ", Mark2 =" + amf1[2] + ", Mark3 =" + amf1[3]
+					logstring = "Mark1=" + amf1[1] + ", Mark2 =" + amf1[2] + ", Mark3 =" + amf1[3];
 					logfile.WriteString("Failed markers S" + i,"D" + m + ";" + n + " (Photomarkers)", logstring);
 				}
 				Panicbutton();
@@ -1051,13 +1203,13 @@ function AlignWF(markprocedure, logWFflag, i, j, k)
 				}
 				if (amf2[2] > 0) 
 				{
-					amf2[3] = AutoWFAlign(23)
+					amf2[3] = AutoWFAlign(23);
 				}
 				if (logWFflag == 1)
 				{
 					logfile = App.OpenInifile(Glogfilename[1] + Glogfilename[2]);
 					logfile.WriteString("Failed markers S" + i,"Markprocedure", "Photo + EBL markers");
-					logstring = "Mark1=" + amf2[1] + ", Mark2 =" + amf2[2] + ", Mark3 =" + amf2[3]
+					logstring = "Mark1=" + amf2[1] + ", Mark2 =" + amf2[2] + ", Mark3 =" + amf2[3];
 					logfile.WriteString("Failed markers S" + i,"D" + m + ";" + n + " (EBL markers)", logstring);
 				}
 				Panicbutton();
@@ -1065,8 +1217,8 @@ function AlignWF(markprocedure, logWFflag, i, j, k)
 		//no wfalign evarrr
 		
 		// only do a writefield alignment on the very first device
-		case 3:
-				if ((j == 0) && (k == 0)) {
+		case 3:	if ((j === 0) && (k === 0)) 
+				{
 					amf1 = createArray(3);
 					amf1[1] = AutoWFAlign(11);
 					Panicbutton();
@@ -1077,13 +1229,13 @@ function AlignWF(markprocedure, logWFflag, i, j, k)
 					}
 					if (amf1[2] > 0) 
 					{
-						amf1[3] = AutoWFAlign(13)
+						amf1[3] = AutoWFAlign(13);
 					}
 					if (logWFflag == 1)
 					{
 						logfile = App.OpenInifile(Glogfilename[1] + Glogfilename[2]);
 						logfile.WriteString("Failed markers S" + i,"Markprocedure", "Photo + EBL markers");
-						logstring = "Mark1=" + amf1[1] + ", Mark2 =" + amf1[2] + ", Mark3 =" + amf1[3]
+						logstring = "Mark1=" + amf1[1] + ", Mark2 =" + amf1[2] + ", Mark3 =" + amf1[3];
 						logfile.WriteString("Failed markers S" + i,"D" + m + ";" + n + " (Photomarkers)", logstring);
 					}
 					Panicbutton();
@@ -1098,36 +1250,39 @@ function AlignWF(markprocedure, logWFflag, i, j, k)
 					}
 					if (amf2[2] > 0) 
 					{
-						amf2[3] = AutoWFAlign(23)
+						amf2[3] = AutoWFAlign(23);
 					}
 					if (logWFflag == 1)
 					{
 						logfile = App.OpenInifile(Glogfilename[1] + Glogfilename[2]);
 						logfile.WriteString("Failed markers S" + i,"Markprocedure", "Photo + EBL markers");
-						logstring = "Mark1=" + amf2[1] + ", Mark2 =" + amf2[2] + ", Mark3 =" + amf2[3]
+						logstring = "Mark1=" + amf2[1] + ", Mark2 =" + amf2[2] + ", Mark3 =" + amf2[3];
 						logfile.WriteString("Failed markers S" + i,"D" + m + ";" + n + " (EBL markers)", logstring);
 					}
-					Panicbutton();
-					}
+				}
+				Panicbutton();
+				break;
 		case 4: break; 		
 		}
 }
 
-function Write(S, i, st, testmode) //S-matrix, n-th chip, type of writing (single,multiple..etc), testmode ornot
+function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,multiple..etc), testmode ornot
 {
+	var N, meander, k, j, mj;
+
 	N = WriteMatrix(S, i);
 	meander = 1;
 	for (k = 0; k <= S[3][4][i]-1; k++)
 	{
 		for (j = 0; j <= S[2][4][i]-1; j++)
 		{	
-			if (isEven(k) == 0 && meander == 1)
+			if (isEven(k) === 0 && meander === 1)
 			{
-				mj = (S[2][4][i]-1)-j
+				mj = (S[2][4][i]-1)-j;
 			}
 			else
 			{
-				mj = j
+				mj = j;
 			}
 			
 			Panicbutton();
@@ -1166,23 +1321,27 @@ function Write(S, i, st, testmode) //S-matrix, n-th chip, type of writing (singl
 
 function FirstWFAlign()
 {
+    var markprocedure;
+
     markprocedure = parseInt(App.InputMsg("Select AutoWFAlign scan procedure", "1: Use photo-markers, 2: Use photo + EBL markers", "1"));
 	AlignWF(markprocedure, 0);
 }
 
 function Start()
 {
+	var GUIflag, beamoffflag, testmode;
+
 	Stage.GlobalAlignment();
     
 	//Column.SetWriteField(100, true); 	
 	
 	if (App.Errmsg(EC_YESNO, 0 , "Do WF alignment only?") == EA_YES)
 	{
-	   FirstWFAlign()
+	   FirstWFAlign();
 	   Abort();
 	}
 
-	var as = App.InputMsg("Select sample data source","Select '1' to collect sample data or select '2' to read 'Multisample.txt'.", "1")
+	var as = App.InputMsg("Select sample data source","Select '1' to collect sample data or select '2' to read 'Multisample.txt'.", "1");
 	if (as!=1 && as!=2) Abort();  
 	
 	if (as == 1)
@@ -1191,28 +1350,28 @@ function Start()
 		if (st!=1 && st!=2 && st!=3) Abort();  
 		if (st == 1 || st == 2)	
 		{
-			GUIflag = App.InputMsg("Select complex data aquiring procedure","1: Easy automatic collection during UV alignment, 2: Manual collection using GUI","1")
+			GUIflag = App.InputMsg("Select complex data aquiring procedure","1: Easy automatic collection during UV alignment, 2: Manual collection using GUI","1");
 			S = CollectSD(st, GUIflag);
 		}
 		else
 		{
-			Gnums = Detectnums();
-			Load(1)
+			Gnums = Detectnums(GSDini, 0);
+			Load(1);
 		}
 
 	}	
 	else
 	{
-		Gnums = Detectnums();
-		S = Load(0);
+		Gnums = Detectnums(Gsampleini, 1);
+		Load(0);
 	}
-	Gnums = S[11][4][1]
-	Glogfilename = Logdata(S, st);
+	//Gnums = S[11][4][1];
+	Glogfilename = Logdata();
 	beamoffflag = 0;
 
 	if (App.Errmsg(EC_YESNO, 0 , "Run in test mode? (No exposure)") == EA_YES)
 	{
-		testmode = 1
+		testmode = 1;
 		//if (App.Errmsg(EC_YESNO, 0 , "Overwrite Multisample.txt with logfile for easy loading of paramters?") == EA_YES)
 		//{
 		//	App.ErrMsg(0,0,"Function not yet implemented")
@@ -1221,7 +1380,7 @@ function Start()
 	else
 	{
 		if (App.Errmsg(EC_YESNO, 0 , "Turn off EHT after writing?") == EA_YES) beamoffflag = 1;
-		testmode = 0
+		testmode = 0;
 	}
 	
 	
@@ -1229,11 +1388,11 @@ function Start()
 	for (i = 1; i<= Gnums; i++)
 	{
 		Panicbutton();
-		AlignUV(i, st);
-		SetSvars(i, st, 1);
+		AlignUV(i);
+		SetSvars(i, 1, 0);
 		
 		//todo: make option for alignment on first device of new chip
-		Write(S, i, st, testmode);
+		Write(S, i, testmode);
     }
     if (beamoffflag == 1)                                                //5 lines: Turn off beam if option has been set.
     {
