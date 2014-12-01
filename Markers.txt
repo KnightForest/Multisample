@@ -1,0 +1,79 @@
+[Markertype]
+
+[Photomarker1]
+CenterU = 0.0
+CenterV = 0.0
+MarkerWidth = 4.0
+MarkerLengthU = 16.0
+MarkerLengthV = 16.0
+ScanWidth = 2.0
+ScanLength = 10.0
+ScanAccuracy = 1.0
+WidthTolerance = 0.2
+ContrastThresholdLow = 45.0
+ContrastThresholHigh = 55.0
+
+[Photomarker2]
+CenterU = 0.0
+CenterV = 1.396
+MarkerWidth = 4.0
+MarkerLengthU = -16.0
+MarkerLengthV = 16.0
+ScanWidth = 2.0
+ScanLength = 8.0
+ScanAccuracy = 1.0
+WidthTolerance = 0.2
+ContrastThresholdLow = 45.0
+ContrastThresholHigh = 55.0
+
+[Photomarker3]
+CenterU = 1.396
+CenterV = 1.396
+MarkerWidth = 4.0
+MarkerLengthU = -16.0
+MarkerLengthV = -16.0
+ScanWidth = 2.0
+ScanLength = 12.0
+ScanAccuracy = 1.0
+WidthTolerance = 0.2
+ContrastThresholdLow = 45.0
+ContrastThresholHigh = 55.0
+
+[EBLmarker1]
+CenterU = 0.16
+CenterV = 0.16
+MarkerWidth = 0.2
+MarkerLengthU = 4
+MarkerLengthV = 4
+ScanWidth = 1.0
+ScanLength = 3.0
+ScanAccuracy = 1.0
+WidthTolerance = 0.2
+ContrastThresholdLow = 45.0
+ContrastThresholHigh = 55.0
+
+[EBLmarker2]
+CenterU = 0.16
+CenterV = 1.24
+MarkerWidth = 0.2
+MarkerLengthU = 4 
+MarkerLengthV = 4
+AveragingWidth = 1
+ScanAccuracy = 1
+WidthTolerance = 0.2
+ContrastThresholdLow = 45
+ContrastThresholHigh = 55
+
+[EBLmarker3]
+CenterU = 1.24
+CenterV = 1.24
+MarkerWidth = 0.2
+MarkerLengthU = 4 
+MarkerLengthV = 4
+AveragingWidth = 1
+ScanAccuracy = 1
+WidthTolerance = 0.2
+ContrastThresholdLow = 45
+ContrastThresholHigh = 55
+
+[M61]

@@ -59,6 +59,7 @@ Glogfilename[1] = Gfilepath + "\\Logs\\";
 var Glib = Gfilepath + "\\Lib\\";
 var Gsampleini = App.OpenInifile(Gfilepath + "Multisample.txt");
 var GSDini = App.OpenInifile(Gfilepath + "SDvars.txt");
+var GMarkertypes = App.Openinifile(Gfilepath + "Markers.txt")
 var S = createArray(1,1,1);
 var Gnums = -1;
 var i, st, beamoffflag;
@@ -123,15 +124,14 @@ function MeasBeamCurrent()												//Measures beam current
        }
 }
 
-function SetStepsizeDwelltime(i)
+function SetStepsizeDwelltime(i, bcflag)
 {
    	var stepsizeline, stepsize, stepsizec, beamcurrent;
 
    	stepsizeline = S[1][6][i];
    	stepsize = S[2][6][i];
    	stepsizec = S[3][6][i];
-   	beamcurrent = S[7][6][i];
-
+   	if (bcflag === 1) beamcurrent = S[7][6][i];
 	App.SetVariable("BeamCurrent.BeamCurrent", beamcurrent);
 
 	App.SetVariable("Variables.MetricStepSize", stepsize);               //Sets area stepsize y-direction to defined area stepsize
@@ -179,19 +179,7 @@ function StepsizeDwelltime(i,GUIflag)
     	stepsizeline=(minstepsize*Math.ceil(App.InputMsg(msg_setlinestepsize, msg_rounding + minstepsize*1000 + "nm:", minstepsize*1000)/(1000*minstepsize))).toString(); //Asks user to set stepsize for patterning
     	if (stepsizeline < minstepsize) stepsizeline = minstepsize; 		//If the user set stepsize is smaller than the minimum stepsize, it is returned to this minimum value   	        
 	}
-
-    
-    App.SetVariable("Variables.MetricStepSize", stepsize);               //Sets area stepsize y-direction to defined area stepsize
-    App.SetVariable("Variables.MetricLineSpacing", stepsize);            //Sets area stepsize x-direction to defined area stepsize
-    App.SetVariable("BeamControl.CurveStepSize", stepsize);              //Sets curved element stepsize to defined area stepsize
-    App.SetVariable("BeamControl.CurveLineSpacing", stepsize);           //Sets curved line stepsize to defined area stepsize
-    App.SetVariable("BeamControl.SplStepSize", stepsizeline);            //Sets line stepsize to defined area stepsize
-    App.Exec("SetExposureParameter()");                                  //Actually activates the previous defined settings
-    App.Exec("CorrectCurvedElementsDwellTime()");                        //Corrects curved elements dwelltimes
-    App.Exec("CorrectDotDwelltime()");                                   //Corrects dot dwelltimes
-    App.Exec("CorrectSPLDwelltime()");                                   //Corrects line dwelltimes
-	App.Exec("CorrectDwelltime()");                                      //Corrects area dwelltimes
-			                                                                     
+	                                                                     
 	beamspeed = [];
 	beamspeed[0] = beamcurrent*Math.pow(10,-9)/(App.GetVariable("Exposure.LineDose")*Math.pow(10,-10));  //Calculates line beamspeed
   	beamspeed[1] = beamcurrent*Math.pow(10,-9)/(stepsize*Math.pow(10,-6)*App.GetVariable("Exposure.ResistSensitivity")*Math.pow(10,-2)); //Calculates area beamspeed                                                                        //Lines below calculate the resulting beam speed based on user stepsize
@@ -351,7 +339,7 @@ function Load(SDflag)
 {	   
     S = createArray(20,7,Gnums+1);
     var inifile, st, it, j, colmode, GDSIIpath;
-    var flag = 0;
+
 	//First load the list of parameters applicable to all loaded samples:
 	if (SDflag === 0) 
 	{
@@ -460,7 +448,7 @@ function Load(SDflag)
 	
 	if (SDflag === 0)
 	{
-		if (App.ErrMsg(4, 0,"Multisample.txt successfully loaded. Use pre-set beamcurrent and stepsize?") == 7);	
+		if (App.ErrMsg(4, 0,"Multisample.txt successfully loaded. Use pre-set beamcurrent and stepsize?") == EA_NO);	
 		{
     		if (st === 2)
     		{
@@ -470,19 +458,18 @@ function Load(SDflag)
 	    			
 	    			Panicbutton();
 	    			SetSvars(i, 1, 1);
-	    			App.Exec("Halt()");
 	    			App.ErrMsg(0, 0, "Settings for sample " + i + " are now activated.")
 	    			Panicbutton();
-					if (st === 2 && i === 1) 
+					if (i === 1) 
 					{
-						flag = 1;
 						MeasBeamCurrent();
 					}				
-					if (flag === 0)
+					else if (flag === 0)
 					{
-						if (st === 2 && S[2][5][i] != S[2][5][i-1]) MeasBeamCurrent();	
+						if (S[2][5][i] != S[2][5][i-1]) MeasBeamCurrent();	
 					}
-					StepsizeDwelltime(i, 2)				
+					StepsizeDwelltime(i, 2)
+					SetStepsizeDwelltime(i, 0)				
 				}    			
     		}
     		
@@ -490,12 +477,12 @@ function Load(SDflag)
 			{
 				App.ErrMsg(0, 0, "Column parameters will be activated. Measure beamcurrent and modify stepsizes.")
 				Panicbutton();
-				ActivateColdata(S[2][5][1])
-				//SetSvars(1, 1, 1);
-				App.Exec("Halt()");
+				//ActivateColdata(S[2][5][1])
+				SetSvars(1, 1, 1);
 				Panicbutton();
 				MeasBeamCurrent();
-	    		StepsizeDwelltime(1, 2);	
+	    		StepsizeDwelltime(1, 2);
+	    		SetStepsizeDwelltime(1,1);	
 			}
 		}
 	}
@@ -681,6 +668,7 @@ function CollectUV(st, GUIflag)
 	    {
 	    	MeasBeamCurrent();
 	    	StepsizeDwelltime(i, GUIflag);
+	    	SetStepsizeDwelltime(i,0)
 	    }
 		if (st === 2 && i === 1) MeasBeamCurrent();
 		if (st === 2 && S[2][5][i] != S[2][5][i-1]) MeasBeamCurrent();
@@ -885,7 +873,9 @@ function InstallWFAlign(markertype, threshold)
 			par = WFalignini.ReadString("Automatic procedure during exposure", parlist[q], "0");
 			scanini.WriteString("Automatic procedure during exposure", parlist[q], par);
 		}
-
+		//App.SetVariable("AlignScans.AvgPoints", "60");                    //Sets the number of points in the y-direction
+      	//App.SetVariable("AlignScans.Scanpoints", "1200");                 //Sets the number of points in the x-direction
+    	//App.Setvariable("AlignScans.Avg", "24");                          //Sets the number of measurements to average over to obtain one point
 		threshold = "Mode:0,L1:45,L2:55,Profile:1,Min:150.0,Max:350.0,LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0";
 	}
 	else
@@ -912,6 +902,13 @@ function InstallWFAlign(markertype, threshold)
 	App.Exec("ResetModule(Scan Manager)");
 }
 
+//function LoadMarkertypes()
+//{
+//	var Markertypes
+//	App.OpenIniFile(Markertypes)
+//	return Markertypes;
+//}
+
 function AutoWFAlign(markertype) 
 {
 	var WF, SizeU, SizeV, StepU, StepV, PointsU, PointsV, MarkOffsetU, MarkOffsetV, MarkPlaceU, MarkPlaceV, Upos, Vpos, threshold, parlistname, parlist, multiini, multipls, PList, q, fmarkers;
@@ -934,8 +931,8 @@ function AutoWFAlign(markertype)
 	   MarkOffsetV = 7 + "";
 	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + "";
 	   MarkPlaceV = MarkPlaceU;
-	   Upos = 0.06650 + "";
-	   Vpos = 0.06650 + "";
+	   Upos = 0.0 + "";
+	   Vpos = 0.0 + "";
 	}
 	if (markertype == 12)
 	{
@@ -953,8 +950,8 @@ function AutoWFAlign(markertype)
 	   MarkOffsetV = -7 + "";
 	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + "";
 	   MarkPlaceV = MarkPlaceU;
-	   Upos = -0.06650 + "";
-	   Vpos = 0.06650 + "";
+	   Upos = 0 + "";
+	   Vpos = 1.396 + "";
 	}
 	if (markertype == 13)
 	{
@@ -972,8 +969,8 @@ function AutoWFAlign(markertype)
 	   MarkOffsetV = -7 + "";
 	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + "";
 	   MarkPlaceV = MarkPlaceU;
-	   Upos = -0.06650 + "";
-	   Vpos = -0.06650 + "";
+	   Upos = 1.396 + "";
+	   Vpos = 1.396 + "";
 	}
 	if (markertype == 11 || markertype == 12 || markertype == 13)
 	{
@@ -997,8 +994,8 @@ function AutoWFAlign(markertype)
 	   MarkOffsetV = 1.5 + "";
 	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + "";
 	   MarkPlaceV = MarkPlaceU;
-	   Upos = 0.0200 + "";
-	   Vpos = 0.0250 + "";
+	   Upos = 0.16 + "";
+	   Vpos = 0.16 + "";
 	}
 	if (markertype == 22)
 	{
@@ -1016,8 +1013,8 @@ function AutoWFAlign(markertype)
 	   MarkOffsetV = 1.5 + "";
 	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + "";
 	   MarkPlaceV = MarkPlaceU;
-	   Upos = -0.0200 + "";
-	   Vpos = 0.0250 + "";
+	   Upos = 0.16 + "";
+	   Vpos = 1.24 + "";
 	}
 	if (markertype == 23)
 	{
@@ -1025,7 +1022,7 @@ function AutoWFAlign(markertype)
 	   SizeV = 1.000000;
 	   StepU = 0.002000;
 	   StepV = 0.002000;
-	   PointsU = (SizeU / StepU);
+	   PointsU = math.ceil(SizeU / StepU);
 	   PointsV = (SizeV / StepV);
 	   StepU = StepU + "";
 	   StepV = StepV + "";
@@ -1033,10 +1030,10 @@ function AutoWFAlign(markertype)
 	   SizeV = SizeV + "";
 	   MarkOffsetU = 1.5 + "";
 	   MarkOffsetV = 1.5 + "";
-	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + "";
+	   MarkPlaceU = WF/2 - (SizecfU / 2) - MarkOffsetU + "";
 	   MarkPlaceV = MarkPlaceU;
-	   Upos = -0.0200 + "";
-	   Vpos = -0.0250 + "";
+	   Upos = 1.24 + "";
+	   Vpos = 1.24 + "";
 	}
 	if (markertype == 21 || markertype == 22 || markertype == 23)
 	{
@@ -1121,7 +1118,7 @@ function SetSvars(i, WFflag, msflag)
 	}
 	if (msflag === 0)
 	{
-		SetStepsizeDwelltime(i);	
+		SetStepsizeDwelltime(i,0);	
 	}
 	
 }
@@ -1214,8 +1211,6 @@ function AlignWF(markprocedure, logWFflag, i, j, k)
 				}
 				Panicbutton();
 				break; 
-		//no wfalign evarrr
-		
 		// only do a writefield alignment on the very first device
 		case 3:	if ((j === 0) && (k === 0)) 
 				{

@@ -1,2 +1,2 @@
 [Panicswitch]
-panic=0
+panic=1
