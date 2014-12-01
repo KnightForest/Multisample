@@ -131,9 +131,11 @@ function SetStepsizeDwelltime(i, bcflag)
    	stepsizeline = S[1][6][i];
    	stepsize = S[2][6][i];
    	stepsizec = S[3][6][i];
-   	if (bcflag === 1) beamcurrent = S[7][6][i];
-	App.SetVariable("BeamCurrent.BeamCurrent", beamcurrent);
-
+   	if (bcflag === 1)
+    {
+     beamcurrent = S[7][6][i];
+	    App.SetVariable("BeamCurrent.BeamCurrent", beamcurrent);
+    }
 	App.SetVariable("Variables.MetricStepSize", stepsize);               //Sets area stepsize y-direction to defined area stepsize
     App.SetVariable("Variables.MetricLineSpacing", stepsize);            //Sets area stepsize x-direction to defined area stepsize
     App.SetVariable("BeamControl.CurveStepSize", stepsizec);              //Sets curved element stepsize to defined area stepsize
@@ -143,11 +145,12 @@ function SetStepsizeDwelltime(i, bcflag)
     App.Exec("CorrectCurvedElementsDwellTime()");                        //Corrects curved elements dwelltimes
     App.Exec("CorrectDotDwelltime()");                                   //Corrects dot dwelltimes
     App.Exec("CorrectSPLDwelltime()");                                   //Corrects line dwelltimes
-	App.Exec("CorrectDwelltime()");                                      //Corrects area dwelltimes
+	App.Exec("CorrectDwelltime()");                                           //Corrects area dwelltimes
 }
 
 function StepsizeDwelltime(i,GUIflag)
 {
+    GUIflag = 2;
     var msg_setareastepsize, msg_rounding, msg_setlinestepsize, msg_higherthan, beamspeed, minstepsize, advisedbeamspeed, areaminstepsize, stepsize, stepsizeline, criticalbeamspeed, bflag;
     msg_setareastepsize = "Set AREA stepsize for patterning in nm";
 	msg_rounding = "Will be rounded up to a multiple of ";
@@ -158,20 +161,22 @@ function StepsizeDwelltime(i,GUIflag)
     App.SetVariable("Exposure.DotDose", "0.01");                         //Sets dot dose to 0.01
     App.SetVariable("Exposure.ResistSensitivity", "150");                //Sets area dose to 150
     App.SetVariable("Exposure.LineDose", "500");                         //Sets line dose to 500
-
+   
 	//Column.SetWriteField(S[1][5][i], true); 
 	beamcurrent = App.GetVariable("BeamCurrent.BeamCurrent");
+
 	minstepsize=App.GetSysVariable("Beamcontrol.MetricBasicStepSize");
+
 	advisedbeamspeed = 0.008;                                             //Sets the advised beamspeed in m/s
     areaminstepsize = minstepsize*1000*Math.ceil(beamcurrent/(advisedbeamspeed*App.GetVariable("Exposure.ResistSensitivity")*Math.pow(10,-2))/(minstepsize*1000)); //Calculates advised minumum area stepsize based on beamspeed and dose
 
-	if (GUIflag === 1)
+	if (GUIflag == 1)
 	{
 		stepsize = minstepsize;
-		stepsizeling = areaminstepsize;
+		stepsizeline = areaminstepsize;
 	}
 
-	if (GUIflag ===2)
+	if (GUIflag == 2)
 	{
 		stepsize = (minstepsize*Math.ceil(App.InputMsg(msg_setareastepsize, msg_rounding + minstepsize*1000 + msg_higherthan + areaminstepsize + "nm)", areaminstepsize)/(1000*minstepsize))).toString(); //Asks user to set stepsize for patterning
     
@@ -223,6 +228,7 @@ function StepsizeDwelltime(i,GUIflag)
    	S[5][6][i] = beamspeed[1]*1000;
    	S[6][6][i] = beamspeed[2]*1000;
    	S[7][6][i] = beamcurrent;
+   	App.ErrMsg(0,0,"1 - szl:"+S[1][6][i] +stepsizeline+" /sz:"+S[2][6][i]+" /szc:"+S[3][6][i]+" /bsl:"+S[4][6][i]+" /bsa:"+S[5][6][i]+" /bsc:"+S[6][6][i]+" /bc:"+S[7][6][i])
 }
 
 function FileExists(filespec)
@@ -464,7 +470,7 @@ function Load(SDflag)
 					{
 						MeasBeamCurrent();
 					}				
-					else if (flag === 0)
+					else
 					{
 						if (S[2][5][i] != S[2][5][i-1]) MeasBeamCurrent();	
 					}
@@ -569,14 +575,14 @@ function CollectSD(st, GUIflag)
 			}
 			S24 = App.InputMsg("Define chip dimensions in x (U)", "Select number of structures: x (U)", "2");
 			S34 = App.InputMsg("Define chip dimensions in y (V)", "Select number of structures: y (V)", "2");
-			//S44 = App.InputMsg("Define structure spacing in (U)", "Select structure spacing in mm: x (U)", "5");
-			//S54 = App.InputMsg("Define structure spacing in (V)", "Select structure spacing in mm: y (V)", "5");
-			//S64 = App.InputMsg("Define Global-Local shift (U) for 1st structure", "Select shift in mm: x (U)", "0");
-			//S74 = App.InputMsg("Define Global-Local shift (V) for 1st structure", "Select shift in mm: v (V)", "0");
-			S44 = 5;
-			S54 = 5;
-			S64 = 0;
-			S74 = 0;
+			S44 = App.InputMsg("Define structure spacing in (U)", "Select structure spacing in mm: x (U)", "5");
+			S54 = App.InputMsg("Define structure spacing in (V)", "Select structure spacing in mm: y (V)", "5");
+			S64 = App.InputMsg("Define Global-Local shift (U) for 1st structure", "Select shift in mm: x (U)", "0");
+			S74 = App.InputMsg("Define Global-Local shift (V) for 1st structure", "Select shift in mm: v (V)", "0");
+			//S44 = 5;
+			//S54 = 5;
+			//S64 = 0;
+			//S74 = 0;
 			S94 = st;
 				
 			if (st == 1) mflag = 1;
@@ -670,10 +676,13 @@ function CollectUV(st, GUIflag)
 	    	StepsizeDwelltime(i, GUIflag);
 	    	SetStepsizeDwelltime(i,0)
 	    }
-		if (st === 2 && i === 1) MeasBeamCurrent();
-		if (st === 2 && S[2][5][i] != S[2][5][i-1]) MeasBeamCurrent();
-		if (st === 2) StepsizeDwelltime(i, GUIflag)
-		
+		if (st == 2 && i == 1) MeasBeamCurrent();
+		if (st == 2 && S[2][5][i] != S[2][5][i-1]) MeasBeamCurrent();
+		if (st == 2) 
+  {
+   StepsizeDwelltime(i, GUIflag)
+		 SetStepsizeDwelltime(i,0)
+  }
 	    for (j = 1; j <= 3; j++)
 		{
 			m = App.GetVariable("GLOBALADJUST.Mark" + j).split(",");
