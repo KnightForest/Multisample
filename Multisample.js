@@ -62,7 +62,7 @@
 //		-> Without changing beam settings, program works fine
 // - Probably more :/
 // - Manual alignment on dot within script not possible
-// 		-> Needs added routine during UV alignment
+// 		-> Needs added routine during UV alignment.
 
 var Gsn = "Multisample";
 //var Gsnl = parseInt(Gsn.length, 8);
