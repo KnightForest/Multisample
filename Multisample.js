@@ -3,7 +3,7 @@
 //    Internal version: 0.9e
 //    AUTHOR:           Joost Ridderbos
 // 	  Git hashkey: 		"value"
-//    Copyright 2013-2014 Joost Ridderbos
+//    Copyright 2013-2015 Joost Ridderbos
 //-------------------------------------------------------------------
 
 //    This program is free software: you can redistribute it and/or modify
@@ -50,6 +50,19 @@
 // - Add ability to do only a GDSII scan on the first device on a sample (one UV alignment)
 // - Add ability to load writematrix from file (for unevenly spaced devices on a sample)
 // 		-> Combine this with loading different designs/layers per UV alignment
+// V Remove reset UV alignment for first sample
+// - Add comment to load new design
+// - Add procedure for manual alignment per chip
+
+// BUGS:
+// V Auto stepsizedwelltime does not work, always uses 2 nm
+//		V It is possible to change the value for the stepsize in multisample.txt
+//		V In this case, the beamspeed reported in the log is wrong
+// - Possibly the WF loading does not work properly, needs testing!
+//		-> Without changing beam settings, program works fine
+// - Probably more :/
+// - Manual alignment on dot within script not possible
+// 		-> Needs added routine during UV alignment
 
 var Gsn = "Multisample";
 //var Gsnl = parseInt(Gsn.length, 8);
@@ -167,10 +180,11 @@ function StepsizeDwelltime(i,GUIflag)
 
 	advisedbeamspeed = 0.008;                                             //Sets the advised beamspeed in m/s
     areaminstepsize = minstepsize*Math.pow(10,3)*Math.ceil(beamcurrent*Math.pow(10,-9)/(advisedbeamspeed*App.GetVariable("Exposure.ResistSensitivity")*Math.pow(10,-2))/(minstepsize*Math.pow(10,-6))); //Calculates advised minumum area stepsize based on beamspeed and dose
+	App.ErrMsg(0,0,areaminstepsize)
 	if (GUIflag == 1)
 	{
-		stepsize = minstepsize;
-		stepsizeline = areaminstepsize;
+		stepsize = areaminstepsize;
+		stepsizeline = minstepsize;
 	}
 
 	if (GUIflag == 2)
@@ -644,7 +658,7 @@ function CollectUV(st, GUIflag)
 	for (i = 1; i <= Gnums; i++)
     {
 		Stage.GlobalAlignment();
-	    Stage.ResetAlignment();
+		if (i != 1) Stage.ResetAlignment();
 
 	    if (GUIflag == 1)
 		{
@@ -917,12 +931,12 @@ function InstallWFAlign(markertype, threshold)
 	App.Exec("ResetModule(Scan Manager)");
 }
 
-//function LoadMarkertypes()
-//{
-//	var Markertypes
-//	App.OpenIniFile(Markertypes)
-//	return Markertypes;
-//}
+function LoadMarkertypes()
+{
+	var Markertypes
+	App.OpenIniFile(Markertypes)
+	return Markertypes;
+}
 
 function AutoWFAlign(markertype) 
 {

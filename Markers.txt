@@ -1,6 +1,7 @@
 [Markertype]
 
-[Photomarker1]
+[M1]
+Type = Photomarker1
 CenterU = 0.0
 CenterV = 0.0
 MarkerWidth = 4.0
@@ -13,7 +14,8 @@ WidthTolerance = 0.2
 ContrastThresholdLow = 45.0
 ContrastThresholHigh = 55.0
 
-[Photomarker2]
+[M2]
+Type = Photomarker 2
 CenterU = 0.0
 CenterV = 1.396
 MarkerWidth = 4.0
@@ -26,7 +28,8 @@ WidthTolerance = 0.2
 ContrastThresholdLow = 45.0
 ContrastThresholHigh = 55.0
 
-[Photomarker3]
+[M3]
+Type = Photomarker 3
 CenterU = 1.396
 CenterV = 1.396
 MarkerWidth = 4.0
