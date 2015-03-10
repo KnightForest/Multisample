@@ -238,7 +238,6 @@ function StepsizeDwelltime(i,GUIflag)
    	S[5][6][i] = beamspeed[1];
    	S[6][6][i] = beamspeed[2];
    	S[7][6][i] = beamcurrent;
-   	App.ErrMsg(0,0,stepsize)
    	//App.ErrMsg(0,0,"1 - szl:"+S[1][6][i] +stepsizeline+" /sz:"+S[2][6][i]+" /szc:"+S[3][6][i]+" /bsl:"+S[4][6][i]+" /bsa:"+S[5][6][i]+" /bsc:"+S[6][6][i]+" /bc:"+S[7][6][i])
 }
 
