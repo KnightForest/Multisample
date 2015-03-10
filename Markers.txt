@@ -1,21 +1,21 @@
-[Markertype]
+[LoadList]
+load = M1;M2;M3;EBLMarker1;EBLMarker2;EBLMarker3;M61
 
 [M1]
-Type = Photomarker1
-CenterU = 0.0
-CenterV = 0.0
-MarkerWidth = 4.0
-MarkerLengthU = 16.0
-MarkerLengthV = 16.0
-ScanWidth = 2.0
-ScanLength = 10.0
-ScanAccuracy = 1.0
-WidthTolerance = 0.2
-ContrastThresholdLow = 45.0
-ContrastThresholHigh = 55.0
+0CenterU = 0.0 		//Upos
+1CenterV = 0.0 		//Vpos
+2MarkerWidth = 4.0	//Not used directly
+3MarkerLengthU = 16.0	//Not used directly
+4MarkerLengthV = 16.0	//Not used directly
+5CenterScanOffset = 0.5	//MarkOffsetU = CenterScanOffset*MarkerLengthU
+6ScanLength = 10.0	//SizeU
+7ScanWidth = 2.0		//SizeV
+8ScanAccuracy = 1.0	//=Max res for WF or datapoints (4087)
+9WidthTolerance = 0.2	//Profile min/max = Markerwidth +/- MarkerWidth * WidthTolerance 
+10ContrastThresholdLow = 45.0
+11ContrastThresholHigh = 55.0
 
 [M2]
-Type = Photomarker 2
 CenterU = 0.0
 CenterV = 1.396
 MarkerWidth = 4.0
@@ -29,7 +29,6 @@ ContrastThresholdLow = 45.0
 ContrastThresholHigh = 55.0
 
 [M3]
-Type = Photomarker 3
 CenterU = 1.396
 CenterV = 1.396
 MarkerWidth = 4.0

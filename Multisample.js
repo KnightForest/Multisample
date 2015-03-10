@@ -44,7 +44,7 @@
 // - Set original magnifiction after AutoWFalign
 // - Sort order of writing chip by aperture size
 // - Fix GDSII layer 61 scan InstallWF. Use functionality from QDAuto113
-// T Add stepsize/beamcurrent to S[5][x][i] column and improve functionality
+// T Add stepsicdze/beamcurrent to S[5][x][i] column and improve functionality
 // 		T-> Also add to Load and Log function
 // - Load differen designs/layers per UV alignment
 // - Add ability to do only a GDSII scan on the first device on a sample (one UV alignment)
@@ -139,21 +139,22 @@ function MeasBeamCurrent()												//Measures beam current
 
 function SetStepsizeDwelltime(i, bcflag)
 {
-   	var stepsizeline, stepsize, stepsizec, beamcurrent;
+   	var stepsizeline_um, stepsize_um, stepsizec_um, beamcurrent;
 
-   	stepsizeline = S[1][6][i];
-   	stepsize = S[2][6][i];
-   	stepsizec = S[3][6][i];
+   	stepsizeline_um = (S[1][6][i]*Math.pow(10,-3));
+   	stepsize_um = (S[2][6][i]*Math.pow(10,-3));
+   	stepsizec_um = (S[3][6][i]*Math.pow(10,-3));
+
    	if (bcflag == 1)
     {
      	beamcurrent = S[7][6][i];
 	    App.SetVariable("BeamCurrent.BeamCurrent", beamcurrent);
     }
-	App.SetVariable("Variables.MetricStepSize", stepsize);               //Sets area stepsize y-direction to defined area stepsize
-    App.SetVariable("Variables.MetricLineSpacing", stepsize);            //Sets area stepsize x-direction to defined area stepsize
-    App.SetVariable("BeamControl.CurveStepSize", stepsizec);              //Sets curved element stepsize to defined area stepsize
-    App.SetVariable("BeamControl.CurveLineSpacing", stepsizec);           //Sets curved line stepsize to defined area stepsize
-    App.SetVariable("BeamControl.SplStepSize", stepsizeline);            //Sets line stepsize to defined area stepsize
+	App.SetVariable("Variables.MetricStepSize", stepsize_um.toString());               //Sets area stepsize y-direction to defined area stepsize
+    App.SetVariable("Variables.MetricLineSpacing", stepsize_um.toString());            //Sets area stepsize x-direction to defined area stepsize
+    App.SetVariable("BeamControl.CurveStepSize", stepsizec_um.toString());              //Sets curved element stepsize to defined area stepsize
+    App.SetVariable("BeamControl.CurveLineSpacing", stepsizec_um.toString());           //Sets curved line stepsize to defined area stepsize
+    App.SetVariable("BeamControl.SplStepSize", stepsizeline_um.toString());            //Sets line stepsize to defined area stepsize
     App.Exec("SetExposureParameter()");                                  //Actually activates the previous defined settings
     App.Exec("CorrectCurvedElementsDwellTime()");                        //Corrects curved elements dwelltimes
     App.Exec("CorrectDotDwelltime()");                                   //Corrects dot dwelltimes
@@ -169,18 +170,16 @@ function StepsizeDwelltime(i,GUIflag)
 	msg_setlinestepsize = "Set LINE stepsize in nm";
 	msg_higherthan = "nm: (recommended higher than ";
 	
-	App.SetVariable("Exposure.CurveDose", "150");                        //Sets curve dose to 150 (generally not used)
-    App.SetVariable("Exposure.DotDose", "0.01");                         //Sets dot dose to 0.01
-    App.SetVariable("Exposure.ResistSensitivity", "150");                //Sets area dose to 150
-    App.SetVariable("Exposure.LineDose", "500");                         //Sets line dose to 500
+	App.SetVariable("Exposure.CurveDose", "150");                        //Sets curve dose to 150 uC/cm^2
+    App.SetVariable("Exposure.DotDose", "0.01");                         //Sets dot dose to 0.01 pC
+    App.SetVariable("Exposure.ResistSensitivity", "150");                //Sets area dose to 150 uC/cm^2
+    App.SetVariable("Exposure.LineDose", "500");                         //Sets line dose to 500 pC/cm
    
-	beamcurrent = App.GetVariable("BeamCurrent.BeamCurrent");
+	beamcurrent = App.GetVariable("BeamCurrent.BeamCurrent"); 			//Beamcurrent [nA]
 
-	minstepsize = App.GetSysVariable("Beamcontrol.MetricBasicStepSize");
-
-	advisedbeamspeed = 0.008;                                             //Sets the advised beamspeed in m/s
-    areaminstepsize = minstepsize*Math.pow(10,3)*Math.ceil(beamcurrent*Math.pow(10,-9)/(advisedbeamspeed*App.GetVariable("Exposure.ResistSensitivity")*Math.pow(10,-2))/(minstepsize*Math.pow(10,-6))); //Calculates advised minumum area stepsize based on beamspeed and dose
-	App.ErrMsg(0,0,areaminstepsize)
+	minstepsize = App.GetSysVariable("Beamcontrol.MetricBasicStepSize")*Math.pow(10,3); //Min stepsize in [nm]
+	advisedbeamspeed = 8;                                             	//Sets the advised beamspeed in [mm/s]
+    areaminstepsize = Math.ceil(beamcurrent/((advisedbeamspeed*Math.pow(10,-5)*App.GetVariable("Exposure.ResistSensitivity")*minstepsize)))*minstepsize; //Calculates advised beamspeed [nm]
 	if (GUIflag == 1)
 	{
 		stepsize = areaminstepsize;
@@ -189,33 +188,33 @@ function StepsizeDwelltime(i,GUIflag)
 
 	if (GUIflag == 2)
 	{
-		stepsize = (minstepsize*Math.ceil(App.InputMsg(msg_setareastepsize, msg_rounding + minstepsize*1000 + msg_higherthan + areaminstepsize + "nm)", areaminstepsize)/(1000*minstepsize))).toString(); //Asks user to set stepsize for patterning
+		stepsize = App.InputMsg(msg_setareastepsize, msg_rounding + minstepsize + msg_higherthan + areaminstepsize + "nm)", areaminstepsize).toString(); //Asks user to set stepsize for patterning
     
-    	if (stepsize < minstepsize) stepsize=minstepsize;                   //If the user set stepsize is smaller than the minimum stepsize, it is return to this minimum value
-    	stepsizeline=(minstepsize*Math.ceil(App.InputMsg(msg_setlinestepsize, msg_rounding + minstepsize*1000 + "nm:", minstepsize*1000)/(1000*minstepsize))).toString(); //Asks user to set stepsize for patterning
+    	if (stepsize < minstepsize) stepsize=minstepsize; //If the user set stepsize is smaller than the minimum stepsize, it is return to this minimum value
+    	stepsizeline=(minstepsize*Math.ceil(App.InputMsg(msg_setlinestepsize, msg_rounding + minstepsize + "nm:", minstepsize)/(minstepsize))).toString(); //Asks user to set stepsize for patterning
     	if (stepsizeline < minstepsize) stepsizeline = minstepsize; 		//If the user set stepsize is smaller than the minimum stepsize, it is returned to this minimum value   	        
 	}
 	                                                                     
 	beamspeed = [];
-	beamspeed[0] = beamcurrent*Math.pow(10,-9)/(App.GetVariable("Exposure.LineDose")*Math.pow(10,-10));  //Calculates line beamspeed in m/s
-  	beamspeed[1] = beamcurrent*Math.pow(10,-9)/(stepsize*Math.pow(10,-6)*App.GetVariable("Exposure.ResistSensitivity")*Math.pow(10,-2)); //Calculates area beamspeed in m/s                                                                        //Lines below calculate the resulting beam speed based on user stepsize
-	beamspeed[2] = beamcurrent*Math.pow(10,-9)/(stepsize*Math.pow(10,-6)*App.GetVariable("Exposure.CurveDose")*Math.pow(10,-2));
+	beamspeed[0] = beamcurrent*Math.pow(10,4)/(App.GetVariable("Exposure.LineDose"));  //Calculates line beamspeed in mm/s
+  	beamspeed[1] = beamcurrent*Math.pow(10,5)/(stepsize*App.GetVariable("Exposure.ResistSensitivity")); //Calculates area beamspeed in mm/s                                                                        //Lines below calculate the resulting beam speed based on user stepsize
+	beamspeed[2] = beamcurrent*Math.pow(10,5)/(stepsize*App.GetVariable("Exposure.CurveDose")); //Calculates area beamspeed in mm/s 
 
    	
 
    	if (GUIflag == 2)
    	{
-   	 	criticalbeamspeed = 0.010;
+   	 	criticalbeamspeed = 10;
    		bflag = 0;
    		
    		if (beamspeed[0] > criticalbeamspeed) 
       	{
-      		App.Errmsg(EC_INFO ,0 , "WARNING! Line beam speed greater than 10mm/s:    " + Math.ceil(beamspeed[2]*10000)/10 + "mm/s, reduce beamcurrent."); 
+      		App.Errmsg(EC_INFO ,0 , "WARNING! Line beam speed greater than 10mm/s:    " + Math.ceil(beamspeed[2]*10)/10 + "mm/s, reduce beamcurrent."); 
       		bflag = 1;
       	}      	
    		if (beamspeed[1] > criticalbeamspeed) 
       	{
-      		App.Errmsg(EC_INFO ,0 , "WARNING! Area beam speed greater than 10mm/s:    " + Math.ceil(beamspeed[1]*10000)/10 + "mm/s, increase stepsize or reduce beamcurrent.");
+      		App.Errmsg(EC_INFO ,0 , "WARNING! Area beam speed greater than 10mm/s:    " + Math.ceil(beamspeed[1]*10)/10 + "mm/s, increase stepsize or reduce beamcurrent.");
       		bflag = 1;
       	}
       	//if (beamspeed[2] > criticalbeamspeed)                                            //Next lines checks if the calculated beamspeed is not higher than 10 mm/s, else it gives a warning.
@@ -235,10 +234,11 @@ function StepsizeDwelltime(i,GUIflag)
   	S[1][6][i] = stepsizeline;
    	S[2][6][i] = stepsize;
    	S[3][6][i] = stepsizec;
-   	S[4][6][i] = beamspeed[0]*1000;
-   	S[5][6][i] = beamspeed[1]*1000;
-   	S[6][6][i] = beamspeed[2]*1000;
+   	S[4][6][i] = beamspeed[0];
+   	S[5][6][i] = beamspeed[1];
+   	S[6][6][i] = beamspeed[2];
    	S[7][6][i] = beamcurrent;
+   	App.ErrMsg(0,0,stepsize)
    	//App.ErrMsg(0,0,"1 - szl:"+S[1][6][i] +stepsizeline+" /sz:"+S[2][6][i]+" /szc:"+S[3][6][i]+" /bsl:"+S[4][6][i]+" /bsa:"+S[5][6][i]+" /bsc:"+S[6][6][i]+" /bc:"+S[7][6][i])
 }
 
@@ -931,10 +931,58 @@ function InstallWFAlign(markertype, threshold)
 	App.Exec("ResetModule(Scan Manager)");
 }
 
-function LoadMarkertypes()
+function LoadMarkers()
 {
-	var Markertypes
-	App.OpenIniFile(Markertypes)
+	var Markertype, loadlist, q, parlist, markerdata
+
+	loadlist = GMarkertypes.ReadString("LoadList", "Load").split(";");
+
+	for (q = 0; q < loadlist.length; q ++) 
+	{
+		parlist = new Array("CenterU","CenterV","MarkerWidth","MarkerLengthU","MarkerLengthV","CenterScanOffset","ScanLength","ScanWidth","ScanAccuracy","WidthTolerance","ConstrastThresholdLow","ConstrastThresholdHigh");
+		markerdata = new Array(parlist.length)
+
+		for (p = 0; p < parlist.length; p ++) 
+		{
+			markerdata[p] = WFalignini.ReadString(loadlist[q], parlist[p], "0");
+		}
+
+		Markertype[q][0] = loadlist[q]; 
+		Markertypes[q][1] = markerdata[0]; //Upos
+		Markertypes[q][2] = markerdata[1]; //Vpos
+		Markertypes[q][3] = markerdata[2]; //SizeU
+		Markertypes[q][4] = markerdata[3]; //SizeV
+
+		if (markerdata[6]*markerdata[9]/App.GetSysVariable("Beamcontrol.MetricBasicStepSize") >= 4080) //StepU
+		{
+			Markertypes[q][5] = Math.ceil((markerdata[6]/4080)/App.GetSysVariable("Beamcontrol.MetricBasicStepSize"))*App.GetSysVariable("Beamcontrol.MetricBasicStepSize");
+		}
+		else
+		{
+			Markertypes[q][6] = markerdata[6]/App.GetSysVariable("Beamcontrol.MetricBasicStepSize")
+		}
+
+		if (markerdata[7]*markerdata[9]/App.GetSysVariable("Beamcontrol.MetricBasicStepSize") >= 4080) //StepV
+		{
+			Markertypes[q][6] = Math.ceil((markerdata[7]/4080)/App.GetSysVariable("Beamcontrol.MetricBasicStepSize"))*App.GetSysVariable("Beamcontrol.MetricBasicStepSize");
+		}
+		else
+		{
+			Markertypes[q][6] = markerdata[7]/App.GetSysVariable("Beamcontrol.MetricBasicStepSize")
+		}
+		Markertypes[q][7] = markerdata[6]/Markertypes[q][5]; //PointsU
+		Markertypes[q][8] = markerdata[7]/Markertypes[q][6]; //PointsV
+		Markertypes[q][9] = Math.ceil(markerdata[5]*markerdata[3]*10)/10; //MarkOffsetU
+		Markertypes[q][10] = Math.ceil(markerdata[5]*markerdata[4]*10)/10; //MarkOffsetV
+		Markertypes[q][11] = Column.GetWriteField()/2 - (Markertypes[q][3] / 2) - Markertypes[q][9] + ""; //MarkplaceU
+		Markertypes[q][12] = Markertypes[q][11];	//MarkplaceV
+		Markertypes[q][13] = markerdata[2] - markerdata[9]*markerdata[2]/1000//Profile min
+		Markertypes[q][14] = markerdata[2] + markerdata[9]*markerdata[2]/1000//Profile max
+		Markertypes[q][15] = markerdata[10] //ContrastLow
+		Markertypes[q][16] = markerdata[11] //ContrastHigh
+		Markertypes[q][17] = "Mode:0,L1:" + Markertypes[q][13] + ",L2:" + Markertypes[q][14] + ",Profile:1,Min:" + Markertypes[q][11] + ",Max:" + Markertypes[q][12] + ",LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0";//threshold
+		Markertypes[q][18] = "0,0.000000,0.000000,0.000000,0.000000,0.000000," + Markertypes[q][1] + "," + Markertypes[q][2] + ",0.000000,LN,UV,Multisample WF align,STAY;,ALWF_AUTOLINE," + Markertypes[q][2] + "," + Markertypes[q][3] + "," + Markertypes[q][4] + "," + Markertypes[q][5] + ",U,16,,,,,,,,,,,,,,,,,,,,,,,0.0,15,0,1,"
+	}
 	return Markertypes;
 }
 
@@ -946,6 +994,8 @@ function AutoWFAlign(markertype)
   
 	if (markertype == 11) //Definition of photomarkers
 	{
+	   Upos = 0.0 + "";
+	   Vpos = 0.0 + "";
 	   SizeU = 10.000000;
 	   SizeV = 1.000000;
 	   StepU = 0.00400;
@@ -960,8 +1010,7 @@ function AutoWFAlign(markertype)
 	   MarkOffsetV = 7 + "";
 	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + "";
 	   MarkPlaceV = MarkPlaceU;
-	   Upos = 0.0 + "";
-	   Vpos = 0.0 + "";
+
 	}
 	if (markertype == 12)
 	{
@@ -1086,7 +1135,7 @@ function AutoWFAlign(markertype)
 	
 	multipls = App.OpenIniFile(Glib + "Multisample WF align.pls");
 	multipls.DeleteSection("DATA");
-	multipls.WriteString("DATA", "0,0.000000,0.000000,0.000000,0.000000,0.000000," + Upos + "," + Vpos + ",0.000000,LN,UV,Multisample WF align,STAY;,ALWF_AUTOLINE," + parlist[1] + "," + parlist[2] + "," + parlist[3] + "," + parlist[4] + ",U,16,,,,,,,,,,,,,,,,,,,,,,,0.0,15,0,1,", 0);
+	multipls.WriteString("DATA", "0,0.000000,0.000000,0.000000,0.000000,0.000000," + Upos + "," + Vpos + ",0.000000,LN,UV,Multisample WF align,STAY;,ALWF_AUTOLINE," + parlist[0] + "," + parlist[1] + "," + parlist[2] + "," + parlist[3] + ",U,16,,,,,,,,,,,,,,,,,,,,,,,0.0,15,0,1,", 0);
 
 	InstallWFAlign(markertype, threshold);
 	PList = OpenPositionList(Glib + "Multisample WF align.pls");
