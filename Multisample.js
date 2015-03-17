@@ -72,7 +72,8 @@ Glogfilename[1] = Gfilepath + "\\Logs\\";
 var Glib = Gfilepath + "\\Lib\\";
 var Gsampleini = App.OpenInifile(Gfilepath + "Multisample.txt");
 var GSDini = App.OpenInifile(Gfilepath + "SDvars.txt");
-var GMarkertypes = App.Openinifile(Gfilepath + "Markers.txt")
+var GMarkertypes = App.Openinifile(Gfilepath + "Markers.txt");
+var GAlignprocedures = App.Openinifile(Gfilepath + "Alignprocedures.txt")
 var S = createArray(1,1,1);
 var Gnums = -1;
 var i, st, beamoffflag;
@@ -164,7 +165,7 @@ function SetStepsizeDwelltime(i, bcflag)
 
 function StepsizeDwelltime(i,GUIflag)
 {
-    var msg_setareastepsize, msg_rounding, msg_setlinestepsize, msg_higherthan, beamspeed, minstepsize, advisedbeamspeed, areaminstepsize, stepsize, stepsizeline, criticalbeamspeed, bflag;
+    var msg_setareastepsize, msg_rounding, msg_setlinestepsize, msg_higherthan, beamspeed, minstepsize, advisedbeamspeed, areaminstepsize, stepsize, stepsizeline, criticalbeamspeed, bflag, beamcurrent;
     msg_setareastepsize = "Set AREA stepsize for patterning in nm";
 	msg_rounding = "Will be rounded up to a multiple of ";
 	msg_setlinestepsize = "Set LINE stepsize in nm";
@@ -229,7 +230,7 @@ function StepsizeDwelltime(i,GUIflag)
 	    }
    			bflag = 0; 
    	}
-   	stepsizec = stepsize
+   	stepsizec = stepsize;
 
   	S[1][6][i] = stepsizeline;
    	S[2][6][i] = stepsize;
@@ -415,7 +416,7 @@ function Load(SDflag)
 			CheckPathLength(GDSIIpath, i);
 			if (FileExists(GDSIIpath) != 1)
 			{
-				App.ErrMsg(0,0,"Error in Multisample.txt: GDSII file not found. Script will abort.")
+				App.ErrMsg(0,0,"Error in Multisample.txt: GDSII file not found. Script will abort.");
 				Abort();
 			}
 			S[3][5][i] = (inifile.ReadString("GS", "GDSII", "0"));
@@ -449,7 +450,7 @@ function Load(SDflag)
 			CheckPathLength(GDSIIpath, i);
 			if (FileExists(GDSIIpath) != 1)
 			{
-				App.ErrMsg(0,0,"Error in Multisample.txt: GDSII file not found for sample " + i + ". Script will abort.")
+				App.ErrMsg(0,0,"Error in Multisample.txt: GDSII file not found for sample " + i + ". Script will abort.");
 				Abort();
 			}
 			S[3][5][i] = (inifile.ReadString(it, "GDSII", "0"));
@@ -505,8 +506,8 @@ function Load(SDflag)
 					{
 						if (S[2][5][i] != S[2][5][i-1]) MeasBeamCurrent();	
 					}
-					StepsizeDwelltime(i, 2)
-					SetStepsizeDwelltime(i, 0)			
+					StepsizeDwelltime(i, 2);
+					SetStepsizeDwelltime(i, 0);			
 				}    			
     		}
     		
@@ -641,7 +642,7 @@ function CollectSD(st, GUIflag)
 
 function CollectUV(st, GUIflag)
 {
-	var i, j, m, maf, wd, colset;
+	var i, j, m, maf, wd;
 // Add loop so that this is only asked once if st == 1
 
     if (GUIflag == 1)
@@ -883,7 +884,7 @@ function Install(restoreflag)
 	{
 		fso.CopyFile(Glib + "AlignWFAuto.js", p2, true);
 	}
-	fso.Close;
+	fso.close;
 }
 
 function InstallWFAlign(markertype, threshold)
@@ -932,57 +933,112 @@ function InstallWFAlign(markertype, threshold)
 
 function LoadMarkers()
 {
-	var Markertype, loadlist, q, parlist, markerdata
-
-	loadlist = GMarkertypes.ReadString("LoadList", "Load").split(";");
+	var Markertypes, loadlist, q, p, parlist, markerdata;
+	loadlist = GMarkertypes.ReadString("LoadList", "load", "0").split(";");
+	Markertypes = createArray(loadlist.length,20);
 
 	for (q = 0; q < loadlist.length; q ++) 
 	{
-		parlist = new Array("CenterU","CenterV","MarkerWidth","MarkerLengthU","MarkerLengthV","CenterScanOffset","ScanLength","ScanWidth","ScanAccuracy","WidthTolerance","ConstrastThresholdLow","ConstrastThresholdHigh");
-		markerdata = new Array(parlist.length)
-
+		parlist = new Array("CenterU","CenterV","MarkerWidth","MarkerLengthU","MarkerLengthV","CenterScanOffset","ScanLength","ScanWidth","ScanAccuracy","WidthTolerance","ContrastThresholdLow","ContrastThresholdHigh");
+		markerdata = new Array(parlist.length);
 		for (p = 0; p < parlist.length; p ++) 
 		{
-			markerdata[p] = WFalignini.ReadString(loadlist[q], parlist[p], "0");
-		}
+			markerdata[p] = GMarkertypes.ReadString(loadlist[q], parlist[p], "undefined");
 
-		Markertype[q][0] = loadlist[q]; 
+			if (markerdata[p] == "undefined") 
+			{
+    			App.ErrMsg(0,0,"Markertype '" + loadlist[q] + "' not configured properly. Check Markers.txt and restart script.");
+    			Abort();
+			}
+		}
+		Markertypes[q][0] = loadlist[q]; 
 		Markertypes[q][1] = markerdata[0]; //Upos
 		Markertypes[q][2] = markerdata[1]; //Vpos
-		Markertypes[q][3] = markerdata[2]; //SizeU
-		Markertypes[q][4] = markerdata[3]; //SizeV
+		Markertypes[q][3] = markerdata[3]; //SizeU
+		Markertypes[q][4] = markerdata[4]; //SizeV
 
-		if (markerdata[6]*markerdata[9]/App.GetSysVariable("Beamcontrol.MetricBasicStepSize") >= 4080) //StepU
+		if (markerdata[6]*markerdata[8]/App.GetSysVariable("Beamcontrol.MetricBasicStepSize") >= 4080) //StepU
 		{
 			Markertypes[q][5] = Math.ceil((markerdata[6]/4080)/App.GetSysVariable("Beamcontrol.MetricBasicStepSize"))*App.GetSysVariable("Beamcontrol.MetricBasicStepSize");
 		}
 		else
 		{
-			Markertypes[q][6] = markerdata[6]/App.GetSysVariable("Beamcontrol.MetricBasicStepSize")
+			Markertypes[q][5] = Math.ceil(App.GetSysVariable("Beamcontrol.MetricBasicStepSize")/(markerdata[8]*App.GetSysVariable("Beamcontrol.MetricBasicStepSize")))*App.GetSysVariable("Beamcontrol.MetricBasicStepSize");
+		
 		}
 
-		if (markerdata[7]*markerdata[9]/App.GetSysVariable("Beamcontrol.MetricBasicStepSize") >= 4080) //StepV
+		if (markerdata[7]*markerdata[8]/App.GetSysVariable("Beamcontrol.MetricBasicStepSize") >= 4080) //StepV
 		{
 			Markertypes[q][6] = Math.ceil((markerdata[7]/4080)/App.GetSysVariable("Beamcontrol.MetricBasicStepSize"))*App.GetSysVariable("Beamcontrol.MetricBasicStepSize");
 		}
 		else
 		{
-			Markertypes[q][6] = markerdata[7]/App.GetSysVariable("Beamcontrol.MetricBasicStepSize")
+			Markertypes[q][6] = Math.ceil(App.GetSysVariable("Beamcontrol.MetricBasicStepSize")/(markerdata[8]*App.GetSysVariable("Beamcontrol.MetricBasicStepSize")))*App.GetSysVariable("Beamcontrol.MetricBasicStepSize");
 		}
 		Markertypes[q][7] = markerdata[6]/Markertypes[q][5]; //PointsU
 		Markertypes[q][8] = markerdata[7]/Markertypes[q][6]; //PointsV
 		Markertypes[q][9] = Math.ceil(markerdata[5]*markerdata[3]*10)/10; //MarkOffsetU
 		Markertypes[q][10] = Math.ceil(markerdata[5]*markerdata[4]*10)/10; //MarkOffsetV
-		Markertypes[q][11] = Column.GetWriteField()/2 - (Markertypes[q][3] / 2) - Markertypes[q][9] + ""; //MarkplaceU
-		Markertypes[q][12] = Markertypes[q][11];	//MarkplaceV
-		Markertypes[q][13] = markerdata[2] - markerdata[9]*markerdata[2]/1000//Profile min
-		Markertypes[q][14] = markerdata[2] + markerdata[9]*markerdata[2]/1000//Profile max
-		Markertypes[q][15] = markerdata[10] //ContrastLow
-		Markertypes[q][16] = markerdata[11] //ContrastHigh
-		Markertypes[q][17] = "Mode:0,L1:" + Markertypes[q][13] + ",L2:" + Markertypes[q][14] + ",Profile:1,Min:" + Markertypes[q][11] + ",Max:" + Markertypes[q][12] + ",LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0";//threshold
-		Markertypes[q][18] = "0,0.000000,0.000000,0.000000,0.000000,0.000000," + Markertypes[q][1] + "," + Markertypes[q][2] + ",0.000000,LN,UV,Multisample WF align,STAY;,ALWF_AUTOLINE," + Markertypes[q][2] + "," + Markertypes[q][3] + "," + Markertypes[q][4] + "," + Markertypes[q][5] + ",U,16,,,,,,,,,,,,,,,,,,,,,,,0.0,15,0,1,"
+		Markertypes[q][11] = Math.floor(Column.GetWriteField()/2 - Math.abs(markerdata[6] / 2) - Math.abs(Markertypes[q][9])); //MarkplaceU
+		Markertypes[q][12] = Math.floor(Column.GetWriteField()/2 - Math.abs(markerdata[6] / 2) - Math.abs(Markertypes[q][10]));	//MarkplaceV
+		Markertypes[q][13] = Math.ceil((markerdata[2]*1 - markerdata[9]*markerdata[2])*1000);//Profile min
+		Markertypes[q][14] = Math.ceil((markerdata[2]*1 + markerdata[9]*markerdata[2])*1000);//Profile max
+		Markertypes[q][15] = markerdata[10]; //ContrastLow
+		Markertypes[q][16] = markerdata[11]; //ContrastHigh
+		Markertypes[q][17] = "Mode:0,L1:" + Markertypes[q][13] + ",L2:" + Markertypes[q][14] + ",Profile:1,Min:" + Markertypes[q][15] + ",Max:" + Markertypes[q][16] + ",LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0";//threshold
+		Markertypes[q][18] = "0,0.000000,0.000000,0.000000,0.000000,0.000000," + Markertypes[q][1] + "," + Markertypes[q][2] + ",0.000000,LN,UV,Multisample WF align,STAY;,ALWF_AUTOLINE," + markerdata[6] + "," + markerdata[7] + "," + Markertypes[q][5] + "," + Markertypes[q][6] + ",U,16,,,,,,,,,,,,,,,,,,,,,,,0.0,15,0,1,";
+
+		Markertypes[q][1] = Markertypes[q][1].toString();
+		Markertypes[q][2] = Markertypes[q][2].toString();
+		Markertypes[q][3] = Markertypes[q][3].toString();
+		Markertypes[q][4] = Markertypes[q][4].toString();
+		Markertypes[q][5] = Markertypes[q][5].toString();
+		Markertypes[q][6] = Markertypes[q][6].toString();
+		Markertypes[q][7] = Markertypes[q][7].toString();
+		Markertypes[q][8] = Markertypes[q][8].toString();
+		Markertypes[q][9] = Markertypes[q][9].toString();
+		Markertypes[q][10] = Markertypes[q][10].toString();
+		Markertypes[q][11] = Markertypes[q][11].toString();
+		Markertypes[q][12] = Markertypes[q][12].toString();
+		Markertypes[q][13] = Markertypes[q][13].toString();
+		Markertypes[q][14] = Markertypes[q][14].toString();
+		Markertypes[q][15] = Markertypes[q][15].toString();
+		Markertypes[q][16] = Markertypes[q][16].toString();
+		Markertypes[q][17] = Markertypes[q][17].toString();
+		Markertypes[q][18] = Markertypes[q][18].toString();
+		
 	}
+	App.ErrMsg(0,0,Markertypes)
 	return Markertypes;
+}
+
+function LoadWFAlignProcedures()
+{
+	var loadlist, Alignprocedures, q, p;
+	loadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
+	App.Errmsg(0,0,loadlist + " - " + loadlist.length)
+	Alignprocedures = createArray(loadlist.length,20);
+
+	for (q = 0; q < loadlist.length; q ++) 
+	{
+		entries = GAlignprocedures.ReadSection(loadlist[q]).split(",")
+		App.Errmsg(0,0,q)
+		App.Errmsg(0,0,(loadlist[q] + " - " + loadlist[q+1]))
+		App.Errmsg(0,0,entries)
+		for (p = 0; p < entries.length; p ++) 
+		{
+			Alignprocedures[q][0] = entries.length;
+			Alignprocedures[q][p+1] = GAlignprocedures.ReadString(loadlist[q], entries[p], "undefined");
+			App.Errmsg(0,0,Alignprocedures[q][p+1])
+			if (Alignprocedures[q][p+1] == "undefined") 
+			{
+    			App.ErrMsg(0,0,"Align procedure '" + loadlist[q] + "' not configured properly. Check Alignprocedures.txt and restart script.");
+    			Abort();
+			}
+		}
+	}
+	App.Errmsg(0,0,Alignprocedures)
+	return Alignprocedures;
 }
 
 function AutoWFAlign(markertype) 
@@ -1099,7 +1155,7 @@ function AutoWFAlign(markertype)
 	   SizeV = 1.000000;
 	   StepU = 0.002000;
 	   StepV = 0.002000;
-	   PointsU = math.ceil(SizeU / StepU);
+	   PointsU = Math.ceil(SizeU / StepU);
 	   PointsV = (SizeV / StepV);
 	   StepU = StepU + "";
 	   StepV = StepV + "";
@@ -1107,7 +1163,7 @@ function AutoWFAlign(markertype)
 	   SizeV = SizeV + "";
 	   MarkOffsetU = 1.5 + "";
 	   MarkOffsetV = 1.5 + "";
-	   MarkPlaceU = WF/2 - (SizecfU / 2) - MarkOffsetU + "";
+	   MarkPlaceU = WF/2 - (SizeU / 2) - MarkOffsetU + "";
 	   MarkPlaceV = MarkPlaceU;
 	   Upos = 1.24 + "";
 	   Vpos = 1.24 + "";
@@ -1147,7 +1203,7 @@ function AutoWFAlign(markertype)
 
 function ActivateColdata(colset)
 {
-	var multipls, PList;
+	var multipls, PList, lastcolset;
 	lastcolset = LastDatasettoColset();
 	if (lastcolset != colset)
 	{
@@ -1163,7 +1219,7 @@ function ActivateColdata(colset)
 
 function SetSvars(i, WFflag, msflag)
 {
-	var colset, ZoomX, ZoomY, ShiftX, ShiftY, RotX, RotY, corrZoomX, corrZoomY, corrShiftX, corrShiftY, corrRotX, corrRotY;
+	var ZoomX, ZoomY, ShiftX, ShiftY, RotX, RotY, corrZoomX, corrZoomY, corrShiftX, corrShiftY, corrRotX, corrRotY;
 	//Add activation of WF and Column as defined
 
 	if (parseFloat(S[1][5][i]) != parseFloat(Column.GetWriteField()))

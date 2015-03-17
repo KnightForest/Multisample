@@ -1,19 +1,19 @@
 [LoadList]
-load = M1;M2;M3;EBLMarker1;EBLMarker2;EBLMarker3;M61
+load = M1;M2;M3;EBLMarker1
 
 [M1]
-0CenterU = 0.0 		//Upos
-1CenterV = 0.0 		//Vpos
-2MarkerWidth = 4.0	//Not used directly
-3MarkerLengthU = 16.0	//Not used directly
-4MarkerLengthV = 16.0	//Not used directly
-5CenterScanOffset = 0.5	//MarkOffsetU = CenterScanOffset*MarkerLengthU
-6ScanLength = 10.0	//SizeU
-7ScanWidth = 2.0		//SizeV
-8ScanAccuracy = 1.0	//=Max res for WF or datapoints (4087)
-9WidthTolerance = 0.2	//Profile min/max = Markerwidth +/- MarkerWidth * WidthTolerance 
-10ContrastThresholdLow = 45.0
-11ContrastThresholHigh = 55.0
+CenterU = 0.0
+CenterV = 0.0 		
+MarkerWidth = 4.0	
+MarkerLengthU = 16.0	
+MarkerLengthV = 16.0	
+CenterScanOffset = 0.5	
+ScanLength = 10.0	
+ScanWidth = 2.0		
+ScanAccuracy = 0.1	
+WidthTolerance = 0.12 
+ContrastThresholdLow = 45.0
+ContrastThresholdHigh = 55.0
 
 [M2]
 CenterU = 0.0
@@ -21,12 +21,13 @@ CenterV = 1.396
 MarkerWidth = 4.0
 MarkerLengthU = -16.0
 MarkerLengthV = 16.0
+CenterScanOffset = 0.5	
 ScanWidth = 2.0
 ScanLength = 8.0
 ScanAccuracy = 1.0
 WidthTolerance = 0.2
 ContrastThresholdLow = 45.0
-ContrastThresholHigh = 55.0
+ContrastThresholdHigh = 55.0
 
 [M3]
 CenterU = 1.396
@@ -34,12 +35,13 @@ CenterV = 1.396
 MarkerWidth = 4.0
 MarkerLengthU = -16.0
 MarkerLengthV = -16.0
+CenterScanOffset = 0.5	
 ScanWidth = 2.0
 ScanLength = 12.0
 ScanAccuracy = 1.0
 WidthTolerance = 0.2
 ContrastThresholdLow = 45.0
-ContrastThresholHigh = 55.0
+ContrastThresholdHigh = 55.0
 
 [EBLmarker1]
 CenterU = 0.16
@@ -47,12 +49,13 @@ CenterV = 0.16
 MarkerWidth = 0.2
 MarkerLengthU = 4
 MarkerLengthV = 4
+CenterScanOffset = 0.5	
 ScanWidth = 1.0
 ScanLength = 3.0
 ScanAccuracy = 1.0
 WidthTolerance = 0.2
 ContrastThresholdLow = 45.0
-ContrastThresholHigh = 55.0
+ContrastThresholdHigh = 55.0
 
 [EBLmarker2]
 CenterU = 0.16
@@ -60,11 +63,12 @@ CenterV = 1.24
 MarkerWidth = 0.2
 MarkerLengthU = 4 
 MarkerLengthV = 4
+CenterScanOffset = 0.5	
 AveragingWidth = 1
 ScanAccuracy = 1
 WidthTolerance = 0.2
 ContrastThresholdLow = 45
-ContrastThresholHigh = 55
+ContrastThresholdHigh = 55
 
 [EBLmarker3]
 CenterU = 1.24
@@ -72,10 +76,11 @@ CenterV = 1.24
 MarkerWidth = 0.2
 MarkerLengthU = 4 
 MarkerLengthV = 4
+CenterScanOffset = 0.5	
 AveragingWidth = 1
 ScanAccuracy = 1
 WidthTolerance = 0.2
 ContrastThresholdLow = 45
-ContrastThresholHigh = 55
+ContrastThresholdHigh = 55
 
 [M61]
