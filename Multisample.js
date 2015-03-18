@@ -1010,7 +1010,7 @@ function LoadMarkers()
 		Markertypes[q][18] = Markertypes[q][18].toString();
 		
 	}
-	App.ErrMsg(0,0,Markertypes);
+	//App.ErrMsg(0,0,Markertypes);
 	return Markertypes;
 }
 
