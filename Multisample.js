@@ -66,14 +66,14 @@
 
 var Gsn = "Multisample";
 //var Gsnl = parseInt(Gsn.length, 8);
-var Gfilepath = ExpandPath("%userroot%\\Script\\" + Gsn + "\\");
+var Gfilepath = ExpandPath("%userroot%\Script\\" + Gsn + "\\");
 var Glogfilename = createArray(3);
 Glogfilename[1] = Gfilepath + "\\Logs\\";
 var Glib = Gfilepath + "\\Lib\\";
 var Gsampleini = App.OpenInifile(Gfilepath + "Multisample.txt");
 var GSDini = App.OpenInifile(Gfilepath + "SDvars.txt");
 var GMarkertypes = App.Openinifile(Gfilepath + "Markers.txt");
-var GAlignprocedures = App.Openinifile(Gfilepath + "Alignprocedures.txt")
+var GAlignprocedures = App.Openinifile(Gfilepath + "Alignprocedures.txt");
 var S = createArray(1,1,1);
 var Gnums = -1;
 var i, st, beamoffflag;
@@ -406,7 +406,7 @@ function Load(SDflag)
 			S[6][4][i] = parseFloat(inifile.ReadString("GS", "UuShift", "0"));			
 			S[7][4][i] = parseFloat(inifile.ReadString("GS", "VvShift", "0"));
 			S[8][4][i] = inifile.ReadString("GS","Name", "0");
-			S[10][4][i] = parseFloat(inifile.ReadString("GS", "Markprocedure", "1"));
+			S[10][4][i] = inifile.ReadString("GS", "Markprocedure", "0");
 			S[12][4][i] = inifile.ReadString("GS", "L61", "0"); 
 			
 			S[1][5][i] = (inifile.ReadString("GS", "WF", "0"));
@@ -441,7 +441,7 @@ function Load(SDflag)
 			S[6][4][i] = parseFloat(inifile.ReadString(it, "UuShift", "0"));			
 			S[7][4][i] = parseFloat(inifile.ReadString(it, "VvShift", "0"));
 			S[8][4][i] = inifile.ReadString(it, "Name", "0");
-			S[10][4][i] = parseFloat(inifile.ReadString(it, "Markprocedure", "1"));
+			S[10][4][i] = inifile.ReadString(it, "Markprocedure", "1");
 			S[12][4][i] = inifile.ReadString(it, "L61", "0");
 			
 			S[1][5][i] = (inifile.ReadString(it, "WF", "0"));
@@ -525,7 +525,7 @@ function Load(SDflag)
 function CollectSD(st, GUIflag)
 {
     var mflag = 0;
-	var i, it, S14, S24, S34, S44, S54, S64, S74, S84, S94, S104, S124, S15, S25, S35, S45, currpath, fex, currstruct, tl;
+	var i, it, wfprocedureloadlist, S14, S24, S34, S44, S54, S64, S74, S84, S94, S104, S124, S15, S25, S35, S45, currpath, fex, currstruct, tl;
 	Gnums = App.InputMsg("Select amount of UV alignments (one additional alignment requirement per column change)", "Select a number 1-20", "1");
     S = createArray(20,7,Gnums+1);
 
@@ -573,7 +573,8 @@ function CollectSD(st, GUIflag)
 				S25 = ReplaceAtbymu(S25);
     		}
 			
-			S104 = parseInt(App.InputMsg("Select AutoWFAlign scan procedure", "1: Use photo-markers, 2: Use photo + EBL markers,  3: Photo+EBL on first device only, 4: No WF align evarr", "1"));
+			wfprocedureloadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
+			S104 = App.InputMsg("Select AutoWFAlign scan procedure", "Select: " + wfprocedureloadlist, wfprocedureloadlist[0]);
 			
 			if (App.ErrMsg(4,0,"Do you want to use layer 61 (GDSII autoscans)?")==EA_YES)
 			{
@@ -616,7 +617,7 @@ function CollectSD(st, GUIflag)
 		S[6][4][i] = parseFloat(S64);
 		S[7][4][i] = parseFloat(S74);
 		S[8][4][i] = S84;
-		S[10][4][i] = parseFloat(S104);
+		S[10][4][i] = S104;
 		S[12][4][i] = S124 + "";
 		S[1][5][i] = S15 + "";	
 		//Add a list of parameter that are always applicable to all loaded samples.
@@ -694,15 +695,15 @@ function CollectUV(st, GUIflag)
 	    {
 	    	MeasBeamCurrent();
 	    	StepsizeDwelltime(i, GUIflag);
-	    	SetStepsizeDwelltime(i,0)
+	    	SetStepsizeDwelltime(i,0);
 	    }
 		if (st == 2 && i == 1) MeasBeamCurrent();
 		if (st == 2 && S[2][5][i] != S[2][5][i-1]) MeasBeamCurrent();
 		if (st == 2) 
-  {
-   StepsizeDwelltime(i, GUIflag)
-		 SetStepsizeDwelltime(i,0)
-  }
+  		{
+   			StepsizeDwelltime(i, GUIflag);
+			SetStepsizeDwelltime(i,0);
+  		}
 	    for (j = 1; j <= 3; j++)
 		{
 			m = App.GetVariable("GLOBALADJUST.Mark" + j).split(",");
@@ -951,6 +952,7 @@ function LoadMarkers()
     			Abort();
 			}
 		}
+		App.Errmsg(0,0,markerdata)
 		Markertypes[q][0] = loadlist[q]; 
 		Markertypes[q][1] = markerdata[0]; //Upos
 		Markertypes[q][2] = markerdata[1]; //Vpos
@@ -1008,40 +1010,46 @@ function LoadMarkers()
 		Markertypes[q][18] = Markertypes[q][18].toString();
 		
 	}
-	App.ErrMsg(0,0,Markertypes)
+	App.ErrMsg(0,0,Markertypes);
 	return Markertypes;
 }
 
 function LoadWFAlignProcedures()
 {
-	var loadlist, Alignprocedures, q, p;
+	var loadlist, Alignprocedures, q, p, entries;
 	loadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
-	App.Errmsg(0,0,loadlist + " - " + loadlist.length)
+	//App.Errmsg(0,0,loadlist + " - " + loadlist.length)
 	Alignprocedures = createArray(loadlist.length,20);
 
 	for (q = 0; q < loadlist.length; q ++) 
 	{
-		entries = GAlignprocedures.ReadSection(loadlist[q]).split(",")
-		App.Errmsg(0,0,q)
-		App.Errmsg(0,0,(loadlist[q] + " - " + loadlist[q+1]))
-		App.Errmsg(0,0,entries)
+		entries = GAlignprocedures.ReadSection(loadlist[q]).split(",");
+		if (entries[entries.length-1] != "log")
+		{
+    		App.ErrMsg(0,0,"Align procedure '" + loadlist[q] + "' not configured properly. Add 'log' switch to Alignprocedures.txt and restart script.");
+    		Abort();			
+		}
+		//App.Errmsg(0,0,q)
+		//App.Errmsg(0,0,(loadlist[q] + " - " + loadlist[q+1]))
+		//App.Errmsg(0,0,entries)
+		Alignprocedures[q][0] = loadlist[q];
+		Alignprocedures[q][1] = entries.length;
 		for (p = 0; p < entries.length; p ++) 
 		{
-			Alignprocedures[q][0] = entries.length;
-			Alignprocedures[q][p+1] = GAlignprocedures.ReadString(loadlist[q], entries[p], "undefined");
-			App.Errmsg(0,0,Alignprocedures[q][p+1])
-			if (Alignprocedures[q][p+1] == "undefined") 
+			Alignprocedures[q][p+2] = GAlignprocedures.ReadString(loadlist[q], entries[p], "undefined");
+			//App.Errmsg(0,0,Alignprocedures[q][p+2])
+			if (Alignprocedures[q][p+2] == "undefined") 
 			{
     			App.ErrMsg(0,0,"Align procedure '" + loadlist[q] + "' not configured properly. Check Alignprocedures.txt and restart script.");
     			Abort();
 			}
 		}
 	}
-	App.Errmsg(0,0,Alignprocedures)
+	//App.Errmsg(0,0,Alignprocedures);
 	return Alignprocedures;
 }
 
-function AutoWFAlign(markertype) 
+function AutoWFAlign_old(markertype) 
 {
 	var WF, SizeU, SizeV, StepU, StepV, PointsU, PointsV, MarkOffsetU, MarkOffsetV, MarkPlaceU, MarkPlaceV, Upos, Vpos, threshold, parlistname, parlist, multiini, multipls, PList, q, fmarkers;
 
@@ -1201,77 +1209,44 @@ function AutoWFAlign(markertype)
 	return(fmarkers);
 }
 
-function ActivateColdata(colset)
+function AutoWFAlign(markertype) 
 {
-	var multipls, PList, lastcolset;
-	lastcolset = LastDatasettoColset();
-	if (lastcolset != colset)
+	var Markertypes, n, m, SizeU, SizeV, StepU, StepV, PointsU, PointsV, MarkOffsetU, MarkOffsetV, MarkPlaceU, MarkPlaceV, Upos, Vpos, threshold, parlistname, parlist, multiini, multipls, PList, q, fmarkers;
+	Markertypes = LoadMarkers();
+	//App.Errmsg(0,0,Markertypes.length + "--" + Markertypes[0][0])
+	for (n = 0; n < Markertypes.length; n++)
 	{
-		multipls = App.OpenIniFile(Glib + "ActivateColumnDataset.pls");
-		multipls.DeleteSection("DATA");
-		multipls.WriteString("DATA", "0,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,VN,UV,set ViCol mode entry,STAY,VICOL,,,,,,,,,,," + colset + ",106,,,,,,,,,,,,,,,,", 0);
-		PList = OpenPositionList(Glib + "ActivateColumnDataset.pls");
-		App.Exec("ScanAllPositions()");
-		PList.Save();
-		PList.Close();	
-	}
-}
-
-function SetSvars(i, WFflag, msflag)
-{
-	var ZoomX, ZoomY, ShiftX, ShiftY, RotX, RotY, corrZoomX, corrZoomY, corrShiftX, corrShiftY, corrRotX, corrRotY;
-	//Add activation of WF and Column as defined
-
-	if (parseFloat(S[1][5][i]) != parseFloat(Column.GetWriteField()))
-	{
-		Column.SetWriteField(S[1][5][i], true);	
-	}
-	ActivateColdata(S[2][5][i]);
-	App.Exec("OpenDatabase(" + S[3][5][i] + ")");
-	App.Exec("ViewStructure(" + S[4][5][i] + ")");
-	if (WFflag == 1)
-	{
-		App.Exec("GetCorrection()");
-		ZoomX = App.GetVariable("Variables.ZoomX");
-		ZoomY = App.GetVariable("Variables.ZoomY");
-		ShiftX = App.GetVariable("Variables.ShiftX");
-		ShiftY = App.GetVariable("Variables.ShiftY");
-		RotX = App.GetVariable("Variables.RotX");
-		RotY = App.GetVariable("Variables.RotY");
-
-		corrZoomX = S[5][5][i] / ZoomX;
-		corrZoomY = S[6][5][i] / ZoomY;
-		corrShiftX = S[7][5][i] - ShiftX;
-		corrShiftY = S[8][5][i] - ShiftY;
-		corrRotX = S[9][5][i] - RotX;
-		corrRotY = S[10][5][i] - RotY;
-
-		App.Exec("SetCorrection(" + corrZoomX + ", " + corrZoomY + ", " + corrShiftX + ", " + corrShiftY + ", " + corrRotX + ", " + corrRotY + ")");	
-	}
-	if (msflag == 0)
-	{
-		SetStepsizeDwelltime(i,0);	
-	}
-	
-}
-
-function WriteMatrix(S, i)
-{
-	var N, k, j;
-
-	N = createArray(S[2][4][i]+1,S[3][4][i]+1,2);
-	for (k = 0; k <= S[3][4][i]-1; k++)
-	{
-		for (j = 0; j <= S[2][4][i]-1; j++)
+		//App.ErrMsg(0,0,Markertypes.length + "--" + Markertypes[n][0] + "--" + markertype)
+		if (Markertypes[n][0] == markertype) 
 		{
-		N[j+1][k+1][1] = parseFloat((j * S[4][4][i]) + S[6][4][i]);
-		N[j+1][k+1][2] = parseFloat((k * S[5][4][i]) + S[7][4][i]);
+			m = n;
+			break;
 		}
 	}
-	return(N);	
+  	
+    parlistname = new Array("SizeU","SizeV","StepU","StepV","PointsU","PointsV","MarkOffsetU","MarkOffsetV","MarkPlaceU","MarkPlaceV");
+	//parlist = new Array(SizeU,SizeV,StepU,StepV,PointsU,PointsV,MarkOffsetU,MarkOffsetV,MarkPlaceU,MarkPlaceV);
+	parlist = new Array(Markertypes[m][3],Markertypes[m][4],Markertypes[m][5],Markertypes[m][6],Markertypes[m][7],Markertypes[m][8],Markertypes[m][9],Markertypes[m][10],Markertypes[m][11],Markertypes[m][12]);
+	multiini = App.OpenIniFile(Glib + "Multisample WF align.ini");
+	for (q = 0; q < parlist.length; q ++) 
+	{	
+		multiini.WriteString("Multisample WF align", parlistname[q], parlist[q]);
+	}
+	
+	multipls = App.OpenIniFile(Glib + "Multisample WF align.pls");
+	multipls.DeleteSection("DATA");
+	multipls.WriteString("DATA", Markertypes[m][18], 0);
+
+	InstallWFAlign(markertype, Markertypes[m][17]);
+	PList = OpenPositionList(Glib + "Multisample WF align.pls");
+	App.Exec("ScanAllPositions()");
+	PList.Save();
+	PList.Close();
+	fmarkers = App.GetVariable("AlignWriteField.AutoMarksFailed");
+	return(fmarkers);
 }
 
-function AlignWF(markprocedure, logWFflag, i, j, k)
+function AlignWF_old(markprocedure, logWFflag, i, j, k)
 {
 	var m, n, amf1, amf2, logfile, logstring;
 
@@ -1393,6 +1368,126 @@ function AlignWF(markprocedure, logWFflag, i, j, k)
 		}
 }
 
+function AlignWF(markprocedure, logWFflag, i, j, k)
+{
+	var WFAlignprocedures, m, n, a, b, c, d, entries, markers, amf, logfile, logstring;
+	WFAlignprocedures = LoadWFAlignProcedures();
+	m = j + 1;
+	n = k + 1;
+	//App.ErrMsg(0,0,WFAlignprocedures.length);
+
+	for (a = 0; a < WFAlignprocedures.length; a++)
+	{
+		//App.ErrMsg(0,0,WFAlignprocedures[a][0] + "--" + markprocedure);
+		
+		if (WFAlignprocedures[a][0] == markprocedure) 
+		{
+			//App.ErrMsg(0,0,WFAlignprocedures[a][0] + "--" + markprocedure);
+			//App.ErrMsg(0,0,a);
+			b = a;
+			break;
+		}
+	}
+	//App.ErrMsg(0,0,b)
+	entries = WFAlignprocedures[b][1];
+
+	for (c = 0; c < entries-1; c++)
+	{
+		markers = WFAlignprocedures[b][c+2].split(";");
+		//App.ErrMsg(0,0,markers);
+		logstring = " ";
+
+		for (d = 0; d < markers.length; d++)
+		{
+			amf = AutoWFAlign(markers[d]);
+			logstring = logstring + markers[d] + " = " + amf + ", ";
+			//App.ErrMsg(0,0,logstring)
+			Panicbutton();
+			if (amf == 0) break;
+		}
+
+		if (WFAlignprocedures[b][entries+1] == 1 && logWFflag == 1)
+		{
+			logfile = App.OpenInifile(Glogfilename[1] + Glogfilename[2]);
+			logfile.WriteString("Failed markers S" + i,"Markprocedure", markprocedure);
+			logfile.WriteString("Failed markers S" + i,"D[" + m + ";" + n + "] - Step " + Math.round(c+1) + ": ", logstring);
+		}
+
+	}
+
+}
+
+
+function ActivateColdata(colset)
+{
+	var multipls, PList, lastcolset;
+	lastcolset = LastDatasettoColset();
+	if (lastcolset != colset)
+	{
+		multipls = App.OpenIniFile(Glib + "ActivateColumnDataset.pls");
+		multipls.DeleteSection("DATA");
+		multipls.WriteString("DATA", "0,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,VN,UV,set ViCol mode entry,STAY,VICOL,,,,,,,,,,," + colset + ",106,,,,,,,,,,,,,,,,", 0);
+		PList = OpenPositionList(Glib + "ActivateColumnDataset.pls");
+		App.Exec("ScanAllPositions()");
+		PList.Save();
+		PList.Close();	
+	}
+}
+
+function SetSvars(i, WFflag, msflag)
+{
+	var ZoomX, ZoomY, ShiftX, ShiftY, RotX, RotY, corrZoomX, corrZoomY, corrShiftX, corrShiftY, corrRotX, corrRotY;
+	//Add activation of WF and Column as defined
+
+	if (parseFloat(S[1][5][i]) != parseFloat(Column.GetWriteField()))
+	{
+		Column.SetWriteField(S[1][5][i], true);	
+	}
+	ActivateColdata(S[2][5][i]);
+	App.Exec("OpenDatabase(" + S[3][5][i] + ")");
+	App.Exec("ViewStructure(" + S[4][5][i] + ")");
+	if (WFflag == 1)
+	{
+		App.Exec("GetCorrection()");
+		ZoomX = App.GetVariable("Variables.ZoomX");
+		ZoomY = App.GetVariable("Variables.ZoomY");
+		ShiftX = App.GetVariable("Variables.ShiftX");
+		ShiftY = App.GetVariable("Variables.ShiftY");
+		RotX = App.GetVariable("Variables.RotX");
+		RotY = App.GetVariable("Variables.RotY");
+
+		corrZoomX = S[5][5][i] / ZoomX;
+		corrZoomY = S[6][5][i] / ZoomY;
+		corrShiftX = S[7][5][i] - ShiftX;
+		corrShiftY = S[8][5][i] - ShiftY;
+		corrRotX = S[9][5][i] - RotX;
+		corrRotY = S[10][5][i] - RotY;
+
+		App.Exec("SetCorrection(" + corrZoomX + ", " + corrZoomY + ", " + corrShiftX + ", " + corrShiftY + ", " + corrRotX + ", " + corrRotY + ")");	
+	}
+	if (msflag == 0)
+	{
+		SetStepsizeDwelltime(i,0);	
+	}
+	
+}
+
+function WriteMatrix(S, i)
+{
+	var N, k, j;
+
+	N = createArray(S[2][4][i]+1,S[3][4][i]+1,2);
+	for (k = 0; k <= S[3][4][i]-1; k++)
+	{
+		for (j = 0; j <= S[2][4][i]-1; j++)
+		{
+		N[j+1][k+1][1] = parseFloat((j * S[4][4][i]) + S[6][4][i]);
+		N[j+1][k+1][2] = parseFloat((k * S[5][4][i]) + S[7][4][i]);
+		}
+	}
+	return(N);	
+}
+
 function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,multiple..etc), testmode ornot
 {
 	var N, meander, k, j, mj;
@@ -1448,10 +1543,10 @@ function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,mu
 
 function FirstWFAlign()
 {
-    var markprocedure;
-
-    markprocedure = parseInt(App.InputMsg("Select AutoWFAlign scan procedure", "1: Use photo-markers, 2: Use photo + EBL markers", "1"));
-	AlignWF(markprocedure, 0);
+    var wfprocedureloadlist, align, markprocedure;
+    wfprocedureloadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
+    markprocedure = App.InputMsg("Select AutoWFAlign scan procedure", "Select: " + wfprocedureloadlist, wfprocedureloadlist[0]);
+	AlignWF(markprocedure, 0, 1, 1, 1);
 }
 
 function Start()

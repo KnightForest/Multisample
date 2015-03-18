@@ -1,5 +1,5 @@
 [LoadList]
-load = M1;M2;M3;EBLMarker1
+load = M1;M2;M3;EBLMarker1;EBLMarker2;Test1
 
 [M1]
 CenterU = 0.0
@@ -10,7 +10,7 @@ MarkerLengthV = 16.0
 CenterScanOffset = 0.5	
 ScanLength = 10.0	
 ScanWidth = 2.0		
-ScanAccuracy = 0.1	
+ScanAccuracy = 1	
 WidthTolerance = 0.12 
 ContrastThresholdLow = 45.0
 ContrastThresholdHigh = 55.0
@@ -61,26 +61,29 @@ ContrastThresholdHigh = 55.0
 CenterU = 0.16
 CenterV = 1.24
 MarkerWidth = 0.2
-MarkerLengthU = 4 
+MarkerLengthU = 4
 MarkerLengthV = 4
 CenterScanOffset = 0.5	
-AveragingWidth = 1
-ScanAccuracy = 1
+ScanWidth = 1.0
+ScanLength = 3.0
+ScanAccuracy = 1.0
 WidthTolerance = 0.2
-ContrastThresholdLow = 45
-ContrastThresholdHigh = 55
+ContrastThresholdLow = 45.0
+ContrastThresholdHigh = 55.0
 
-[EBLmarker3]
-CenterU = 1.24
-CenterV = 1.24
+[Test1]
+CenterU = 15
+CenterV = 15
 MarkerWidth = 0.2
-MarkerLengthU = 4 
+MarkerLengthU = 4
 MarkerLengthV = 4
 CenterScanOffset = 0.5	
-AveragingWidth = 1
-ScanAccuracy = 1
+ScanWidth = 1.0
+ScanLength = 3.0
+ScanAccuracy = 1.0
 WidthTolerance = 0.2
-ContrastThresholdLow = 45
-ContrastThresholdHigh = 55
+ContrastThresholdLow = 45.0
+ContrastThresholdHigh = 55.0
+
 
 [M61]

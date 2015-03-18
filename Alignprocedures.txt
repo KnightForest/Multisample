@@ -1,5 +1,5 @@
 [LoadList]
-load = Ed;Kaas;Leeghoofd
+load = Photo1;Ed;Kaas;Leeghoofd;DoNothing
 
 [Ed]
 1 = M1;M2;M3
@@ -13,4 +13,11 @@ log = 1
 1 = M1
 2 = M2
 3 = EBLMarker1;EBLMarker2;EBLMarker3
+log = 1
+
+[DoNothing]
+log = 0
+
+[Photo1]
+1 = M2
 log = 1
