@@ -180,7 +180,28 @@ function StepsizeDwelltime(i,GUIflag)
     App.SetVariable("Exposure.DotDose", "0.01");                         //Sets dot dose to 0.01 pC
     App.SetVariable("Exposure.ResistSensitivity", "150");                //Sets area dose to 150 uC/cm^2
     App.SetVariable("Exposure.LineDose", "500");                         //Sets line dose to 500 pC/cm
-   
+	App.SetVariable("Exposure.ExposureLoops","1");
+
+	var nLoops = S[14][4][i];
+	
+	var curvedose = 150.;
+	var dotdose = 0.01;
+	var resistsensitivity = 150.;
+	var linedose = 500.;
+	
+	curvedose = curvedose / nLoops;
+	dotdose = dotdose / nLoops;
+	resistsensitivity = resistsensitivity / nLoops;
+	linedose = linedose / nLoops;
+	
+	if (nLoops > 1) 
+   	{  //n times less the regular doses
+		App.SetVariable("Exposure.CurveDose", curvedose+""); 
+		App.SetVariable("Exposure.DotDose",dotdose+"") ;
+		App.SetVariable("Exposure.ResistSensitivity",resistsensitivity+"");
+		App.SetVariable("Exposure.LineDose",linedose+"");
+		App.SetVariable("Exposure.ExposureLoops",nLoops+"");
+	}
 	beamcurrent = App.GetVariable("BeamCurrent.BeamCurrent"); 			//Beamcurrent [nA]
 
 	minstepsize = App.GetSysVariable("Beamcontrol.MetricBasicStepSize")*Math.pow(10,3); //Min stepsize in [nm]
@@ -414,7 +435,8 @@ function Load(SDflag)
 			S[13][4][i] = inifile.ReadString("GS", "WFMethod", "0");
 			S[10][4][i] = inifile.ReadString("GS", "Markprocedure", "0");
 			S[12][4][i] = inifile.ReadString("GS", "L61", "0"); 
-			
+			S[14][4][i] = parseInt(inifile.ReadString("GS", "Exposureloops", "0"));
+			 
 			S[1][5][i] = (inifile.ReadString("GS", "WF", "0"));
 			colmode = (inifile.ReadString("GS", "ColMode", "0"));
 			S[2][5][i] = ReplaceAtbymu(colmode);
@@ -450,7 +472,8 @@ function Load(SDflag)
 			S[13][4][i] = inifile.ReadString(it, "WFMethod", "0");
 			S[10][4][i] = inifile.ReadString(it, "Markprocedure", "1");
 			S[12][4][i] = inifile.ReadString(it, "L61", "0");
-		
+			S[14][4][i] = parseInt(inifile.ReadString("GS", "Exposureloops", "0"));
+
 			S[1][5][i] = (inifile.ReadString(it, "WF", "0"));
 			S[2][5][i] = (inifile.ReadString(it, "ColMode", "0"));
 			GDSIIpath = (inifile.ReadString(it, "GDSII", "0"));
@@ -529,7 +552,7 @@ function Load(SDflag)
 }
 
 
-function CollectSD(st, GUIflag)
+function collectSD(st, GUIflag)
 {
     var mflag = 0;
 	var i, it, wfprocedureloadlist, S14, S24, S34, S44, S54, S64, S74, S84, S94, S104, S124, S15, S25, S35, S45, currpath, fex, currstruct, tl;
@@ -616,6 +639,7 @@ function CollectSD(st, GUIflag)
 			S54 = App.InputMsg("Define structure spacing in (V)", "Select structure spacing in mm: y (V)", "5");
 			S64 = App.InputMsg("Define Global-Local shift (U) for 1st structure", "Select shift in mm: x (U)", "0");
 			S74 = App.InputMsg("Define Global-Local shift (V) for 1st structure", "Select shift in mm: v (V)", "0");
+			S144 = App.InputMsg("Number of exposureloops per device","#", "1");
 			//S44 = 5;
 			//S54 = 5;
 			//S64 = 0;
@@ -637,6 +661,7 @@ function CollectSD(st, GUIflag)
 		S[12][4][i] = S124 + "";
 		S[13][4][i] = S134 + "";
 		S[1][5][i] = S15 + "";	
+		S[14][4][i] = parseInt(S144);
 		//Add a list of parameter that are always applicable to all loaded samples.
 		if (i==1)
 		{
@@ -786,6 +811,7 @@ function Logdata()
 		Glogini.Writestring("GS", "WFMethod", S[13][4][1] + "");
 		Glogini.Writestring("GS", "Markprocedure", S[10][4][1]);
 		Glogini.Writestring("GS", "L61", S[12][4][1]);	
+		Glogini.Writestring("GS", "Exposureloops", S[14][4][1]);	
 		
 		Glogini.WriteString("GS", "WF", S[1][5][1] + "");
 		Glogini.WriteString("GS", "ColMode", S[2][5][1] + "");
@@ -817,6 +843,8 @@ function Logdata()
 			Glogini.Writestring(it, "WFMethod", S[13][4][i] + "")
 			Glogini.Writestring(it,"Markprocedure", S[10][4][i]);	
 			Glogini.Writestring(it, "L61", S[12][4][i]);
+			Glogini.Writestring("GS", "Exposureloops", S[14][4][i]);	
+			
 			Glogini.WriteString(it,"WF", S[1][5][i] + "");
 			Glogini.WriteString(it,"ColMode", S[2][5][i] + "");
 			Glogini.WriteString(it,"GDSII", S[3][5][i] + "");
@@ -1389,7 +1417,32 @@ function AlignWF_old(markprocedure, logWFflag, i, j, k)
 				}
 				Panicbutton();
 				break;
-		case 4: break; 		
+		case 4: break; 
+		//do write alignment on photomarkers only, on first device
+		case 5:	if ((j == 0) && (k == 0))  
+				{
+					amf1 = createArray(3);
+					amf1[1] = AutoWFAlign(11);
+					Panicbutton();
+					if (amf1[1] > 0) 
+					{
+						amf1[2] = AutoWFAlign(12);
+						Panicbutton();
+					}
+					if (amf1[2] > 0) 
+					{
+						amf1[3] = AutoWFAlign(13);
+					}
+					if (logWFflag == 1)
+					{
+						logfile = App.OpenInifile(Glogfilename[1] + Glogfilename[2]);
+						logfile.WriteString("Failed markers S" + i,"Markprocedure", "Photo + EBL markers");
+						logstring = "Mark1=" + amf1[1] + ", Mark2 =" + amf1[2] + ", Mark3 =" + amf1[3];
+						logfile.WriteString("Failed markers S" + i,"D" + m + ";" + n + " (Photomarkers)", logstring);
+					}
+				}
+				Panicbutton();
+				break;		
 		}
 }
 

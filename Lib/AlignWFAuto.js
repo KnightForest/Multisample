@@ -22,11 +22,26 @@ var MinAutoMarks = App.GetFloatVariable("AlignWriteField.MinAutoMarks");
 var AutoMarkMode = App.GetFloatVariable("AlignWriteField.AutoMarkMode");
 
 
-if ( AutoMarksStored >= MinAutoMarks )
-	App.Exec("SendCorrection()");
+var i = App.GetFloatVariable("AlignWriteField.AlignmentIteration");
+if (i == -1) i = 0;
+
+if (i == 0) 
+{ //first alignment procedure
+	if ( AutoMarksStored >= MinAutoMarks )
+		App.Exec("SendCorrection()");
+	else
+		Column.ClearAlignment();
+}
 else
+{
 	Column.ClearAlignment();
-	
+}
+
+var n = parseInt(App.GetVariable("Exposure.ExposureLoops"),10);
+i = (i +1) % n; //n is number of total exposureloops
+
+App.SetFloatVariable("AlignWriteField.AlignmentIteration",i);
+
 
 // reset marks counter
 App.SetFloatVariable("AlignWriteField.AutoMarksStored", 0);
