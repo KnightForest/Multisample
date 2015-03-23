@@ -1,6 +1,6 @@
 //-------------------------------------------------------------------
 //    SCRIPT NAME:      Multisample
-//    Internal version: 0.9e
+//    Internal version: 0.9f
 //    AUTHOR:           Joost Ridderbos
 // 	  Git hashkey: 		"value"
 //    Copyright 2013-2015 Joost Ridderbos
@@ -31,7 +31,7 @@
 //		V-> Save and load column parameters
 //		V-> Load dataset from positionlist
 // V Add options to read everything except UV alignment from file
-// - Separate markertypes/procedures in separate files (for editing by users)
+// T Separate markertypes/procedures in separate files (for editing by users)
 // - Add more checks for user input
 // - Add time estimation calculation
 // - Add logdata:
@@ -44,15 +44,18 @@
 // - Set original magnifiction after AutoWFalign
 // - Sort order of writing chip by aperture size
 // - Fix GDSII layer 61 scan InstallWF. Use functionality from QDAuto113
-// T Add stepsicdze/beamcurrent to S[5][x][i] column and improve functionality
-// 		T-> Also add to Load and Log function
-// - Load differen designs/layers per UV alignment
+// V Add stepsicdze/beamcurrent to S[5][x][i] column and improve functionality
+// 		V-> Also add to Load and Log function
+// - Load different designs/layers per UV alignment
 // - Add ability to do only a GDSII scan on the first device on a sample (one UV alignment)
 // - Add ability to load writematrix from file (for unevenly spaced devices on a sample)
 // 		-> Combine this with loading different designs/layers per UV alignment
 // V Remove reset UV alignment for first sample
 // - Add comment to load new design
 // - Add procedure for manual alignment per chip
+// V Add WFalignment on first sample on the chip only
+// - Add no-GUI mode for using patterning in Plist
+// - Add GDSII alignment for fist sample on the chip only
 
 // BUGS:
 // V Auto stepsizedwelltime does not work, always uses 2 nm
@@ -60,9 +63,11 @@
 //		V In this case, the beamspeed reported in the log is wrong
 // - Possibly the WF loading does not work properly, needs testing!
 //		-> Without changing beam settings, program works fine
+// V Layer 61 scans do not work for this version.
 // - Probably more :/
 // - Manual alignment on dot within script not possible
 // 		-> Needs added routine during UV alignment.
+// 
 
 var Gsn = "Multisample";
 //var Gsnl = parseInt(Gsn.length, 8);
@@ -406,6 +411,7 @@ function Load(SDflag)
 			S[6][4][i] = parseFloat(inifile.ReadString("GS", "UuShift", "0"));			
 			S[7][4][i] = parseFloat(inifile.ReadString("GS", "VvShift", "0"));
 			S[8][4][i] = inifile.ReadString("GS","Name", "0");
+			S[13][4][i] = inifile.ReadString("GS", "WFMethod", "0");
 			S[10][4][i] = inifile.ReadString("GS", "Markprocedure", "0");
 			S[12][4][i] = inifile.ReadString("GS", "L61", "0"); 
 			
@@ -441,9 +447,10 @@ function Load(SDflag)
 			S[6][4][i] = parseFloat(inifile.ReadString(it, "UuShift", "0"));			
 			S[7][4][i] = parseFloat(inifile.ReadString(it, "VvShift", "0"));
 			S[8][4][i] = inifile.ReadString(it, "Name", "0");
+			S[13][4][i] = inifile.ReadString(it, "WFMethod", "0");
 			S[10][4][i] = inifile.ReadString(it, "Markprocedure", "1");
 			S[12][4][i] = inifile.ReadString(it, "L61", "0");
-			
+		
 			S[1][5][i] = (inifile.ReadString(it, "WF", "0"));
 			S[2][5][i] = (inifile.ReadString(it, "ColMode", "0"));
 			GDSIIpath = (inifile.ReadString(it, "GDSII", "0"));
@@ -573,9 +580,18 @@ function CollectSD(st, GUIflag)
 				S25 = ReplaceAtbymu(S25);
     		}
 			
-			wfprocedureloadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
-			S104 = App.InputMsg("Select AutoWFAlign scan procedure", "Select: " + wfprocedureloadlist, wfprocedureloadlist[0]);
+			S134 = App.Inputmsg("Select type of WF alignment","1: All devices, 2: First device per sample, 3: Manual per chip, 4: No alignment", "1")
 			
+			if (S134 != 3 || S134 != 4)
+			{
+				wfprocedureloadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
+				S104 = App.InputMsg("Select AutoWFAlign scan procedure", "Select: " + wfprocedureloadlist, wfprocedureloadlist[0]);
+			}
+			else
+			{
+				S104 = -1
+			}
+
 			if (App.ErrMsg(4,0,"Do you want to use layer 61 (GDSII autoscans)?")==EA_YES)
 			{
 				tl = App.InputMsg("Select layer", "Select layer(s) to use together with layer 61 (separate by ';')","");
@@ -619,6 +635,7 @@ function CollectSD(st, GUIflag)
 		S[8][4][i] = S84;
 		S[10][4][i] = S104;
 		S[12][4][i] = S124 + "";
+		S[13][4][i] = S134 + "";
 		S[1][5][i] = S15 + "";	
 		//Add a list of parameter that are always applicable to all loaded samples.
 		if (i==1)
@@ -685,8 +702,14 @@ function CollectUV(st, GUIflag)
 		}
 
 	    App.Exec("Halt()");
-
-		AlignWF(S[10][4][i], 0);
+	    if (S[13][4][i] == 1 || S[13][4][i] == 2)
+		{
+			AlignWF(S[10][4][i], 0, 0, 0, 0); //align a writefield or not depending on S[10][4][i]
+		}	
+		if (S[13][4][i] == 3)
+		{	
+		 // fix this to be compatble with manual WF alignment	
+		}	    
 
 	    App.ErrMsg(0,0,"Check UV alignment + focus after WF change of sample chip " + i + " of " + Gnums);
 	    App.Exec("Halt()");
@@ -760,6 +783,7 @@ function Logdata()
 		Glogini.WriteString("GS", "UuShift", S[6][4][1] + "");
 		Glogini.WriteString("GS", "VvShift", S[7][4][1] + "");
 		Glogini.Writestring("GS", "Name", S[8][4][1]);
+		Glogini.Writestring("GS", "WFMethod", S[13][4][1] + "");
 		Glogini.Writestring("GS", "Markprocedure", S[10][4][1]);
 		Glogini.Writestring("GS", "L61", S[12][4][1]);	
 		
@@ -790,6 +814,7 @@ function Logdata()
 			Glogini.WriteString(it, "UuShift", S[6][4][i] + "");
 			Glogini.WriteString(it, "VvShift", S[7][4][i] + "");
 			Glogini.Writestring(it,"Name", S[8][4][i]);
+			Glogini.Writestring(it, "WFMethod", S[13][4][i] + "")
 			Glogini.Writestring(it,"Markprocedure", S[10][4][i]);	
 			Glogini.Writestring(it, "L61", S[12][4][i]);
 			Glogini.WriteString(it,"WF", S[1][5][i] + "");
@@ -830,6 +855,7 @@ function Logdata()
 function AlignUV(i)
 {
 	Stage.ResetAlignment(); 
+	Stage.GlobalAlignment();
 	Stage.SetAlignPointUV(1, S[7][1][i], S[1][1][i], S[2][1][i])     ; 
 	Stage.SetAlignPointXY(1, S[4][1][i], S[5][1][i])   ; 
 	Stage.SetAlignPointUV(2, S[7][2][i], S[1][2][i], S[2][2][i])     ;  
@@ -952,7 +978,6 @@ function LoadMarkers()
     			Abort();
 			}
 		}
-		App.Errmsg(0,0,markerdata)
 		Markertypes[q][0] = loadlist[q]; 
 		Markertypes[q][1] = markerdata[0]; //Upos
 		Markertypes[q][2] = markerdata[1]; //Vpos
@@ -1370,51 +1395,52 @@ function AlignWF_old(markprocedure, logWFflag, i, j, k)
 
 function AlignWF(markprocedure, logWFflag, i, j, k)
 {
-	var WFAlignprocedures, m, n, a, b, c, d, entries, markers, amf, logfile, logstring;
-	WFAlignprocedures = LoadWFAlignProcedures();
-	m = j + 1;
-	n = k + 1;
-	//App.ErrMsg(0,0,WFAlignprocedures.length);
-
-	for (a = 0; a < WFAlignprocedures.length; a++)
+	if (markprocedure != -1)
 	{
-		//App.ErrMsg(0,0,WFAlignprocedures[a][0] + "--" + markprocedure);
-		
-		if (WFAlignprocedures[a][0] == markprocedure) 
+		var WFAlignprocedures, m, n, a, b, c, d, entries, markers, amf, logfile, logstring;
+		WFAlignprocedures = LoadWFAlignProcedures();
+		m = j + 1;
+		n = k + 1;
+		//App.ErrMsg(0,0,WFAlignprocedures.length);
+
+		for (a = 0; a < WFAlignprocedures.length; a++)
 		{
 			//App.ErrMsg(0,0,WFAlignprocedures[a][0] + "--" + markprocedure);
-			//App.ErrMsg(0,0,a);
-			b = a;
-			break;
+		
+			if (WFAlignprocedures[a][0] == markprocedure) 
+			{
+				//App.ErrMsg(0,0,WFAlignprocedures[a][0] + "--" + markprocedure);
+				//App.ErrMsg(0,0,a);
+				b = a;
+				break;
+			}
 		}
-	}
-	//App.ErrMsg(0,0,b)
-	entries = WFAlignprocedures[b][1];
+		//App.ErrMsg(0,0,b)
+		entries = WFAlignprocedures[b][1];
 
-	for (c = 0; c < entries-1; c++)
-	{
-		markers = WFAlignprocedures[b][c+2].split(";");
-		//App.ErrMsg(0,0,markers);
-		logstring = " ";
-
-		for (d = 0; d < markers.length; d++)
+		for (c = 0; c < entries-1; c++)
 		{
-			amf = AutoWFAlign(markers[d]);
-			logstring = logstring + markers[d] + " = " + amf + ", ";
-			//App.ErrMsg(0,0,logstring)
-			Panicbutton();
-			if (amf == 0) break;
+			markers = WFAlignprocedures[b][c+2].split(";");
+			//App.ErrMsg(0,0,markers);
+			logstring = " ";
+
+			for (d = 0; d < markers.length; d++)
+			{
+				amf = AutoWFAlign(markers[d]);
+				logstring = logstring + markers[d] + " = " + amf + ", ";
+				//App.ErrMsg(0,0,logstring)
+				Panicbutton();
+				if (amf == 0) break;
+			}
+
+			if (WFAlignprocedures[b][entries+1] == 1 && logWFflag == 1)
+			{
+				logfile = App.OpenInifile(Glogfilename[1] + Glogfilename[2]);
+				logfile.WriteString("Failed markers S" + i,"Markprocedure", markprocedure);
+				logfile.WriteString("Failed markers S" + i,"D[" + m + ";" + n + "] - Step " + Math.round(c+1) + ": ", logstring);
+			}
 		}
-
-		if (WFAlignprocedures[b][entries+1] == 1 && logWFflag == 1)
-		{
-			logfile = App.OpenInifile(Glogfilename[1] + Glogfilename[2]);
-			logfile.WriteString("Failed markers S" + i,"Markprocedure", markprocedure);
-			logfile.WriteString("Failed markers S" + i,"D[" + m + ";" + n + "] - Step " + Math.round(c+1) + ": ", logstring);
-		}
-
-	}
-
+	}	
 }
 
 
@@ -1514,7 +1540,7 @@ function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,mu
 			OriginCorrection();
 			if (S[12][4][i] != -1) //if the to be exposed layer is not empty
 			{
-				AlignWF(S[10][4][i], 1, i, mj, k);
+				//AlignWF(S[10][4][i], 1, i, mj, k);
 				InstallWFAlign(61);
 				App.Exec("UnSelectAllExposedLayer()");                      //Deselects al exposed layers
 				
@@ -1530,8 +1556,14 @@ function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,mu
 			}
 			if (S[1][4][i] != -1) //what does this do? Layer to be written also in global alignment?
 			{
-				AlignWF(S[10][4][i], 1, i, j, k); //align a writefield or not depending on S[10][4][i]
-				
+				if (S[13][4][i] == 1)
+				{
+					AlignWF(S[10][4][i], 1, i, j, k); //align a writefield or not depending on S[10][4][i]
+				}	
+				if (S[13][4][i] == 2 && i == 1 && mj == 1)
+				{	
+					AlignWF(S[10][4][i], 1, i, j, k); //align a writefield or not depending on S[10][4][i]
+				}			
 				App.Exec("UnSelectAllExposedLayer()");                      //Deselects al exposed layers
 				App.Exec("SelectExposedLayer(" + S[1][4][i] + ")");
 				if (testmode != 1) App.Exec("Exposure");
@@ -1606,7 +1638,10 @@ function Start()
 	}
 	
 	
-	App.ErrMsg(0,0,"Writing now commences.");
+	if (App.ErrMsg(EC_YESNO,0,"Writing now commences.") == EA_NO)
+	{
+		Abort();
+	}
 	for (i = 1; i<= Gnums; i++)
 	{
 		Panicbutton();
