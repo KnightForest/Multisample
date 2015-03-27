@@ -729,7 +729,7 @@ function CollectUV(st, GUIflag)
 	    App.Exec("Halt()");
 	    if (S[13][4][i] == 1 || S[13][4][i] == 2)
 		{
-			AlignWF(S[10][4][i], 0, 0, 0, 0); //align a writefield or not depending on S[10][4][i]
+			AlignWF(S[10][4][i], 0, 1, 1, 1); //align a writefield or not depending on S[10][4][i]
 		}	
 		if (S[13][4][i] == 3)
 		{	
@@ -843,7 +843,7 @@ function Logdata()
 			Glogini.Writestring(it, "WFMethod", S[13][4][i] + "")
 			Glogini.Writestring(it,"Markprocedure", S[10][4][i]);	
 			Glogini.Writestring(it, "L61", S[12][4][i]);
-			Glogini.Writestring("GS", "Exposureloops", S[14][4][i]);	
+			Glogini.Writestring(it, "Exposureloops", S[14][4][i]);	
 			
 			Glogini.WriteString(it,"WF", S[1][5][i] + "");
 			Glogini.WriteString(it,"ColMode", S[2][5][i] + "");
@@ -1063,7 +1063,6 @@ function LoadMarkers()
 		Markertypes[q][18] = Markertypes[q][18].toString();
 		
 	}
-	//App.ErrMsg(0,0,Markertypes);
 	return Markertypes;
 }
 
@@ -1071,7 +1070,6 @@ function LoadWFAlignProcedures()
 {
 	var loadlist, Alignprocedures, q, p, entries;
 	loadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
-	//App.Errmsg(0,0,loadlist + " - " + loadlist.length)
 	Alignprocedures = createArray(loadlist.length,20);
 
 	for (q = 0; q < loadlist.length; q ++) 
@@ -1082,15 +1080,11 @@ function LoadWFAlignProcedures()
     		App.ErrMsg(0,0,"Align procedure '" + loadlist[q] + "' not configured properly. Add 'log' switch to Alignprocedures.txt and restart script.");
     		Abort();			
 		}
-		//App.Errmsg(0,0,q)
-		//App.Errmsg(0,0,(loadlist[q] + " - " + loadlist[q+1]))
-		//App.Errmsg(0,0,entries)
 		Alignprocedures[q][0] = loadlist[q];
 		Alignprocedures[q][1] = entries.length;
 		for (p = 0; p < entries.length; p ++) 
 		{
 			Alignprocedures[q][p+2] = GAlignprocedures.ReadString(loadlist[q], entries[p], "undefined");
-			//App.Errmsg(0,0,Alignprocedures[q][p+2])
 			if (Alignprocedures[q][p+2] == "undefined") 
 			{
     			App.ErrMsg(0,0,"Align procedure '" + loadlist[q] + "' not configured properly. Check Alignprocedures.txt and restart script.");
@@ -1098,7 +1092,6 @@ function LoadWFAlignProcedures()
 			}
 		}
 	}
-	//App.Errmsg(0,0,Alignprocedures);
 	return Alignprocedures;
 }
 
@@ -1106,10 +1099,8 @@ function AutoWFAlign(markertype)
 {
 	var Markertypes, n, m, SizeU, SizeV, StepU, StepV, PointsU, PointsV, MarkOffsetU, MarkOffsetV, MarkPlaceU, MarkPlaceV, Upos, Vpos, threshold, parlistname, parlist, multiini, multipls, PList, q, fmarkers;
 	Markertypes = LoadMarkers();
-	//App.Errmsg(0,0,Markertypes.length + "--" + Markertypes[0][0])
 	for (n = 0; n < Markertypes.length; n++)
 	{
-		//App.ErrMsg(0,0,Markertypes.length + "--" + Markertypes[n][0] + "--" + markertype)
 		if (Markertypes[n][0] == markertype) 
 		{
 			m = n;
@@ -1147,34 +1138,27 @@ function AlignWF(markprocedure, logWFflag, i, j, k)
 		WFAlignprocedures = LoadWFAlignProcedures();
 		m = j + 1;
 		n = k + 1;
-		//App.ErrMsg(0,0,WFAlignprocedures.length);
 
 		for (a = 0; a < WFAlignprocedures.length; a++)
 		{
-			//App.ErrMsg(0,0,WFAlignprocedures[a][0] + "--" + markprocedure);
 		
 			if (WFAlignprocedures[a][0] == markprocedure) 
 			{
-				//App.ErrMsg(0,0,WFAlignprocedures[a][0] + "--" + markprocedure);
-				//App.ErrMsg(0,0,a);
 				b = a;
 				break;
 			}
 		}
-		//App.ErrMsg(0,0,b)
 		entries = WFAlignprocedures[b][1];
 
 		for (c = 0; c < entries-1; c++)
 		{
 			markers = WFAlignprocedures[b][c+2].split(";");
-			//App.ErrMsg(0,0,markers);
 			logstring = " ";
 
 			for (d = 0; d < markers.length; d++)
 			{
 				amf = AutoWFAlign(markers[d]);
 				logstring = logstring + markers[d] + " = " + amf + ", ";
-				//App.ErrMsg(0,0,logstring)
 				Panicbutton();
 				if (amf == 0) break;
 			}
@@ -1209,7 +1193,6 @@ function ActivateColdata(colset)
 function SetSvars(i, WFflag, msflag)
 {
 	var ZoomX, ZoomY, ShiftX, ShiftY, RotX, RotY, corrZoomX, corrZoomY, corrShiftX, corrShiftY, corrRotX, corrRotY;
-	//Add activation of WF and Column as defined
 
 	if (parseFloat(S[1][5][i]) != parseFloat(Column.GetWriteField()))
 	{
@@ -1286,7 +1269,6 @@ function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,mu
 			OriginCorrection();
 			if (S[12][4][i] != -1) //if the to be exposed layer is not empty
 			{
-				//AlignWF(S[10][4][i], 1, i, mj, k);
 				InstallWFAlign(61);
 				App.Exec("UnSelectAllExposedLayer()");                      //Deselects al exposed layers
 				
@@ -1333,8 +1315,6 @@ function Start()
 
 	Stage.GlobalAlignment();
     
-	//Column.SetWriteField(100, true); 	
-	
 	if (App.Errmsg(EC_YESNO, 0 , "Do WF alignment only?") == EA_YES)
 	{
 	   FirstWFAlign();
@@ -1365,7 +1345,6 @@ function Start()
 		Gnums = Detectnums(Gsampleini, 1);
 		Load(0);
 	}
-	//Gnums = S[11][4][1];
 	Glogfilename = Logdata();
 	beamoffflag = 0;
 
@@ -1403,28 +1382,6 @@ function Start()
 		App.ProtocolEvent(30, 0, 0, "Beam shutdown.");
     }
 }
-
-//function Crap()
-// {
-// var path = App.GetVariable("Variables.File") + "\\";
-// var path = path.substring(0, path.length-(Gsnl+4));
-// path = "C:\\RAITH150-TWO\\User\\Administrator\\Script\\Multisample\\"
-// App.Errmsg(0,0,path + Gfilepath)
-// if (path != Gfilepath)
-// {
-// 	Install(Gsn, Gsnl, Gfilepath, path);
-// 	App.ErrMsg(0,0,"Script installed, please restart RAITH software.");
-// 	//Abort();
-// }
-// else
-// {
-// 	if (App.ErrMsg(EC_YESNO, 0, "Do you want to reinstall the script?") == EA_YES) 
-// 	{
-// 		Install(Gsn, Gsnl, Gfilepath, path);
-// 		App.ErrMsg(0,0,"Script successfully reinstalled.");
-// 	}
-// }
-// }
 
 Install(0);
 ResetPanicbutton();
