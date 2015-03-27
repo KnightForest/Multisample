@@ -11,7 +11,7 @@ log = 1
 log = 1
 
 [Photo]
-1 = M1;M2;M3
+1 = M2
 log = 1
 
 [DoNothing]
