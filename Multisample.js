@@ -85,8 +85,6 @@ var i, st, beamoffflag;
 
 function Succes()			                                            //-- Called if function 'write' was successful
 {
-//   App.Exec("OpenDatabase(PhotolithoConnect)");                       //Opens the GDSII database
-//   OriginCorrection()                                                 //Runs function OriginCorrection() defined below
    Install(1);
    Stage.JoystickEnabled = true;                                        //Turns joystick back on
    App.SetFloatVariable("AlignWriteField.AutoMarksFailed", 0);          //Resets failed automarks counter
@@ -110,8 +108,6 @@ function isEven(n)														//Function to check if number is odd or even
 function ReplaceAtbymu(str)
 {
 	str = str.replace(/@/g, "\u00B5");
-	//str = str.replace(/µ/g, "\u00B5");
-	//App.InputMsg("","",str)
 	return str;
 }
 
@@ -131,14 +127,34 @@ function LastDatasettoColset()
 
 function MeasBeamCurrent()												//Measures beam current
 {
+   var bc, bcf;
+   bc = createArray(3)
    if (App.ErrMsg(EC_YESNO, 0, "Do you want to measure the beam current?") == EA_YES)                        //Asks user to perform beam current measurement + dwelltime corrections
       {
       if ( Column.CheckConnection() )                                   //If answer is YES, measurement is performed
-         {
-		 Stage.X = -30; 													//Sets stage coörds to 30,30 (saves time when driving back)
-		 Stage.Y = 30; 
+      	{
+		 Stage.X = -35; 													//Sets stage coörds to 30,30 (saves time when driving back)
+		 Stage.Y = 39; 
 		 Stage.WaitPositionReached(); 
-         BeamCurrent(true, true);                                       //Saves value and returns result in a popup
+		 BeamCurrent(false, false);
+		 bc[0] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
+		 App.Exec("Halt()")
+		 Stage.WaitPositionReached();
+         BeamCurrent(false, false);
+         bc[1] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
+         Stage.WaitPositionReached();
+         BeamCurrent(false, false);
+         bc[2] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
+         if	(Math.max(bc[0], bc[1], bc[2])/Math.min(bc[0], bc[1], bc[2]) >= 1.01)
+         {
+         	if (App.ErrMsg(4,0,"Beam current fluctuation over three measurements(>1%) (" + bc + " nA). Continue?") == 7)
+         	{
+         		Abort();
+         	}
+         }
+         bcf = ((bc[0]+bc[1]+bc[2])/3)
+         App.ErrMsg(0,0,"Beamcurrent: " + bcf + "nA")
+         //App.SetVariable("BeamCurrent.BeamCurrent", bcf);
          }
        }
 }
@@ -605,7 +621,7 @@ function CollectSD(st, GUIflag)
 			
 			S134 = App.Inputmsg("Select type of WF alignment","1: All devices, 2: First device per sample, 3: Manual per chip, 4: No alignment", "1")
 			
-			if (S134 != 3 || S134 != 4)
+			if (S134 ==  1 || S134 == 2 )
 			{
 				wfprocedureloadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
 				S104 = App.InputMsg("Select AutoWFAlign scan procedure", "Select: " + wfprocedureloadlist, wfprocedureloadlist[0]);
