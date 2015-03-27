@@ -244,7 +244,7 @@ function StepsizeDwelltime(i,GUIflag)
       		App.Errmsg(EC_INFO ,0 , "WARNING! Area beam speed greater than 10mm/s:    " + Math.ceil(beamspeed[1]*10)/10 + "mm/s, increase stepsize or reduce beamcurrent.");
       		bflag = 1;
       	}
-      	//if (beamspeed[2] > criticalbeamspeed)                                            //Next lines checks if the calculated beamspeed is not higher than 10 mm/s, else it gives a warning.
+      	//if (beamspeed[2] > critica3	lbeamspeed)                                            //Next lines checks if the calculated beamspeed is not higher than 10 mm/s, else it gives a warning.
       	//{ 
       	//	App.Errmsg(EC_INFO ,0 , "WARNING! Curved Area beam speed greater than 10mm/s: " + beamspeed[0]*1000 + "mm/s, increase stepsize or reduce beamcurrent.");
       	//	bflag = 1;
@@ -552,7 +552,7 @@ function Load(SDflag)
 }
 
 
-function collectSD(st, GUIflag)
+function CollectSD(st, GUIflag)
 {
     var mflag = 0;
 	var i, it, wfprocedureloadlist, S14, S24, S34, S44, S54, S64, S74, S84, S94, S104, S124, S15, S25, S35, S45, currpath, fex, currstruct, tl;
@@ -1040,7 +1040,7 @@ function LoadMarkers()
 		Markertypes[q][14] = Math.ceil((markerdata[2]*1 + markerdata[9]*markerdata[2])*1000);//Profile max
 		Markertypes[q][15] = markerdata[10]; //ContrastLow
 		Markertypes[q][16] = markerdata[11]; //ContrastHigh
-		Markertypes[q][17] = "Mode:0,L1:" + Markertypes[q][13] + ",L2:" + Markertypes[q][14] + ",Profile:1,Min:" + Markertypes[q][15] + ",Max:" + Markertypes[q][16] + ",LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0";//threshold
+		Markertypes[q][17] = "Mode:0,L1:" + Markertypes[q][15] + ",L2:" + Markertypes[q][16] + ",Profile:1,Min:" + Markertypes[q][13] + ",Max:" + Markertypes[q][14] + ",LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0";//threshold
 		Markertypes[q][18] = "0,0.000000,0.000000,0.000000,0.000000,0.000000," + Markertypes[q][1] + "," + Markertypes[q][2] + ",0.000000,LN,UV,Multisample WF align,STAY;,ALWF_AUTOLINE," + markerdata[6] + "," + markerdata[7] + "," + Markertypes[q][5] + "," + Markertypes[q][6] + ",U,16,,,,,,,,,,,,,,,,,,,,,,,0.0,15,0,1,";
 
 		Markertypes[q][1] = Markertypes[q][1].toString();
