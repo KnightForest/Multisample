@@ -89,6 +89,7 @@ function Succes()			                                            //-- Called if f
    Stage.JoystickEnabled = true;                                        //Turns joystick back on
    App.SetFloatVariable("AlignWriteField.AutoMarksFailed", 0);          //Resets failed automarks counter
    App.SetVariable("Adjust.MinAutoMarks","3");                          //Resets MinAutoMarks back to 3 (from 2)
+   App.SetVariable("Exposure.ExposureLoops","1"); 						//Let's be nice to the default settings
    App.ErrMsg(EC_INFO, 0, "Great Succes!");                             //Displays success message ;) (as long as you don't correct the spelling in the message)
 }
 
@@ -209,7 +210,7 @@ function StepsizeDwelltime(i,GUIflag)
 	dotdose = dotdose / nLoops;
 	resistsensitivity = resistsensitivity / nLoops;
 	linedose = linedose / nLoops;
-	
+
 	if (nLoops > 1) 
    	{  //n times less the regular doses
 		App.SetVariable("Exposure.CurveDose", curvedose+""); 
@@ -311,7 +312,9 @@ function Abort()                                                        //-- Abo
 {                                                                       //For details, check function Succes()
    Install(1);
    Stage.JoystickEnabled = true;
-   App.SetVariable("Adjust.MinAutoMarks","3");
+   App.SetVariable("Adjust.MinAutoMarks","3")
+   App.SetVariable("Exposure.ExposureLoops","1"); 						//Let's be nice to the default settings
+
    throw new Error('Execution cancelled by user');                      //Interrupts script by trowing error
 }
 
@@ -451,7 +454,7 @@ function Load(SDflag)
 			S[13][4][i] = inifile.ReadString("GS", "WFMethod", "0");
 			S[10][4][i] = inifile.ReadString("GS", "Markprocedure", "0");
 			S[12][4][i] = inifile.ReadString("GS", "L61", "0"); 
-			S[14][4][i] = parseInt(inifile.ReadString("GS", "Exposureloops", "0"));
+			S[14][4][i] = parseInt(inifile.ReadString("GS", "Exposureloops", "1"));
 			 
 			S[1][5][i] = (inifile.ReadString("GS", "WF", "0"));
 			colmode = (inifile.ReadString("GS", "ColMode", "0"));
@@ -488,7 +491,7 @@ function Load(SDflag)
 			S[13][4][i] = inifile.ReadString(it, "WFMethod", "0");
 			S[10][4][i] = inifile.ReadString(it, "Markprocedure", "1");
 			S[12][4][i] = inifile.ReadString(it, "L61", "0");
-			S[14][4][i] = parseInt(inifile.ReadString("GS", "Exposureloops", "0"));
+			S[14][4][i] = parseInt(inifile.ReadString(it, "Exposureloops", "1"));
 
 			S[1][5][i] = (inifile.ReadString(it, "WF", "0"));
 			S[2][5][i] = (inifile.ReadString(it, "ColMode", "0"));
@@ -1238,6 +1241,7 @@ function SetSvars(i, WFflag, msflag)
 	}
 	if (msflag == 0)
 	{
+		StepsizeDwelltime(i,0);
 		SetStepsizeDwelltime(i,0);	
 	}
 	
@@ -1262,7 +1266,7 @@ function WriteMatrix(S, i)
 function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,multiple..etc), testmode ornot
 {
 	var N, meander, k, j, mj;
-
+	
 	N = WriteMatrix(S, i);
 	meander = 1;
 	for (k = 0; k <= S[3][4][i]-1; k++)
@@ -1389,7 +1393,6 @@ function Start()
 		AlignUV(i);
 		SetSvars(i, 1, 0);
 		
-		//todo: make option for alignment on first device of new chip
 		Write(S, i, testmode);
     }
     if (beamoffflag == 1)                                                //5 lines: Turn off beam if option has been set.
