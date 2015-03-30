@@ -38,7 +38,7 @@
 //		-> Layer61 scan results
 //		-> Progress bar (together with time estimation)
 // V Fix SetSvars function
-// - For personal version: change position EBL markers to 2nd row
+// X For personal version: change position EBL markers to 2nd row
 // - Add comments :)
 // - Add initialisation to check if all files are present
 // - Set original magnifiction after AutoWFalign
@@ -56,6 +56,7 @@
 // V Add WFalignment on first sample on the chip only
 // - Add no-GUI mode for using patterning in Plist
 // - Add GDSII alignment for fist sample on the chip only
+// V Add immproved beamcurrent measurement
 
 // BUGS:
 // V Auto stepsizedwelltime does not work, always uses 2 nm
@@ -154,7 +155,7 @@ function MeasBeamCurrent()												//Measures beam current
          }
          bcf = ((bc[0]+bc[1]+bc[2])/3)
          App.ErrMsg(0,0,"Beamcurrent: " + bcf + "nA")
-         //App.SetVariable("BeamCurrent.BeamCurrent", bcf);
+         App.SetVariable("BeamCurrent.BeamCurrent", bcf);
          }
        }
 }
