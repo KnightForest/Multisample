@@ -977,10 +977,10 @@ function InstallWFAlign(markertype, threshold)
 			par = WFalignini.ReadString("Automatic procedure during exposure", parlist[q], "0");
 			scanini.WriteString("Automatic procedure during exposure", parlist[q], par);
 		}
-		//App.SetVariable("AlignScans.AvgPoints", "60");                    //Sets the number of points in the y-direction
-      	//App.SetVariable("AlignScans.Scanpoints", "1200");                 //Sets the number of points in the x-direction
-    	//App.Setvariable("AlignScans.Avg", "24");                          //Sets the number of measurements to average over to obtain one point
-		threshold = "Mode:0,L1:45,L2:55,Profile:1,Min:150.0,Max:350.0,LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0";
+		App.SetVariable("AlignScans.AvgPoints", "120");                    //Sets the number of points in the y-direction
+      	App.SetVariable("AlignScans.Scanpoints", "2000");                 //Sets the number of points in the x-direction
+    	App.Setvariable("AlignScans.Avg", "24");                          //Sets the number of measurements to average over to obtain one point
+		threshold = "Mode:0,L1:50,L2:75,Profile:1,Min:100.0,Max:400.0,LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0";
 	}
 	else
 	{
