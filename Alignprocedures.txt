@@ -1,5 +1,5 @@
 [LoadList]
-load = PhotoEbl;EBL;Photo;DoNothing
+load = PhotoEBL;EBL;Photo;DoNothing
 
 [PhotoEBL]
 1 = M1;M2;M3
