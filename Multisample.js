@@ -47,6 +47,7 @@
 // V Add stepsicdze/beamcurrent to S[5][x][i] column and improve functionality
 // 		V-> Also add to Load and Log function
 // - Load different designs/layers per UV alignment
+//		-> Make loading of positionlist possible for a chipgh
 // - Add ability to do only a GDSII scan on the first device on a sample (one UV alignment)
 // - Add ability to load writematrix from file (for unevenly spaced devices on a sample)
 // 		-> Combine this with loading different designs/layers per UV alignment
@@ -56,9 +57,16 @@
 // V Add WFalignment on first sample on the chip only
 // - Add no-GUI mode for using patterning in Plist
 // - Add GDSII alignment for fist sample on the chip only
-// V Add immproved beamcurrent measurement
+// V Add improved beamcurrent measurement
+// - Add checks for proper procedure naming or stop using capital letters..
+
+// Maybe later:
+// - Make separate capture UV/WF script
+// - 
 
 // BUGS:
+// - Asks to measure beamcurrent twice during CollectSD
+// 		-> Also asks for beamcurrent if column did not change.. is this ok?
 // V Auto stepsizedwelltime does not work, always uses 2 nm
 //		V It is possible to change the value for the stepsize in multisample.txt
 //		V In this case, the beamspeed reported in the log is wrong
@@ -223,7 +231,7 @@ function StepsizeDwelltime(i,GUIflag)
 	beamcurrent = App.GetVariable("BeamCurrent.BeamCurrent"); 			//Beamcurrent [nA]
 
 	minstepsize = App.GetSysVariable("Beamcontrol.MetricBasicStepSize")*Math.pow(10,3); //Min stepsize in [nm]
-	advisedbeamspeed = 8;                                             	//Sets the advised beamspeed in [mm/s]
+	advisedbeamspeed = 8.;                                             	//Sets the advised beamspeed in [mm/s]
     areaminstepsize = Math.ceil(beamcurrent/((advisedbeamspeed*Math.pow(10,-5)*App.GetVariable("Exposure.ResistSensitivity")*minstepsize)))*minstepsize; //Calculates advised beamspeed [nm]
 	if (GUIflag == 1)
 	{
