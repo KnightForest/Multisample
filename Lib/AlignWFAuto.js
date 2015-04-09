@@ -22,10 +22,10 @@ var MinAutoMarks = App.GetFloatVariable("AlignWriteField.MinAutoMarks");
 var AutoMarkMode = App.GetFloatVariable("AlignWriteField.AutoMarkMode");
 
 
-var i = App.GetFloatVariable("AlignWriteField.AlignmentIteration");
-if (i == -1) i = 0;
+var ni = App.GetFloatVariable("AlignWriteField.AlignmentIteration");
+if (ni == -1) ni = 0;
 
-if (i == 0) 
+if (ni == 0) 
 { //first alignment procedure
 	if ( AutoMarksStored >= MinAutoMarks )
 		App.Exec("SendCorrection()");
@@ -39,7 +39,7 @@ else
 
 var n = parseInt(App.GetVariable("Exposure.ExposureLoops"),10);
 n = 1
-i = (i +1) % n; //n is number of total exposureloops
+ni = (ni +1) % n; //n is number of total exposureloops
 
 App.SetFloatVariable("AlignWriteField.AlignmentIteration",i);
 //App.ErrMsg(0,0,i + "dit zit in alignwfauto.js")

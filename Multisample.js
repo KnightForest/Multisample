@@ -149,6 +149,7 @@ function MeasBeamCurrent()												//Measures beam current
 		 BeamCurrent(false, false);
 		 bc[0] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
 		 Stage.WaitPositionReached();
+		 App.Exec("Halt()")
          BeamCurrent(false, false);
          bc[1] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
          Stage.WaitPositionReached();
@@ -163,7 +164,8 @@ function MeasBeamCurrent()												//Measures beam current
          }
          bcf = ((bc[0]+bc[1]+bc[2])/3)
          App.ErrMsg(0,0,"Beamcurrent: " + bcf*Math.pow(10,3) + "pA") //Dit moest van Joren. Hij houdt niet van teveel floating.
-         App.SetVariable("BeamCurrent.BeamCurrent", bcf.toString());
+         bcf = bcf.toString();
+         App.SetVariable("BeamCurrent.BeamCurrent", bcf);
          }
        }
 }
@@ -175,10 +177,9 @@ function SetStepsizeDwelltime(i, bcflag)
    	stepsizeline_um = (S[1][6][i]*Math.pow(10,-3));
    	stepsize_um = (S[2][6][i]*Math.pow(10,-3));
    	stepsizec_um = (S[3][6][i]*Math.pow(10,-3));
-
+   	beamcurrent = S[7][6][i];
    	if (bcflag == 1)
-    {
-     	beamcurrent = S[7][6][i];
+    {  
 	    App.SetVariable("BeamCurrent.BeamCurrent", beamcurrent);
     }
 	App.SetVariable("Variables.MetricStepSize", stepsize_um.toString());               //Sets area stepsize y-direction to defined area stepsize
@@ -201,14 +202,7 @@ function StepsizeDwelltime(i,GUIflag)
 	msg_setlinestepsize = "Set LINE stepsize in nm";
 	msg_higherthan = "nm: (recommended higher than ";
 	
-	App.SetVariable("Exposure.CurveDose", "150");                        //Sets curve dose to 150 uC/cm^2
-    App.SetVariable("Exposure.DotDose", "0.01");                         //Sets dot dose to 0.01 pC
-    App.SetVariable("Exposure.ResistSensitivity", "150");                //Sets area dose to 150 uC/cm^2
-    App.SetVariable("Exposure.LineDose", "500");                         //Sets line dose to 500 pC/cm
-	App.SetVariable("Exposure.ExposureLoops","1");
-
 	var nLoops = S[14][4][i];
-	
 	var curvedose = 150.;
 	var dotdose = 0.01;
 	var resistsensitivity = 150.;
@@ -219,16 +213,13 @@ function StepsizeDwelltime(i,GUIflag)
 	resistsensitivity = resistsensitivity / nLoops;
 	linedose = linedose / nLoops;
 
-	if (nLoops > 1) 
-   	{  //n times less the regular doses
-		App.SetVariable("Exposure.CurveDose", curvedose+""); 
-		App.SetVariable("Exposure.DotDose",dotdose+"") ;
-		App.SetVariable("Exposure.ResistSensitivity",resistsensitivity+"");
-		App.SetVariable("Exposure.LineDose",linedose+"");
-		App.SetVariable("Exposure.ExposureLoops",nLoops+"");
-	}
-	beamcurrent = App.GetVariable("BeamCurrent.BeamCurrent"); 			//Beamcurrent [nA]
+	App.SetVariable("Exposure.CurveDose", curvedose+""); 
+	App.SetVariable("Exposure.DotDose",dotdose+"") ;
+	App.SetVariable("Exposure.ResistSensitivity",resistsensitivity+"");
+	App.SetVariable("Exposure.LineDose",linedose+"");
+	App.SetVariable("Exposure.ExposureLoops",nLoops+"");
 
+	beamcurrent = App.GetVariable("BeamCurrent.BeamCurrent"); 			//Beamcurrent [nA]
 	minstepsize = App.GetSysVariable("Beamcontrol.MetricBasicStepSize")*Math.pow(10,3); //Min stepsize in [nm]
 	advisedbeamspeed = 8.;                                             	//Sets the advised beamspeed in [mm/s]
     areaminstepsize = Math.ceil(beamcurrent/((advisedbeamspeed*Math.pow(10,-5)*App.GetVariable("Exposure.ResistSensitivity")*minstepsize)))*minstepsize; //Calculates advised beamspeed [nm]
@@ -283,9 +274,13 @@ function StepsizeDwelltime(i,GUIflag)
    	}
    	stepsizec = stepsize;
 
-  	S[1][6][i] = stepsizeline;
-   	S[2][6][i] = stepsize;
-   	S[3][6][i] = stepsizec;
+   	if (GUIflag != 0)
+   	{
+   		S[1][6][i] = stepsizeline;
+   		S[2][6][i] = stepsize;
+   		S[3][6][i] = stepsizec;
+   	}
+
    	S[4][6][i] = beamspeed[0];
    	S[5][6][i] = beamspeed[1];
    	S[6][6][i] = beamspeed[2];
@@ -1249,8 +1244,8 @@ function SetSvars(i, WFflag, msflag)
 	}
 	if (msflag == 0)
 	{
-		StepsizeDwelltime(i,0);
-		SetStepsizeDwelltime(i,0);	
+		StepsizeDwelltime(i,0); //GUIflag only 0 in setsvars function. Needed for exposureloops icw MS defined stepsizes.
+		SetStepsizeDwelltime(i,1);	
 	}
 	
 }
