@@ -162,8 +162,8 @@ function MeasBeamCurrent()												//Measures beam current
          	}
          }
          bcf = ((bc[0]+bc[1]+bc[2])/3)
-         App.ErrMsg(0,0,"Beamcurrent: " + bcf + "nA")
-         App.SetVariable("BeamCurrent.BeamCurrent", bcf);
+         App.ErrMsg(0,0,"Beamcurrent: " + bcf*Math.pow(10,3) + "pA") //Dit moest van Joren. Hij houdt niet van teveel floating.
+         App.SetVariable("BeamCurrent.BeamCurrent", bcf.toString());
          }
        }
 }
