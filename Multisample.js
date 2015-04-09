@@ -148,7 +148,6 @@ function MeasBeamCurrent()												//Measures beam current
 		 Stage.WaitPositionReached(); 
 		 BeamCurrent(false, false);
 		 bc[0] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
-		 App.Exec("Halt()")
 		 Stage.WaitPositionReached();
          BeamCurrent(false, false);
          bc[1] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
@@ -774,7 +773,7 @@ function CollectUV(st, GUIflag)
 	    	SetStepsizeDwelltime(i,0);
 	    }
 		if (st == 2 && i == 1) MeasBeamCurrent();
-		if (st == 2 && S[2][5][i] != S[2][5][i-1]) MeasBeamCurrent();
+		if (st == 2 && i !=1 && S[2][5][i] != S[2][5][i-1]) MeasBeamCurrent();
 		if (st == 2) 
   		{
    			StepsizeDwelltime(i, GUIflag);

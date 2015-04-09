@@ -2,7 +2,7 @@
 load = PhotoEBL;EBL;Photo;DoNothing
 
 [PhotoEBL]
-1 = M1;M2;M3
+1 = M1;M2;M3;M4
 2 = EBLMarker1;EBLMarker2;EBLMarker3
 log = 1
 
@@ -11,7 +11,7 @@ log = 1
 log = 1
 
 [Photo]
-1 = M2
+1 = M1;M2;M3;M4
 log = 1
 
 [DoNothing]
