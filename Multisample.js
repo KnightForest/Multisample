@@ -1292,6 +1292,16 @@ function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,mu
 			OriginCorrection();
 			if (S[12][4][i] != -1) //if the to be exposed layer is not empty
 			{
+			
+				if (S[13][4][i] == 1)
+				{
+					AlignWF(S[10][4][i], 1, i, j, k); //align a writefield or not depending on S[10][4][i]
+				}	
+				if (S[13][4][i] == 2 && k == 0 && j == 0)
+				{	
+					AlignWF(S[10][4][i], 1, i, j, k); //align a writefield or not depending on S[10][4][i]
+				}	
+				
 				InstallWFAlign(61);
 				App.Exec("UnSelectAllExposedLayer()");                      //Deselects al exposed layers
 				
@@ -1311,7 +1321,7 @@ function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,mu
 				{
 					AlignWF(S[10][4][i], 1, i, j, k); //align a writefield or not depending on S[10][4][i]
 				}	
-				if (S[13][4][i] == 2 && i == 1 && mj == 1)
+				if (S[13][4][i] == 2 && k == 0 && j == 0)
 				{	
 					AlignWF(S[10][4][i], 1, i, j, k); //align a writefield or not depending on S[10][4][i]
 				}			
