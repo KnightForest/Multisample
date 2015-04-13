@@ -11,9 +11,10 @@ CenterScanOffset = 0.5
 ScanLength = 10.0	
 ScanWidth = 0.5		
 ScanAccuracy = 1	
-WidthTolerance = 0.12 
+WidthTolerance = 0.2 
 ContrastThresholdLow = 45.0
 ContrastThresholdHigh = 55.0
+Profile = 1
 
 [M2]
 CenterU = 0.0
@@ -28,6 +29,7 @@ ScanAccuracy = 1.0
 WidthTolerance = 0.2
 ContrastThresholdLow = 45.0
 ContrastThresholdHigh = 55.0
+Profile = 1
 
 [M3]
 CenterU = 1.396
@@ -42,6 +44,7 @@ ScanAccuracy = 1.0
 WidthTolerance = 0.2
 ContrastThresholdLow = 45.0
 ContrastThresholdHigh = 55.0
+Profile = 1
 
 [M4]
 CenterU = 1.396
@@ -56,6 +59,7 @@ ScanAccuracy = 1.0
 WidthTolerance = 0.2
 ContrastThresholdLow = 45.0
 ContrastThresholdHigh = 55.0
+Profile = 1
 
 [EBLmarker1]
 CenterU = 0.16
@@ -70,6 +74,7 @@ ScanAccuracy = 1.0
 WidthTolerance = 0.2
 ContrastThresholdLow = 50.0
 ContrastThresholdHigh = 80.0
+Profile = 1
 
 [EBLmarker2]
 CenterU = 0.16
@@ -84,6 +89,7 @@ ScanAccuracy = 1.0
 WidthTolerance = 0.2
 ContrastThresholdLow = 50.0
 ContrastThresholdHigh = 80.0
+Profile = 1
 
 [EBLmarker3]
 CenterU = 1.24
@@ -98,6 +104,7 @@ ScanAccuracy = 1.0
 WidthTolerance = 0.2
 ContrastThresholdLow = 50.0
 ContrastThresholdHigh = 80.0
+Profile = 1
 
 [Test1]
 CenterU = 15
@@ -112,6 +119,6 @@ ScanAccuracy = 1.0
 WidthTolerance = 0.2
 ContrastThresholdLow = 45.0
 ContrastThresholdHigh = 55.0
-
+Profile = 1
 
 [M61]

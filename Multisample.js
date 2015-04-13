@@ -983,6 +983,7 @@ function InstallWFAlign(markertype, threshold)
       	App.SetVariable("AlignScans.Scanpoints", "2000");                 //Sets the number of points in the x-direction
     	App.Setvariable("AlignScans.Avg", "24");                          //Sets the number of measurements to average over to obtain one point
 		threshold = "Mode:0,L1:50,L2:75,Profile:1,Min:100.0,Max:400.0,LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0";
+		//threshold = "Mode:0,L1:50,L2:75,Profile:0,Min:100.0,Max:400.0,LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0"; //For Sergeys etched markers
 	}
 	else
 	{
@@ -1016,7 +1017,7 @@ function LoadMarkers()
 
 	for (q = 0; q < loadlist.length; q ++) 
 	{
-		parlist = new Array("CenterU","CenterV","MarkerWidth","MarkerLengthU","MarkerLengthV","CenterScanOffset","ScanLength","ScanWidth","ScanAccuracy","WidthTolerance","ContrastThresholdLow","ContrastThresholdHigh");
+		parlist = new Array("CenterU","CenterV","MarkerWidth","MarkerLengthU","MarkerLengthV","CenterScanOffset","ScanLength","ScanWidth","ScanAccuracy","WidthTolerance","ContrastThresholdLow","ContrastThresholdHigh","Profile");
 		markerdata = new Array(parlist.length);
 		for (p = 0; p < parlist.length; p ++) 
 		{
@@ -1062,7 +1063,7 @@ function LoadMarkers()
 		Markertypes[q][14] = Math.ceil((markerdata[2]*1 + markerdata[9]*markerdata[2])*1000);//Profile max
 		Markertypes[q][15] = markerdata[10]; //ContrastLow
 		Markertypes[q][16] = markerdata[11]; //ContrastHigh
-		Markertypes[q][17] = "Mode:0,L1:" + Markertypes[q][15] + ",L2:" + Markertypes[q][16] + ",Profile:1,Min:" + Markertypes[q][13] + ",Max:" + Markertypes[q][14] + ",LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0";//threshold
+		Markertypes[q][17] = "Mode:0,L1:" + Markertypes[q][15] + ",L2:" + Markertypes[q][16] + ",Profile:" + markerdata[12] + ",Min:" + Markertypes[q][13] + ",Max:" + Markertypes[q][14] + ",LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0";//threshold
 		Markertypes[q][18] = "0,0.000000,0.000000,0.000000,0.000000,0.000000," + Markertypes[q][1] + "," + Markertypes[q][2] + ",0.000000,LN,UV,Multisample WF align,STAY;,ALWF_AUTOLINE," + markerdata[6] + "," + markerdata[7] + "," + Markertypes[q][5] + "," + Markertypes[q][6] + ",U,16,,,,,,,,,,,,,,,,,,,,,,,0.0,15,0,1,";
 
 		Markertypes[q][1] = Markertypes[q][1].toString();
@@ -1245,7 +1246,7 @@ function SetSvars(i, WFflag, msflag)
 	if (msflag == 0)
 	{
 		StepsizeDwelltime(i,0); //GUIflag only 0 in setsvars function. Needed for exposureloops icw MS defined stepsizes.
-		SetStepsizeDwelltime(i,1);	
+		SetStepsizeDwelltime(i,1);	//bcflag should be one, beamcurrent should be set
 	}
 	
 }
