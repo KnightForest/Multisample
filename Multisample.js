@@ -329,7 +329,7 @@ function Detectnums(file, checkflag)
 
 	if (checkflag == 1)
 	{
-		for (i = 1; i <= 20; i++)
+		for (i = 1; i <= 99; i++)
 		{
 			it = "S" + i;
 			if (file.SectionExists(it)==false )
@@ -402,7 +402,7 @@ function CheckPathLength(str, sn)
 
 function Load(SDflag)
 {	   
-    S = createArray(20,7,Gnums+1);
+    S = createArray(99,7,Gnums+1);
     var inifile, st, it, j, colmode, GDSIIpath;
 
 	//First load the list of parameters applicable to all loaded samples:
@@ -578,12 +578,12 @@ function CollectSD(st, GUIflag)
 {
     var mflag = 0;
 	var i, it, wfprocedureloadlist, S14, S24, S34, S44, S54, S64, S74, S84, S94, S104, S124, S15, S25, S35, S45, currpath, fex, currstruct, tl;
-	Gnums = App.InputMsg("Select amount of UV alignments (one additional alignment requirement per column change)", "Select a number 1-20", "1");
-    S = createArray(20,7,Gnums+1);
+	Gnums = App.InputMsg("Select amount of UV alignments (one additional alignment requirement per column change)", "Select a number 1-99", "1");
+    S = createArray(99,7,Gnums+1);
 
-	if (Gnums != parseInt(Gnums) || Gnums > 20 || Gnums < 1)
+	if (Gnums != parseInt(Gnums) || Gnums > 99 || Gnums < 1)
 	{
-		App.ErrMsg(0,0,"Input is no integer or > 20.");
+		App.ErrMsg(0,0,"Input is no integer or > 99.");
 		Abort();
 	}
 	
