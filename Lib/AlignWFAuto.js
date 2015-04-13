@@ -38,11 +38,9 @@ else
 }
 
 var n = parseInt(App.GetVariable("Exposure.ExposureLoops"),10);
-n = 1
 ni = (ni +1) % n; //n is number of total exposureloops
 
-App.SetFloatVariable("AlignWriteField.AlignmentIteration",i);
-//App.ErrMsg(0,0,i + "dit zit in alignwfauto.js")
+App.SetFloatVariable("AlignWriteField.AlignmentIteration",ni);
 
 // reset marks counter
 App.SetFloatVariable("AlignWriteField.AutoMarksStored", 0);
