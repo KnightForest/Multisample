@@ -87,6 +87,7 @@ var Glib = Gfilepath + "\\Lib\\";
 var Gsampleini = App.OpenInifile(Gfilepath + "Multisample.txt");
 var GSDini = App.OpenInifile(Gfilepath + "SDvars.txt");
 var GMarkertypes = App.Openinifile(Gfilepath + "Markers.txt");
+var GGDSIImarkertypes = App.Openinifile(Gfilepath + "GDSIImarkers.txt");
 var GAlignprocedures = App.Openinifile(Gfilepath + "Alignprocedures.txt");
 var S = createArray(1,1,1);
 var Gnums = -1;
@@ -1007,6 +1008,37 @@ function InstallWFAlign(markertype, threshold)
     }
 	
 	App.Exec("ResetModule(Scan Manager)");
+}
+
+function LoadGDSIIMarkers()
+{
+	var Markertypes, loadlist, q, p, parlist, markerdata;
+	loadlist = GMarkertypes.ReadString("LoadList", "load", "0").split(";");
+	MarkertypesGDS = createArray(loadlist.length,20);
+	for (q = 0; q < loadlist.length; q ++) 
+	{
+		parlist = new Array("ScanpointsLength","ScanpointsWidth","Averaging","MarkerWidth","WidthTolerance","ContrastThresholdLow","ContrastThresholdHigh","Profile", "Log");
+		markerdata = new Array(parlist.length);
+		for (p = 0; p < parlist.length; p ++) 
+		{
+			markerdata[p] = GGDSmarkertypes.ReadString(loadlist[q], parlist[p], "undefined");
+
+			if (markerdata[p] == "undefined") 
+			{
+    			App.ErrMsg(0,0,"Markertype '" + loadlist[q] + "' not configured properly. Check Markers.txt and restart script.");
+    			Abort();
+			}
+		}
+		GDSmarkertypes[q][0] = loadlist[q]; 
+		GDSnarkertypes[q][1] = markerdata[0]; //ScanpointsLength
+		GDSmarkertypes[q][2] = markerdata[1]; //ScanpointsWidth
+		GDSmarkertypes[q][3] = markerdata[2]; //Averaging
+		GDSmarkertypes[q][4] = markerdata[3]; //Markerwidth
+		GDSmarkertypes[q][5] = Math.ceil((markerdata[3]*1 - markerdata[4]*markerdata[3])*1000);//Profile min
+		GDSmarkertypes[q][6] = Math.ceil((markerdata[3]*1 + markerdata[4]*markerdata[3])*1000);//Profile max
+		GDSmarkertypes[q][7] = "Mode:0,L1:" + Markertypes[q][5] + ",L2:" + Markertypes[q][6] + ",Profile:" + markerdata[7] + ",Min:" + markerdata[q][5] + ",Max:" + markerdata[q][5] + ",LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0";//threshold
+		GDSmarkertypes[q][8] = markerdata[8];
+	}
 }
 
 function LoadMarkers()
