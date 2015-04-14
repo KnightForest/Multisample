@@ -1064,8 +1064,8 @@ function LoadMarkers()
 		Markertypes[q][0] = loadlist[q]; 
 		Markertypes[q][1] = markerdata[0]; //Upos
 		Markertypes[q][2] = markerdata[1]; //Vpos
-		Markertypes[q][3] = markerdata[3]; //SizeU
-		Markertypes[q][4] = markerdata[4]; //SizeV
+		Markertypes[q][3] = markerdata[6]; //SizeU (actually ScanLength)
+		Markertypes[q][4] = markerdata[7]; //SizeV (actually ScanWidth)
 
 		if (markerdata[6]*markerdata[8]/App.GetSysVariable("Beamcontrol.MetricBasicStepSize") >= 4080) //StepU
 		{
