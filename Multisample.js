@@ -150,7 +150,6 @@ function MeasBeamCurrent()												//Measures beam current
 		 BeamCurrent(false, false);
 		 bc[0] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
 		 Stage.WaitPositionReached();
-		 App.Exec("Halt()")
          BeamCurrent(false, false);
          bc[1] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
          Stage.WaitPositionReached();
