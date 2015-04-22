@@ -221,7 +221,7 @@ function StepsizeDwelltime(i,GUIflag)
 	App.SetVariable("Exposure.ExposureLoops",nLoops+"");
 
 	beamcurrent = App.GetVariable("BeamCurrent.BeamCurrent"); 			//Beamcurrent [nA]
-	minstepsize = App.GetSysVariable("Beamcontrol.MetricBasicStepSize")*Math.pow(10,3); //Min stepsize in [nm]
+	minstepsize = App.GetVariable("Beamcontrol.MetricBasicStepSize")*Math.pow(10,3); //Min stepsize in [nm]
 	advisedbeamspeed = 8.;                                             	//Sets the advised beamspeed in [mm/s]
     areaminstepsize = Math.ceil(beamcurrent/((advisedbeamspeed*Math.pow(10,-5)*App.GetVariable("Exposure.ResistSensitivity")*minstepsize)))*minstepsize; //Calculates advised beamspeed [nm]
 	if (GUIflag == 1)
@@ -980,9 +980,9 @@ function InstallWFAlign(markertype, threshold)
 			par = WFalignini.ReadString("Automatic procedure during exposure", parlist[q], "0");
 			scanini.WriteString("Automatic procedure during exposure", parlist[q], par);
 		}
-		App.SetVariable("AlignScans.AvgPoints", "120");                    //Sets the number of points in the y-direction
-      	App.SetVariable("AlignScans.Scanpoints", "2000");                 //Sets the number of points in the x-direction
-    	App.Setvariable("AlignScans.Avg", "24");                          //Sets the number of measurements to average over to obtain one point
+		App.SetVariable("AlignScans.AvgPoints", "240");                    //Sets the number of points in the y-direction
+      	App.SetVariable("AlignScans.Scanpoints", "3000");                 //Sets the number of points in the x-direction
+    	App.Setvariable("AlignScans.Avg", "8");                          //Sets the number of measurements to average over to obtain one point
 		threshold = "Mode:0,L1:50,L2:75,Profile:1,Min:100.0,Max:400.0,LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0";
 		//threshold = "Mode:0,L1:50,L2:75,Profile:0,Min:100.0,Max:400.0,LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0"; //For Sergeys etched markers
 	}
@@ -1067,23 +1067,22 @@ function LoadMarkers()
 		Markertypes[q][3] = markerdata[6]; //SizeU (actually ScanLength)
 		Markertypes[q][4] = markerdata[7]; //SizeV (actually ScanWidth)
 
-		if (markerdata[6]*markerdata[8]/App.GetSysVariable("Beamcontrol.MetricBasicStepSize") >= 4080) //StepU
+		if (markerdata[6]*markerdata[8]/App.GetVariable("Beamcontrol.MetricBasicStepSize") >= 4080) //StepU
 		{
-			Markertypes[q][5] = Math.ceil((markerdata[6]/4080)/App.GetSysVariable("Beamcontrol.MetricBasicStepSize"))*App.GetSysVariable("Beamcontrol.MetricBasicStepSize");
+			Markertypes[q][5] = Math.ceil((markerdata[6]/4080)/App.GetVariable("Beamcontrol.MetricBasicStepSize"))*App.GetVariable("Beamcontrol.MetricBasicStepSize");
 		}
 		else
 		{
-			Markertypes[q][5] = Math.ceil(App.GetSysVariable("Beamcontrol.MetricBasicStepSize")/(markerdata[8]*App.GetSysVariable("Beamcontrol.MetricBasicStepSize")))*App.GetSysVariable("Beamcontrol.MetricBasicStepSize");
+			Markertypes[q][5] = Math.ceil(App.GetVariable("Beamcontrol.MetricBasicStepSize")/(markerdata[8]*App.GetVariable("Beamcontrol.MetricBasicStepSize")))*App.GetVariable("Beamcontrol.MetricBasicStepSize");
 		
 		}
-
-		if (markerdata[7]*markerdata[8]/App.GetSysVariable("Beamcontrol.MetricBasicStepSize") >= 4080) //StepV
+		if (markerdata[7]*markerdata[8]/App.GetVariable("Beamcontrol.MetricBasicStepSize") >= 4080) //StepV
 		{
-			Markertypes[q][6] = Math.ceil((markerdata[7]/4080)/App.GetSysVariable("Beamcontrol.MetricBasicStepSize"))*App.GetSysVariable("Beamcontrol.MetricBasicStepSize");
+			Markertypes[q][6] = Math.ceil((markerdata[7]/4080)/App.GetVariable("Beamcontrol.MetricBasicStepSize"))*App.GetVariable("Beamcontrol.MetricBasicStepSize");
 		}
 		else
 		{
-			Markertypes[q][6] = Math.ceil(App.GetSysVariable("Beamcontrol.MetricBasicStepSize")/(markerdata[8]*App.GetSysVariable("Beamcontrol.MetricBasicStepSize")))*App.GetSysVariable("Beamcontrol.MetricBasicStepSize");
+			Markertypes[q][6] = Math.ceil(App.GetVariable("Beamcontrol.MetricBasicStepSize")/(markerdata[8]*App.GetVariable("Beamcontrol.MetricBasicStepSize")))*App.GetVariable("Beamcontrol.MetricBasicStepSize");
 		}
 		Markertypes[q][7] = markerdata[6]/Markertypes[q][5]; //PointsU
 		Markertypes[q][8] = markerdata[7]/Markertypes[q][6]; //PointsV

@@ -62,47 +62,47 @@ ContrastThresholdHigh = 55.0
 Profile = 1
 
 [EBLmarker1]
-CenterU = 0.16
-CenterV = 0.16
+CenterU = 0.26
+CenterV = 0.26
 MarkerWidth = 0.2
 MarkerLengthU = 4
 MarkerLengthV = 4
 CenterScanOffset = 0.5	
-ScanWidth = 1.0
-ScanLength = 2
+ScanWidth = 1
+ScanLength = 1
 ScanAccuracy = 1.0
-WidthTolerance = 0.2
-ContrastThresholdLow = 50.0
+WidthTolerance = 0.4
+ContrastThresholdLow = 60.0
 ContrastThresholdHigh = 80.0
 Profile = 1
 
 [EBLmarker2]
-CenterU = 0.16
+CenterU = 0.24
 CenterV = 1.24
 MarkerWidth = 0.2
 MarkerLengthU = 4
 MarkerLengthV = 4
 CenterScanOffset = 0.5	
-ScanWidth = 1.0
-ScanLength = 3.0
+ScanWidth = 1.5
+ScanLength = 2
 ScanAccuracy = 1.0
-WidthTolerance = 0.2
-ContrastThresholdLow = 50.0
+WidthTolerance = 0.4
+ContrastThresholdLow = 60.0
 ContrastThresholdHigh = 80.0
 Profile = 1
 
 [EBLmarker3]
-CenterU = 1.24
+CenterU = 1.14
 CenterV = 1.24
 MarkerWidth = 0.2
 MarkerLengthU = 4
 MarkerLengthV = 4
 CenterScanOffset = 0.5	
-ScanWidth = 1.0
-ScanLength = 5
+ScanWidth = 1.5
+ScanLength = 3
 ScanAccuracy = 1.0
-WidthTolerance = 0.2
-ContrastThresholdLow = 50.0
+WidthTolerance = 0.4
+ContrastThresholdLow = 60.0
 ContrastThresholdHigh = 80.0
 Profile = 1
 
