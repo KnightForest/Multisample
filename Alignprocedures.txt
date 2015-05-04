@@ -3,12 +3,12 @@ load = PhotoEBL;EBL;Photo;DoNothing
 
 [PhotoEBL]
 1 = M1;M2;M3;M4
-2 = EBLMarker1;EBLMarker2;EBLMarker3
+2 = EBLmarker1;EBLmarker2;EBLmarker3
 log = 1
 alwayswrite = 1
 
 [EBL]
-1 = EBLMarker1;EBLMarker2;EBLMarker3
+1 = EBLmarker1;EBLmarker2;EBLmarker3
 log = 1
 alwayswrite = 1
 

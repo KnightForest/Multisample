@@ -31,7 +31,7 @@
 //		V-> Save and load column parameters
 //		V-> Load dataset from positionlist
 // V Add options to read everything except UV alignment from file
-// T Separate markertypes/procedures in separate files (for editing by users)
+// V Separate markertypes/procedures in separate files (for editing by users)
 // - Add more checks for user input
 // - Add time estimation calculation
 // - Add logdata:
@@ -59,6 +59,7 @@
 // - Add GDSII alignment for fist sample on the chip only
 // V Add improved beamcurrent measurement
 // - Add checks for proper procedure naming or stop using capital letters..
+// - Add notifications when finished to file (on swapdrive)
 
 // Maybe later:
 // - Make separate capture UV/WF script
@@ -1128,7 +1129,7 @@ function LoadWFAlignProcedures()
 	for (q = 0; q < loadlist.length; q ++) 
 	{
 		entries = GAlignprocedures.ReadSection(loadlist[q]).split(",");
-		if (entries[entries.length-2] != "log")
+		if (entries[entries.length-2] != "log" || entries[entries.length-1] != "alwayswrite")
 		{
     		App.ErrMsg(0,0,"Align procedure '" + loadlist[q] + "' not configured properly. Add 'log' and 'alwayswrite' switch to Alignprocedures.txt and restart script.");
     		Abort();			
@@ -1202,8 +1203,8 @@ function AlignWF(markprocedure, logWFflag, i, j, k)
 			}
 		}
 		entries = WFAlignprocedures[b][1];
-
-		for (c = 0; c < entries-1; c++)
+		App.ErrMsg(0,0,WFAlignprocedures[b][entries+1])
+		for (c = 0; c < entries-2; c++)
 		{
 			markers = WFAlignprocedures[b][c+2].split(";");
 			logstring = " ";

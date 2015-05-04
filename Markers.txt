@@ -1,5 +1,5 @@
 [LoadList]
-load = M1;M2;M3;M4;EBLMarker1;EBLMarker2;EBLMarker3
+load = M1;M2;M3;M4;EBLmarker1;EBLmarker2;EBLmarker3
 
 [M1]
 CenterU = 0.0
