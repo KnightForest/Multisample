@@ -62,7 +62,7 @@
 
 // Maybe later:
 // - Make separate capture UV/WF script
-// - 
+// - Expand on alignprocedures syntax
 
 // BUGS:
 // - Asks to measure beamcurrent twice during CollectSD
@@ -76,7 +76,7 @@
 // - Probably more :/
 // - Manual alignment on dot within script not possible
 // 		-> Needs added routine during UV alignment.
-// 
+
 
 var Gsn = "Multisample";
 //var Gsnl = parseInt(Gsn.length, 8);
@@ -1128,9 +1128,9 @@ function LoadWFAlignProcedures()
 	for (q = 0; q < loadlist.length; q ++) 
 	{
 		entries = GAlignprocedures.ReadSection(loadlist[q]).split(",");
-		if (entries[entries.length-1] != "log")
+		if (entries[entries.length-2] != "log")
 		{
-    		App.ErrMsg(0,0,"Align procedure '" + loadlist[q] + "' not configured properly. Add 'log' switch to Alignprocedures.txt and restart script.");
+    		App.ErrMsg(0,0,"Align procedure '" + loadlist[q] + "' not configured properly. Add 'log' and 'alwayswrite' switch to Alignprocedures.txt and restart script.");
     		Abort();			
 		}
 		Alignprocedures[q][0] = loadlist[q];
@@ -1192,7 +1192,7 @@ function AlignWF(markprocedure, logWFflag, i, j, k)
 		m = j + 1;
 		n = k + 1;
 
-		for (a = 0; a < WFAlignprocedures.length; a++)
+		for (a = 0; a < WFAlignprocedures.length; a++) //Loop for selecting procedure using index 'b'.
 		{
 		
 			if (WFAlignprocedures[a][0] == markprocedure) 
@@ -1223,7 +1223,10 @@ function AlignWF(markprocedure, logWFflag, i, j, k)
 				logfile.WriteString("Failed markers S" + i,"D[" + m + ";" + n + "] - Step " + Math.round(c+1) + ": ", logstring);
 			}
 		}
-	}	
+	}
+	if (WFAlignprocedures[b][entries+2] == 0 && amf >= 1) exposure = 0 //checks 'alwayswrite' and failed markers of last alignment and sets 'exopsure' accordingly
+	else exposure = 1
+	return exposure	
 }
 
 
@@ -1321,16 +1324,16 @@ function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,mu
 			Stage.DriveUV(N[mj+1][k+1][1], N[mj+1][k+1][2]);
 			Stage.LocalAlignment();
 			OriginCorrection();
-			if (S[12][4][i] != -1) //if the to be exposed layer is not empty
+			if (S[12][4][i] != -1) //Checks if layer 61 is enabled
 			{
 			
 				if (S[13][4][i] == 1)
 				{
-					AlignWF(S[10][4][i], 1, i, j, k); //align a writefield or not depending on S[10][4][i]
+					AlignWF(S[10][4][i], 1, i, j, k);
 				}	
 				if (S[13][4][i] == 2 && k == 0 && j == 0)
 				{	
-					AlignWF(S[10][4][i], 1, i, j, k); //align a writefield or not depending on S[10][4][i]
+					AlignWF(S[10][4][i], 1, i, j, k); d
 				}	
 				
 				InstallWFAlign(61);
@@ -1346,19 +1349,19 @@ function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,mu
 				}
 				App.Exec("Exposure");
 			}
-			if (S[1][4][i] != -1) //what does this do? Layer to be written also in global alignment?
+			if (S[1][4][i] != -1) //Checks if a global layer is selected
 			{
 				if (S[13][4][i] == 1)
 				{
-					AlignWF(S[10][4][i], 1, i, j, k); //align a writefield or not depending on S[10][4][i]
+					exposure = AlignWF(S[10][4][i], 1, i, j, k); //align a writefield or not depending on S[10][4][i]
 				}	
 				if (S[13][4][i] == 2 && k == 0 && j == 0)
 				{	
-					AlignWF(S[10][4][i], 1, i, j, k); //align a writefield or not depending on S[10][4][i]
+					exposure = AlignWF(S[10][4][i], 1, i, j, k); //align a writefield or not depending on S[10][4][i]
 				}			
 				App.Exec("UnSelectAllExposedLayer()");                      //Deselects al exposed layers
 				App.Exec("SelectExposedLayer(" + S[1][4][i] + ")");
-				if (testmode != 1) App.Exec("Exposure");
+				if (testmode != 1 && exposure == 1) App.Exec("Exposure");
 			}		
 		}
 	}

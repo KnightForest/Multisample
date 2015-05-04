@@ -3,7 +3,7 @@
 //  VERSION:          6.02
 //  FUNCTIONALITY:    execute to align the write field
 //  AUTHOR:           A. Rampe, Raith Company
-//  LAST MODIFIED:    12-03-2013 by J. Ridderbos, University of Twente
+//  LAST MODIFIED:    30-04-2015 by J. Ridderbos, University of Twente
 //-------------------------------------------------------------------
 
 // now calculate correction values
