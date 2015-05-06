@@ -45,3 +45,13 @@ App.SetFloatVariable("AlignWriteField.AlignmentIteration",ni);
 // reset marks counter
 App.SetFloatVariable("AlignWriteField.AutoMarksStored", 0);
 //App.SetFloatVariable("AlignWriteField.AutoMarksFailed", 0);
+
+scanini = App.OpenIniFile(Glib + "GDSII Linescan.ini");
+logflag = scanini.ReadString("Interact","log","0")
+logfilepath = scanini.ReadString("Interact","logfile", "")
+nx = scanini.ReadString("Interact","nx", "")
+ny = scanini.ReadString("Interact","ny", "")
+if (logflag == 1)
+{
+	logfile.WriteString("Failed markers S" + i, "Device nx/ny[" + nx + ";" + ny +  "]", "Local Stage Coord[" + Stage.U + ";" + Stage.V + "] : " AutoMarksFailed);
+}

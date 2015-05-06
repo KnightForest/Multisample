@@ -967,7 +967,7 @@ function Install(restoreflag)
 	fso.close;
 }
 
-function InstallGDSmarker(markertype) //Installs GDSII marker properties into system.
+function InstallGDSmarker(markertype, k, mj) //Installs GDSII marker properties into system.
 {
 	var GDSmarkers, n, m, p3, WFalignini, parlist, scanini, par, threshold;
 	GDSmarkertypes = LoadGDSIIMarkers()
@@ -991,7 +991,11 @@ function InstallGDSmarker(markertype) //Installs GDSII marker properties into sy
 		scanini.WriteString("Automatic procedure during exposure", parlist[q], par);
 	}
 	scanini.WriteString("Interact", "log", GDSmarkertypes[m][8]);
-	
+	scanini.WriteString("Interact", "path", Gfilepath)
+	scanini.WriteString("Interact", "logfile", Glogfilename[1] + Glogfilename[2])
+	scanini.WriteString("Interact", "nx", k)
+	scanini.WriteString("Interact", "ny", mj)
+
 	App.SetVariable("AlignScans.AvgPoints", GDSmarkertypes[m][2]);                    //Sets the number of points in the y-direction
     App.SetVariable("AlignScans.Scanpoints", GDSmarkertypes[m][1]);                 //Sets the number of points in the x-direction
     App.Setvariable("AlignScans.Avg", GDSmarkertypes[m][3]);                          //Sets the number of measurements to average over to obtain one point
@@ -1364,7 +1368,7 @@ function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,mu
 					AlignWF(S[10][4][i], 1, i, j, k); d
 				}	
 				
-				InstallGDSmarker(l61[0]);
+				InstallGDSmarker(l61[0], k, mj);
 				App.Exec("UnSelectAllExposedLayer()");                      //Deselects al exposed layers
 				
 				if (testmode == 1) 
