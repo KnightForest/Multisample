@@ -641,7 +641,9 @@ function CollectSD(st, GUIflag)
 			if (App.ErrMsg(4,0,"Do you want to use layer 61 (GDSII autoscans)?")==EA_YES)
 			{
 				tl = App.InputMsg("Select layer", "Select layer(s) to use together with layer 61 (separate by ';')","");
-				S124 = 61 + ";" + tl;
+				GDSmarklist = GGDSIIMarkertypes.ReadString("LoadList", "load", "0").split(";");
+				GDSmark = App.InputMsg("Select GDSII marker", "Choose", GDSmarklist);
+				S124 = GDSmark + "-" + tl;
 				if (App.ErrMsg(4,0,"Do you want to write other layers in a global alignment?")==EA_YES)
 				{
 					S14 = App.InputMsg("Choose layers", "Select (separate by ';') ", "0");
@@ -965,39 +967,62 @@ function Install(restoreflag)
 	fso.close;
 }
 
-function InstallWFAlign(markertype, threshold)
+function InstallGDSmarker(markertype) //Installs GDSII marker properties into system.
+{
+	var GDSmarkers, n, m, p3, WFalignini, parlist, scanini, par, threshold;
+	GDSmarkertypes = LoadGDSIIMarkers()
+	for (n = 0; n < Markertypes.length; n++)
+	{
+		if (GDSmarkertypes[n][0] == markertype) 
+		{
+			m = n;
+			break;
+		}
+	}
+
+	p3 = ExpandPath("%userroot%\\System\\");
+	WFalignini = App.OpenIniFile(Glib + "GDSII Linescan.ini");
+	parlist = WFalignini.ReadSection("Automatic procedure during exposure").split(",");
+	scanini = App.OpenIniFile(p3 + "Scan.ini");
+	scanini.DeleteSection("Automatic procedure during exposure");
+	for (q = 0; q < parlist.length; q ++) 
+	{
+		par = WFalignini.ReadString("Automatic procedure during exposure", parlist[q], "0");
+		scanini.WriteString("Automatic procedure during exposure", parlist[q], par);
+	}
+	scanini.WriteString("Interact", "log", GDSmarkertypes[m][8]);
+	
+	App.SetVariable("AlignScans.AvgPoints", GDSmarkertypes[m][2]);                    //Sets the number of points in the y-direction
+    App.SetVariable("AlignScans.Scanpoints", GDSmarkertypes[m][1]);                 //Sets the number of points in the x-direction
+    App.Setvariable("AlignScans.Avg", GDSmarkertypes[m][3]);                          //Sets the number of measurements to average over to obtain one point
+	}
+
+	var iniTest = App.OpenIniFile(ExpandPath("%userroot%\\System\\LineScanFilter.ini"));//Opens .ini file threshold algorithm            
+    
+	if (iniTest)                                                     //Loop deletes previous entry and enters 'threshold' in Writefield Alignment
+    { 
+        if ( iniTest.SectionExists("Threshold")==true )                //If the header Threshold is found, it is deleted
+        iniTest.DeleteKey("Threshold", "Align write field"); 
+        iniTest.WriteString("Threshold", "Align write field", GDSmarkertypes[m][7]);//The new values are entered from string 'threshold'  
+    }
+
+}
+
+function InstallWFAlign(markertype, threshold) //Installs markerproperties into systems Scan.ini, called from AutoWFAlign
 {	
 	var p3, WFalignini, par, parlist, scanini, q; 
 	p3 = ExpandPath("%userroot%\\System\\");
-	if (markertype == 61)
+
+	WFalignini = App.OpenIniFile(Glib + "Multisample WF align.ini");
+	parlist = WFalignini.ReadSection("Multisample WF align").split(",");
+	scanini = App.OpenIniFile(p3 + "Scan.ini");
+	scanini.DeleteSection("Multisample WF align");
+	for (q = 0; q < parlist.length; q ++) 
 	{
-		WFalignini = App.OpenIniFile(Glib + "GDSII Linescan.ini");
-		parlist = WFalignini.ReadSection("Automatic procedure during exposure").split(",");
-		scanini = App.OpenIniFile(p3 + "Scan.ini");
-		scanini.DeleteSection("Automatic procedure during exposure");
-		for (q = 0; q < parlist.length; q ++) 
-		{
-			par = WFalignini.ReadString("Automatic procedure during exposure", parlist[q], "0");
-			scanini.WriteString("Automatic procedure during exposure", parlist[q], par);
-		}
-		App.SetVariable("AlignScans.AvgPoints", "240");                    //Sets the number of points in the y-direction
-      	App.SetVariable("AlignScans.Scanpoints", "3000");                 //Sets the number of points in the x-direction
-    	App.Setvariable("AlignScans.Avg", "8");                          //Sets the number of measurements to average over to obtain one point
-		threshold = "Mode:0,L1:50,L2:75,Profile:1,Min:100.0,Max:400.0,LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0";
-		//threshold = "Mode:0,L1:50,L2:75,Profile:0,Min:100.0,Max:400.0,LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0"; //For Sergeys etched markers
+		par = WFalignini.ReadString("Multisample WF align", parlist[q], "0");
+		scanini.WriteString("Multisample WF align", parlist[q], par);
 	}
-	else
-	{
-		WFalignini = App.OpenIniFile(Glib + "Multisample WF align.ini");
-		parlist = WFalignini.ReadSection("Multisample WF align").split(",");
-		scanini = App.OpenIniFile(p3 + "Scan.ini");
-		scanini.DeleteSection("Multisample WF align");
-		for (q = 0; q < parlist.length; q ++) 
-		{
-			par = WFalignini.ReadString("Multisample WF align", parlist[q], "0");
-			scanini.WriteString("Multisample WF align", parlist[q], par);
-		}
-	}
+
 	var iniTest = App.OpenIniFile(ExpandPath("%userroot%\\System\\LineScanFilter.ini"));//Opens .ini file threshold algorithm            
     
 	if (iniTest)                                                     //Loop deletes previous entry and enters 'threshold' in Writefield Alignment
@@ -1013,7 +1038,7 @@ function InstallWFAlign(markertype, threshold)
 function LoadGDSIIMarkers()
 {
 	var Markertypes, loadlist, q, p, parlist, markerdata;
-	loadlist = GMarkertypes.ReadString("LoadList", "load", "0").split(";");
+	loadlist = GGDSIIMarkertypes.ReadString("LoadList", "load", "0").split(";");
 	MarkertypesGDS = createArray(loadlist.length,20);
 	for (q = 0; q < loadlist.length; q ++) 
 	{
@@ -1039,6 +1064,7 @@ function LoadGDSIIMarkers()
 		GDSmarkertypes[q][7] = "Mode:0,L1:" + Markertypes[q][5] + ",L2:" + Markertypes[q][6] + ",Profile:" + markerdata[7] + ",Min:" + markerdata[q][5] + ",Max:" + markerdata[q][5] + ",LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0";//threshold
 		GDSmarkertypes[q][8] = markerdata[8];
 	}
+	return GDSmarkertypes;
 }
 
 function LoadMarkers()
@@ -1120,7 +1146,7 @@ function LoadMarkers()
 	return Markertypes;
 }
 
-function LoadWFAlignProcedures()
+function LoadWFAlignProcedures() 
 {
 	var loadlist, Alignprocedures, q, p, entries;
 	loadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
@@ -1149,7 +1175,7 @@ function LoadWFAlignProcedures()
 	return Alignprocedures;
 }
 
-function AutoWFAlign(markertype) 
+function AutoWFAlign(markertype) //Aligns WF according to markertype, called from AlignWF
 {
 	var Markertypes, n, m, SizeU, SizeV, StepU, StepV, PointsU, PointsV, MarkOffsetU, MarkOffsetV, MarkPlaceU, MarkPlaceV, Upos, Vpos, threshold, parlistname, parlist, multiini, multipls, PList, q, fmarkers;
 	Markertypes = LoadMarkers();
@@ -1166,7 +1192,7 @@ function AutoWFAlign(markertype)
 	//parlist = new Array(SizeU,SizeV,StepU,StepV,PointsU,PointsV,MarkOffsetU,MarkOffsetV,MarkPlaceU,MarkPlaceV);
 	parlist = new Array(Markertypes[m][3],Markertypes[m][4],Markertypes[m][5],Markertypes[m][6],Markertypes[m][7],Markertypes[m][8],Markertypes[m][9],Markertypes[m][10],Markertypes[m][11],Markertypes[m][12]);
 	multiini = App.OpenIniFile(Glib + "Multisample WF align.ini");
-	for (q = 0; q < parlist.length; q ++) 
+	for (q = 0; q < parlist.length; q ++)  //Loop writes markerproperties to Multisample WF align.ini
 	{	
 		multiini.WriteString("Multisample WF align", parlistname[q], parlist[q]);
 	}
@@ -1184,7 +1210,7 @@ function AutoWFAlign(markertype)
 	return(fmarkers);
 }
 
-function AlignWF(markprocedure, logWFflag, i, j, k)
+function AlignWF(markprocedure, logWFflag, i, j, k) //Main function to start automatic WF alignment
 {
 	if (markprocedure != -1)
 	{
@@ -1303,7 +1329,7 @@ function WriteMatrix(S, i)
 
 function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,multiple..etc), testmode ornot
 {
-	var N, meander, k, j, mj;
+	var N, meander, k, j, mj, l61;
 	
 	N = WriteMatrix(S, i);
 	meander = 1;
@@ -1327,7 +1353,8 @@ function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,mu
 			OriginCorrection();
 			if (S[12][4][i] != -1) //Checks if layer 61 is enabled
 			{
-			
+				l61 = S[12][4][i].split("-");
+
 				if (S[13][4][i] == 1)
 				{
 					AlignWF(S[10][4][i], 1, i, j, k);
@@ -1337,7 +1364,7 @@ function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,mu
 					AlignWF(S[10][4][i], 1, i, j, k); d
 				}	
 				
-				InstallWFAlign(61);
+				InstallGDSmarker(l61[0]);
 				App.Exec("UnSelectAllExposedLayer()");                      //Deselects al exposed layers
 				
 				if (testmode == 1) 
@@ -1346,7 +1373,9 @@ function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,mu
 				}
 				else 
 				{
-					App.Exec("SelectExposedLayer(" + S[12][4][i] + ")");			
+					
+					l61exp = 61 + ";" + l61[1] 
+					App.Exec("SelectExposedLayer(" + l61exp + ")");			
 				}
 				App.Exec("Exposure");
 			}
