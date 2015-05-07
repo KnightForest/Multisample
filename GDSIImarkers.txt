@@ -10,7 +10,7 @@ WidthTolerance = 0.2
 ContrastThresholdLow = 50.0
 ContrastThresholdHigh = 80.0
 Profile = 1
-Log = 0
+Log = 1
 
 [GDS2]
 ScanpointsLength = 4000

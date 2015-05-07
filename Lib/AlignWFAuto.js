@@ -45,13 +45,38 @@ App.SetFloatVariable("AlignWriteField.AlignmentIteration",ni);
 // reset marks counter
 App.SetFloatVariable("AlignWriteField.AutoMarksStored", 0);
 //App.SetFloatVariable("AlignWriteField.AutoMarksFailed", 0);
+function FileExists(filespec)
+{
+   var fso, s = filespec;
+   fso = new ActiveXObject("Scripting.FileSystemObject");
+   if (fso.FileExists(filespec))
+      s = 1;
+   else 
+      s = 0;
+   return(s);
+}
 
-scanini = App.OpenIniFile(Glib + "GDSII Linescan.ini");
-logflag = scanini.ReadString("Interact","log","0")
-logfilepath = scanini.ReadString("Interact","logfile", "")
-nx = scanini.ReadString("Interact","nx", "")
-ny = scanini.ReadString("Interact","ny", "")
+function PreciseRound(num, decimals) 
+{
+	var t=Math.pow(10, decimals);   
+ 	return (Math.round((num * t) + (decimals)*((10 / Math.pow(100, decimals)))) / t).toFixed(decimals);
+ }
+
+
+p3 = ExpandPath("%userroot%\\System\\");
+scanini = App.OpenIniFile(p3 + "Scan.ini");
+logflag = scanini.ReadString("Interact","log","0");
+logpath = scanini.ReadString("Interact","logfile", "");
+//Gfilepath = scanini.ReadString("Interact", "path", "")
+i = scanini.ReadString("Interact", "sample_n", "");
+nx = scanini.ReadString("Interact","nx", "");
+ny = scanini.ReadString("Interact","ny", "");
+su = PreciseRound(Stage.U, 2);
+sv = PreciseRound(Stage.V, 2);
+dinges = App.OpenIniFile(logpath);
 if (logflag == 1)
 {
-	logfile.WriteString("Failed markers S" + i, "Device nx/ny[" + nx + ";" + ny +  "]", "Local Stage Coord[" + Stage.U + ";" + Stage.V + "] : " AutoMarksFailed);
+	dinges.WriteString("Failed markers S" + i, "Device nx/ny[" + nx + ";" + ny +  "] - Local Stage Coord[" + su + ";" + sv + "]", AutoMarksFailed);
 }
+
+

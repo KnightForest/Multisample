@@ -35,19 +35,16 @@
 // - Add more checks for user input
 // - Add time estimation calculation
 // - Add logdata:
-//		-> Layer61 scan results
+//		V Layer61 scan results
 //		-> Progress bar (together with time estimation)
 // V Fix SetSvars function
-// X For personal version: change position EBL markers to 2nd row
 // - Add comments :)
 // - Add initialisation to check if all files are present
 // - Set original magnifiction after AutoWFalign
 // - Sort order of writing chip by aperture size
-// - Fix GDSII layer 61 scan InstallWF. Use functionality from QDAuto113
+// V Fix GDSII layer 61 scan InstallWF. Use functionality from QDAuto113
 // V Add stepsicdze/beamcurrent to S[5][x][i] column and improve functionality
 // 		V-> Also add to Load and Log function
-// - Load different designs/layers per UV alignment
-//		-> Make loading of positionlist possible for a chipgh
 // - Add ability to do only a GDSII scan on the first device on a sample (one UV alignment)
 // - Add ability to load writematrix from file (for unevenly spaced devices on a sample)
 // 		-> Combine this with loading different designs/layers per UV alignment
@@ -56,7 +53,6 @@
 // - Add procedure for manual alignment per chip
 // V Add WFalignment on first sample on the chip only
 // - Add no-GUI mode for using patterning in Plist
-// - Add GDSII alignment for fist sample on the chip only
 // V Add improved beamcurrent measurement
 // - Add checks for proper procedure naming or stop using capital letters..
 // - Add notifications when finished to file (on swapdrive)
@@ -64,6 +60,7 @@
 // Maybe later:
 // - Make separate capture UV/WF script
 // - Expand on alignprocedures syntax
+// - Split logfiles into sampledata, markerlog and progress log
 
 // BUGS:
 // - Asks to measure beamcurrent twice during CollectSD
@@ -77,13 +74,16 @@
 // - Probably more :/
 // - Manual alignment on dot within script not possible
 // 		-> Needs added routine during UV alignment.
+dinges = App.OpenIniFile("D:\\2.txt")
+dinges.WriteString("Subject", "test", "dink");
+
 
 
 var Gsn = "Multisample";
 //var Gsnl = parseInt(Gsn.length, 8);
 var Gfilepath = ExpandPath("%userroot%\Script\\" + Gsn + "\\");
 var Glogfilename = createArray(3);
-Glogfilename[1] = Gfilepath + "\\Logs\\";
+Glogfilename[1] = Gfilepath + "Logs\\";
 var Glib = Gfilepath + "\\Lib\\";
 var Gsampleini = App.OpenInifile(Gfilepath + "Multisample.txt");
 var GSDini = App.OpenInifile(Gfilepath + "SDvars.txt");
@@ -123,6 +123,12 @@ function ReplaceAtbymu(str)
 	return str;
 }
 
+function PreciseRound(num, decimals) 
+{
+	var t=Math.pow(10, decimals);   
+ 	return (Math.round((num * t) + (decimals)*((10 / Math.pow(100, decimals)))) / t).toFixed(decimals);
+ }
+
 function LastDatasettoColset()
 {
 	var dataset, splitdataset, splitdataset2, partonecolset, parttwocolset, colset;
@@ -140,7 +146,7 @@ function LastDatasettoColset()
 function MeasBeamCurrent()												//Measures beam current
 {
    var bc, bcf;
-   bc = createArray(3)
+   bc = createArray(3);
    if (App.ErrMsg(EC_YESNO, 0, "Do you want to measure the beam current?") == EA_YES)                        //Asks user to perform beam current measurement + dwelltime corrections
       {
       if ( Column.CheckConnection() )                                   //If answer is YES, measurement is performed
@@ -163,8 +169,8 @@ function MeasBeamCurrent()												//Measures beam current
          		Abort();
          	}
          }
-         bcf = ((bc[0]+bc[1]+bc[2])/3)
-         App.ErrMsg(0,0,"Beamcurrent: " + bcf*Math.pow(10,3) + "pA") //Dit moest van Joren. Hij houdt niet van teveel floating.
+         bcf = ((bc[0]+bc[1]+bc[2])/3);
+         App.ErrMsg(0,0,"Beamcurrent: " + bcf*Math.pow(10,3) + "pA"); //Dit moest van Joren. Hij houdt niet van teveel floating.
          bcf = bcf.toString();
          App.SetVariable("BeamCurrent.BeamCurrent", bcf);
          }
@@ -197,17 +203,17 @@ function SetStepsizeDwelltime(i, bcflag)
 
 function StepsizeDwelltime(i,GUIflag)
 {
-    var msg_setareastepsize, msg_rounding, msg_setlinestepsize, msg_higherthan, beamspeed, minstepsize, advisedbeamspeed, areaminstepsize, stepsize, stepsizeline, criticalbeamspeed, bflag, beamcurrent;
+    var msg_setareastepsize, msg_rounding, msg_setlinestepsize, msg_higherthan, beamspeed, minstepsize, advisedbeamspeed, areaminstepsize, stepsize, stepsizec, stepsizeline, criticalbeamspeed, bflag, beamcurrent;
     msg_setareastepsize = "Set AREA stepsize for patterning in nm";
 	msg_rounding = "Will be rounded up to a multiple of ";
 	msg_setlinestepsize = "Set LINE stepsize in nm";
 	msg_higherthan = "nm: (recommended higher than ";
 	
 	var nLoops = S[14][4][i];
-	var curvedose = 150.;
+	var curvedose = 150;
 	var dotdose = 0.01;
-	var resistsensitivity = 150.;
-	var linedose = 500.;
+	var resistsensitivity = 150;
+	var linedose = 500;
 	
 	curvedose = curvedose / nLoops;
 	dotdose = dotdose / nLoops;
@@ -222,7 +228,7 @@ function StepsizeDwelltime(i,GUIflag)
 
 	beamcurrent = App.GetVariable("BeamCurrent.BeamCurrent"); 			//Beamcurrent [nA]
 	minstepsize = App.GetVariable("Beamcontrol.MetricBasicStepSize")*Math.pow(10,3); //Min stepsize in [nm]
-	advisedbeamspeed = 8.;                                             	//Sets the advised beamspeed in [mm/s]
+	advisedbeamspeed = 8;                                             	//Sets the advised beamspeed in [mm/s]
     areaminstepsize = Math.ceil(beamcurrent/((advisedbeamspeed*Math.pow(10,-5)*App.GetVariable("Exposure.ResistSensitivity")*minstepsize)))*minstepsize; //Calculates advised beamspeed [nm]
 	if (GUIflag == 1)
 	{
@@ -240,9 +246,9 @@ function StepsizeDwelltime(i,GUIflag)
 	}
 	                                                                     
 	beamspeed = [];
-	beamspeed[0] = beamcurrent*Math.pow(10,4)/(App.GetVariable("Exposure.LineDose"));  //Calculates line beamspeed in mm/s
-  	beamspeed[1] = beamcurrent*Math.pow(10,5)/(stepsize*App.GetVariable("Exposure.ResistSensitivity")); //Calculates area beamspeed in mm/s                                                                        //Lines below calculate the resulting beam speed based on user stepsize
-	beamspeed[2] = beamcurrent*Math.pow(10,5)/(stepsize*App.GetVariable("Exposure.CurveDose")); //Calculates area beamspeed in mm/s 
+	beamspeed[0] = PreciseRound(beamcurrent*Math.pow(10,4)/(App.GetVariable("Exposure.LineDose")) ,3);  //Calculates line beamspeed in mm/s
+  	beamspeed[1] = PreciseRound(beamcurrent*Math.pow(10,5)/(stepsize*App.GetVariable("Exposure.ResistSensitivity")) ,3); //Calculates area beamspeed in mm/s                                                                        //Lines below calculate the resulting beam speed based on user stepsize
+	beamspeed[2] = PreciseRound(beamcurrent*Math.pow(10,5)/(stepsize*App.GetVariable("Exposure.CurveDose")), 3); //Calculates area beamspeed in mm/s 
 
    	
 
@@ -316,7 +322,7 @@ function Abort()                                                        //-- Abo
 {                                                                       //For details, check function Succes()
    Install(1);
    Stage.JoystickEnabled = true;
-   App.SetVariable("Adjust.MinAutoMarks","3")
+   App.SetVariable("Adjust.MinAutoMarks","3");
    App.SetVariable("Exposure.ExposureLoops","1"); 						//Let's be nice to the default settings
 
    throw new Error('Execution cancelled by user');                      //Interrupts script by trowing error
@@ -578,7 +584,8 @@ function Load(SDflag)
 function CollectSD(st, GUIflag)
 {
     var mflag = 0;
-	var i, it, wfprocedureloadlist, S14, S24, S34, S44, S54, S64, S74, S84, S94, S104, S124, S15, S25, S35, S45, currpath, fex, currstruct, tl;
+	var i, it, wfprocedureloadlist, S14, S24, S34, S44, S54, S64, S74, S84, S94, S104, S124, S134, S144, S15, S25, S35, S45, currpath, fex, currstruct, tl;
+	var GDSmarklist, GDSmark;
 	Gnums = App.InputMsg("Select amount of UV alignments (one additional alignment requirement per column change)", "Select a number 1-99", "1");
     S = createArray(99,7,Gnums+1);
 
@@ -626,7 +633,7 @@ function CollectSD(st, GUIflag)
 				S25 = ReplaceAtbymu(S25);
     		}
 			
-			S134 = App.Inputmsg("Select type of WF alignment","1: All devices, 2: First device per sample, 3: Manual per chip, 4: No alignment", "1")
+			S134 = App.Inputmsg("Select type of WF alignment","1: All devices, 2: First device per sample, 3: Manual per chip, 4: No alignment", "1");
 			
 			if (S134 ==  1 || S134 == 2 )
 			{
@@ -635,13 +642,13 @@ function CollectSD(st, GUIflag)
 			}
 			else
 			{
-				S104 = -1
+				S104 = -1;
 			}
 
 			if (App.ErrMsg(4,0,"Do you want to use layer 61 (GDSII autoscans)?")==EA_YES)
 			{
 				tl = App.InputMsg("Select layer", "Select layer(s) to use together with layer 61 (separate by ';')","");
-				GDSmarklist = GGDSIIMarkertypes.ReadString("LoadList", "load", "0").split(";");
+				GDSmarklist = GGDSIImarkertypes.ReadString("LoadList", "load", "0");
 				GDSmark = App.InputMsg("Select GDSII marker", "Choose", GDSmarklist);
 				S124 = GDSmark + "-" + tl;
 				if (App.ErrMsg(4,0,"Do you want to write other layers in a global alignment?")==EA_YES)
@@ -865,7 +872,7 @@ function Logdata()
 			Glogini.WriteString(it, "UuShift", S[6][4][i] + "");
 			Glogini.WriteString(it, "VvShift", S[7][4][i] + "");
 			Glogini.Writestring(it,"Name", S[8][4][i]);
-			Glogini.Writestring(it, "WFMethod", S[13][4][i] + "")
+			Glogini.Writestring(it, "WFMethod", S[13][4][i] + "");
 			Glogini.Writestring(it,"Markprocedure", S[10][4][i]);	
 			Glogini.Writestring(it, "L61", S[12][4][i]);
 			Glogini.Writestring(it, "Exposureloops", S[14][4][i]);	
@@ -969,9 +976,9 @@ function Install(restoreflag)
 
 function InstallGDSmarker(markertype, k, mj) //Installs GDSII marker properties into system.
 {
-	var GDSmarkers, n, m, p3, WFalignini, parlist, scanini, par, threshold;
-	GDSmarkertypes = LoadGDSIIMarkers()
-	for (n = 0; n < Markertypes.length; n++)
+	var GDSmarkertypes, n, m, q, p3, WFalignini, parlist, scanini, par;
+	GDSmarkertypes = LoadGDSIIMarkers();
+	for (n = 0; n < GDSmarkertypes.length; n++)
 	{
 		if (GDSmarkertypes[n][0] == markertype) 
 		{
@@ -991,15 +998,16 @@ function InstallGDSmarker(markertype, k, mj) //Installs GDSII marker properties 
 		scanini.WriteString("Automatic procedure during exposure", parlist[q], par);
 	}
 	scanini.WriteString("Interact", "log", GDSmarkertypes[m][8]);
-	scanini.WriteString("Interact", "path", Gfilepath)
-	scanini.WriteString("Interact", "logfile", Glogfilename[1] + Glogfilename[2])
-	scanini.WriteString("Interact", "nx", k)
-	scanini.WriteString("Interact", "ny", mj)
+	scanini.WriteString("Interact", "path", Gfilepath);
+	scanini.WriteString("Interact", "logfile", Glogfilename[1] + Glogfilename[2]);
+	scanini.WriteString("Interact", "sample_n", i)
+	scanini.WriteString("Interact", "nx", k);
+	scanini.WriteString("Interact", "ny", mj);
 
 	App.SetVariable("AlignScans.AvgPoints", GDSmarkertypes[m][2]);                    //Sets the number of points in the y-direction
     App.SetVariable("AlignScans.Scanpoints", GDSmarkertypes[m][1]);                 //Sets the number of points in the x-direction
     App.Setvariable("AlignScans.Avg", GDSmarkertypes[m][3]);                          //Sets the number of measurements to average over to obtain one point
-	}
+	
 
 	var iniTest = App.OpenIniFile(ExpandPath("%userroot%\\System\\LineScanFilter.ini"));//Opens .ini file threshold algorithm            
     
@@ -1012,7 +1020,7 @@ function InstallGDSmarker(markertype, k, mj) //Installs GDSII marker properties 
 
 }
 
-function InstallWFAlign(markertype, threshold) //Installs markerproperties into systems Scan.ini, called from AutoWFAlign
+function InstallWFAlign(threshold) //Installs markerproperties into systems Scan.ini, called from AutoWFAlign
 {	
 	var p3, WFalignini, par, parlist, scanini, q; 
 	p3 = ExpandPath("%userroot%\\System\\");
@@ -1041,16 +1049,16 @@ function InstallWFAlign(markertype, threshold) //Installs markerproperties into 
 
 function LoadGDSIIMarkers()
 {
-	var Markertypes, loadlist, q, p, parlist, markerdata;
-	loadlist = GGDSIIMarkertypes.ReadString("LoadList", "load", "0").split(";");
-	MarkertypesGDS = createArray(loadlist.length,20);
+	var GDSmarkertypes, loadlist, q, p, parlist, markerdata;
+	loadlist = GGDSIImarkertypes.ReadString("LoadList", "load", "0").split(";");
+	GDSmarkertypes = createArray(loadlist.length,20);
 	for (q = 0; q < loadlist.length; q ++) 
 	{
 		parlist = new Array("ScanpointsLength","ScanpointsWidth","Averaging","MarkerWidth","WidthTolerance","ContrastThresholdLow","ContrastThresholdHigh","Profile", "Log");
 		markerdata = new Array(parlist.length);
 		for (p = 0; p < parlist.length; p ++) 
 		{
-			markerdata[p] = GGDSmarkertypes.ReadString(loadlist[q], parlist[p], "undefined");
+			markerdata[p] = GGDSIImarkertypes.ReadString(loadlist[q], parlist[p], "undefined");
 
 			if (markerdata[p] == "undefined") 
 			{
@@ -1059,13 +1067,13 @@ function LoadGDSIIMarkers()
 			}
 		}
 		GDSmarkertypes[q][0] = loadlist[q]; 
-		GDSnarkertypes[q][1] = markerdata[0]; //ScanpointsLength
+		GDSmarkertypes[q][1] = markerdata[0]; //ScanpointsLength
 		GDSmarkertypes[q][2] = markerdata[1]; //ScanpointsWidth
 		GDSmarkertypes[q][3] = markerdata[2]; //Averaging
 		GDSmarkertypes[q][4] = markerdata[3]; //Markerwidth
 		GDSmarkertypes[q][5] = Math.ceil((markerdata[3]*1 - markerdata[4]*markerdata[3])*1000);//Profile min
 		GDSmarkertypes[q][6] = Math.ceil((markerdata[3]*1 + markerdata[4]*markerdata[3])*1000);//Profile max
-		GDSmarkertypes[q][7] = "Mode:0,L1:" + Markertypes[q][5] + ",L2:" + Markertypes[q][6] + ",Profile:" + markerdata[7] + ",Min:" + markerdata[q][5] + ",Max:" + markerdata[q][5] + ",LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0";//threshold
+		GDSmarkertypes[q][7] = "Mode:0,L1:" + markerdata[5] + ",L2:" + markerdata[6] + ",Profile:" + markerdata[7] + ",Min:" + GDSmarkertypes[q][5] + ",Max:" + GDSmarkertypes[q][6] + ",LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0";//threshold
 		GDSmarkertypes[q][8] = markerdata[8];
 	}
 	return GDSmarkertypes;
@@ -1181,7 +1189,7 @@ function LoadWFAlignProcedures()
 
 function AutoWFAlign(markertype) //Aligns WF according to markertype, called from AlignWF
 {
-	var Markertypes, n, m, SizeU, SizeV, StepU, StepV, PointsU, PointsV, MarkOffsetU, MarkOffsetV, MarkPlaceU, MarkPlaceV, Upos, Vpos, threshold, parlistname, parlist, multiini, multipls, PList, q, fmarkers;
+	var Markertypes, n, m, parlistname, parlist, multiini, multipls, PList, q, fmarkers;
 	Markertypes = LoadMarkers();
 	for (n = 0; n < Markertypes.length; n++)
 	{
@@ -1205,7 +1213,7 @@ function AutoWFAlign(markertype) //Aligns WF according to markertype, called fro
 	multipls.DeleteSection("DATA");
 	multipls.WriteString("DATA", Markertypes[m][18], 0);
 
-	InstallWFAlign(markertype, Markertypes[m][17]);
+	InstallWFAlign(Markertypes[m][17]);
 	PList = OpenPositionList(Glib + "Multisample WF align.pls");
 	App.Exec("ScanAllPositions()");
 	PList.Save();
@@ -1233,7 +1241,7 @@ function AlignWF(markprocedure, logWFflag, i, j, k) //Main function to start aut
 			}
 		}
 		entries = WFAlignprocedures[b][1];
-		App.ErrMsg(0,0,WFAlignprocedures[b][entries+1])
+		//App.ErrMsg(0,0,WFAlignprocedures[b][entries+1])
 		for (c = 0; c < entries-2; c++)
 		{
 			markers = WFAlignprocedures[b][c+2].split(";");
@@ -1251,13 +1259,13 @@ function AlignWF(markprocedure, logWFflag, i, j, k) //Main function to start aut
 			{
 				logfile = App.OpenInifile(Glogfilename[1] + Glogfilename[2]);
 				logfile.WriteString("Failed markers S" + i,"Markprocedure", markprocedure);
-				logfile.WriteString("Failed markers S" + i,"D[" + m + ";" + n + "] - Step " + Math.round(c+1) + ": ", logstring);
+				logfile.WriteString("Failed markers S" + i,"Device nx/ny[" + m + ";" + n + "] - Step " + Math.round(c+1) + ": ", logstring);
 			}
 		}
+		if (WFAlignprocedures[b][entries+2] == 0 && amf >= 1) exposure = 0; //checks 'alwayswrite' and failed markers of last alignment and sets 'exopsure' accordingly
+		else exposure = 1;
 	}
-	if (WFAlignprocedures[b][entries+2] == 0 && amf >= 1) exposure = 0 //checks 'alwayswrite' and failed markers of last alignment and sets 'exopsure' accordingly
-	else exposure = 1
-	return exposure	
+	return exposure;	
 }
 
 
@@ -1333,7 +1341,7 @@ function WriteMatrix(S, i)
 
 function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,multiple..etc), testmode ornot
 {
-	var N, meander, k, j, mj, l61;
+	var N, meander, k, j, mj, l61, l61exp;
 	
 	N = WriteMatrix(S, i);
 	meander = 1;
@@ -1365,7 +1373,7 @@ function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,mu
 				}	
 				if (S[13][4][i] == 2 && k == 0 && j == 0)
 				{	
-					AlignWF(S[10][4][i], 1, i, j, k); d
+					AlignWF(S[10][4][i], 1, i, j, k);
 				}	
 				
 				InstallGDSmarker(l61[0], k, mj);
@@ -1378,7 +1386,7 @@ function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,mu
 				else 
 				{
 					
-					l61exp = 61 + ";" + l61[1] 
+					l61exp = 61 + ";" + l61[1]; 
 					App.Exec("SelectExposedLayer(" + l61exp + ")");			
 				}
 				App.Exec("Exposure");
@@ -1404,7 +1412,7 @@ function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,mu
 
 function FirstWFAlign()
 {
-    var wfprocedureloadlist, align, markprocedure;
+    var wfprocedureloadlist, markprocedure;
     wfprocedureloadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
     markprocedure = App.InputMsg("Select AutoWFAlign scan procedure", "Select: " + wfprocedureloadlist, wfprocedureloadlist[0]);
 	AlignWF(markprocedure, 0, 1, 1, 1);
