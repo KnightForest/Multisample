@@ -18,7 +18,7 @@
 
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+ 
 // Future plans (- = open, V = fixed, T = needs testing):
 // V Change procedure text/behaviour
 // V Add dynamic WF size compatbility 
