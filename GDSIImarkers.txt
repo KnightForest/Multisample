@@ -1,5 +1,5 @@
 [LoadList]
-load = GDS1
+load = GDS1;GDS2
 
 [GDS1]
 ScanpointsLength = 2000
@@ -20,5 +20,5 @@ MarkerWidth = 4
 WidthTolerance = 0.2
 ContrastThresholdLow = 45.0
 ContrastThresholdHigh = 55.0
-Profile = 1
+Profile = 0
 Log = 1

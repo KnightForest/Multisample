@@ -74,10 +74,6 @@
 // - Probably more :/
 // - Manual alignment on dot within script not possible
 // 		-> Needs added routine during UV alignment.
-dinges = App.OpenIniFile("D:\\2.txt")
-dinges.WriteString("Subject", "test", "dink");
-
-
 
 var Gsn = "Multisample";
 //var Gsnl = parseInt(Gsn.length, 8);
@@ -246,9 +242,9 @@ function StepsizeDwelltime(i,GUIflag)
 	}
 	                                                                     
 	beamspeed = [];
-	beamspeed[0] = PreciseRound(beamcurrent*Math.pow(10,4)/(App.GetVariable("Exposure.LineDose")) ,3);  //Calculates line beamspeed in mm/s
-  	beamspeed[1] = PreciseRound(beamcurrent*Math.pow(10,5)/(stepsize*App.GetVariable("Exposure.ResistSensitivity")) ,3); //Calculates area beamspeed in mm/s                                                                        //Lines below calculate the resulting beam speed based on user stepsize
-	beamspeed[2] = PreciseRound(beamcurrent*Math.pow(10,5)/(stepsize*App.GetVariable("Exposure.CurveDose")), 3); //Calculates area beamspeed in mm/s 
+	beamspeed[0] = beamcurrent*Math.pow(10,4)/(App.GetVariable("Exposure.LineDose"));  //Calculates line beamspeed in mm/s
+  	beamspeed[1] = beamcurrent*Math.pow(10,5)/(stepsize*App.GetVariable("Exposure.ResistSensitivity")); //Calculates area beamspeed in mm/s                                                                        //Lines below calculate the resulting beam speed based on user stepsize
+	beamspeed[2] = beamcurrent*Math.pow(10,5)/(stepsize*App.GetVariable("Exposure.CurveDose")); //Calculates area beamspeed in mm/s 
 
    	
 
@@ -288,10 +284,10 @@ function StepsizeDwelltime(i,GUIflag)
    		S[3][6][i] = stepsizec;
    	}
 
-   	S[4][6][i] = beamspeed[0];
-   	S[5][6][i] = beamspeed[1];
-   	S[6][6][i] = beamspeed[2];
-   	S[7][6][i] = beamcurrent;
+   	S[4][6][i] = PreciseRound(beamspeed[0],3);
+   	S[5][6][i] = PreciseRound(beamspeed[1],3);
+   	S[6][6][i] = PreciseRound(beamspeed[2],3);
+   	S[7][6][i] = PreciseRound(beamcurrent,6);
    	//App.ErrMsg(0,0,"1 - szl:"+S[1][6][i] +stepsizeline+" /sz:"+S[2][6][i]+" /szc:"+S[3][6][i]+" /bsl:"+S[4][6][i]+" /bsa:"+S[5][6][i]+" /bsc:"+S[6][6][i]+" /bc:"+S[7][6][i])
 }
 
