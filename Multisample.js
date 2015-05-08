@@ -20,6 +20,7 @@
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
 // Future plans (- = open, V = fixed, T = needs testing):
+// - Add WF min/max to markers
 // V Change procedure text/behaviour
 // V Add dynamic WF size compatbility 
 // -	--> Working areas?
@@ -645,7 +646,7 @@ function CollectSD(st, GUIflag)
 			{
 				tl = App.InputMsg("Select layer", "Select layer(s) to use together with layer 61 (separate by ';')","");
 				GDSmarklist = GGDSIImarkertypes.ReadString("LoadList", "load", "0");
-				GDSmark = App.InputMsg("Select GDSII marker", "Choose", GDSmarklist);
+				GDSmark = App.InputMsg("Select GDSII marker", "Choose: " + GDSmarklist, GDSmarklist[0]);
 				S124 = GDSmark + "-" + tl;
 				if (App.ErrMsg(4,0,"Do you want to write other layers in a global alignment?")==EA_YES)
 				{
