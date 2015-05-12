@@ -1,0 +1,27 @@
+[LoadList]
+load = PhotoEBL;EBL;Photo;DoNothing
+
+[PhotoEBL]
+1 = M1;M2;M3;M4
+2 = EBLmarker1;EBLmarker2;EBLmarker3
+log = 1
+alwayswrite = 1
+
+[EBL]
+1 = EBLmarker1;EBLmarker2;EBLmarker3
+log = 1
+alwayswrite = 1
+
+[Photo]
+1 = M1;M2;M3;M4
+log = 1
+alwayswrite = 1
+
+[DoNothing]
+log = 0
+alwayswrite = 1
+
+[Photo1]
+1 = M1
+log = 1
+alwayswrite = 1

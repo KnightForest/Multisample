@@ -1,0 +1,124 @@
+[LoadList]
+load = M1;M2;M3;M4;EBLmarker1;EBLmarker2;EBLmarker3
+
+[M1]
+CenterU = 0.0
+CenterV = 0.0 		
+MarkerWidth = 4.0	
+MarkerLengthU = 16.0	
+MarkerLengthV = 16.0	
+CenterScanOffset = 0.5	
+ScanLength = 10.0	
+ScanWidth = 0.5		
+ScanAccuracy = 1	
+WidthTolerance = 0.2 
+ContrastThresholdLow = 45.0
+ContrastThresholdHigh = 55.0
+Profile = 1
+
+[M2]
+CenterU = 0.0
+CenterV = 1.396
+MarkerWidth = 4.0
+MarkerLengthU = 16.0
+MarkerLengthV = -16.0
+CenterScanOffset = 0.5	
+ScanWidth = 1
+ScanLength = 8.0
+ScanAccuracy = 1.0
+WidthTolerance = 0.2
+ContrastThresholdLow = 45.0
+ContrastThresholdHigh = 55.0
+Profile = 1
+
+[M3]
+CenterU = 1.396
+CenterV = 1.396
+MarkerWidth = 4.0
+MarkerLengthU = -16.0
+MarkerLengthV = -16.0
+CenterScanOffset = 0.5	
+ScanWidth = 1.5
+ScanLength = 12.0
+ScanAccuracy = 1.0
+WidthTolerance = 0.2
+ContrastThresholdLow = 45.0
+ContrastThresholdHigh = 55.0
+Profile = 1
+
+[M4]
+CenterU = 1.396
+CenterV = 0
+MarkerWidth = 4.0
+MarkerLengthU = -16.0
+MarkerLengthV = 16.0
+CenterScanOffset = 0.5	
+ScanWidth = 1.5
+ScanLength = 12.0
+ScanAccuracy = 1.0
+WidthTolerance = 0.2
+ContrastThresholdLow = 45.0
+ContrastThresholdHigh = 55.0
+Profile = 1
+
+[EBLmarker1]
+CenterU = 0.24
+CenterV = 0.24
+MarkerWidth = 0.2
+MarkerLengthU = 2
+MarkerLengthV = 2
+CenterScanOffset = 0.5	
+ScanWidth = 1
+ScanLength = 1
+ScanAccuracy = 1.0
+WidthTolerance = 0.4
+ContrastThresholdLow = 60.0
+ContrastThresholdHigh = 80.0
+Profile = 1
+
+[EBLmarker2]
+CenterU = 0.16
+CenterV = 1.24
+MarkerWidth = 0.2
+MarkerLengthU = 2
+MarkerLengthV = 2
+CenterScanOffset = 0.5	
+ScanWidth = 0.5
+ScanLength = 2
+ScanAccuracy = 1.0
+WidthTolerance = 0.4
+ContrastThresholdLow = 60.0
+ContrastThresholdHigh = 80.0
+Profile = 1
+
+[EBLmarker3]
+CenterU = 1.34
+CenterV = 1.34
+MarkerWidth = 0.2
+MarkerLengthU = 2
+MarkerLengthV = 2
+CenterScanOffset = 0.5	
+ScanWidth = 1.5
+ScanLength = 3
+ScanAccuracy = 1.0
+WidthTolerance = 0.4
+ContrastThresholdLow = 60.0
+ContrastThresholdHigh = 80.0
+Profile = 1
+
+[Test1]
+CenterU = 15
+CenterV = 15
+MarkerWidth = 0.2
+MarkerLengthU = 4
+MarkerLengthV = 4
+CenterScanOffset = 0.5	
+ScanWidth = 1.0
+ScanLength = 3.0
+ScanAccuracy = 1.0
+WidthTolerance = 0.2
+ContrastThresholdLow = 45.0
+ContrastThresholdHigh = 55.0
+Profile = 1
+
+[M61]
