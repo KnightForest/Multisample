@@ -76,7 +76,7 @@ sv = PreciseRound(Stage.V, 2);
 dinges = App.OpenIniFile(logpath);
 if (logflag == 1)
 {
-	dinges.WriteString("Failed markers S" + i, "Device nx/ny[" + nx + ";" + ny +  "] - Local Stage Coord[" + su + ";" + sv + "]", AutoMarksFailed);
+	dinges.WriteString("Failed GDSII markers S" + i, "Device nx/ny[" + nx + ";" + ny +  "] - Local Stage Coord[" + su + ";" + sv + "]", AutoMarksFailed);
 }
 
 
