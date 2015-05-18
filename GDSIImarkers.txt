@@ -13,12 +13,12 @@ Profile = 1
 Log = 1
 
 [GDS2]
-ScanpointsLength = 4000
+ScanpointsLength = 2000
 ScanpointsWidth = 120
 Averaging = 24
-MarkerWidth = 4
-WidthTolerance = 0.2
-ContrastThresholdLow = 45.0
-ContrastThresholdHigh = 55.0
+MarkerWidth = 0.07
+WidthTolerance = 0.8
+ContrastThresholdLow = 10.0
+ContrastThresholdHigh = 40.0
 Profile = 0
 Log = 1
