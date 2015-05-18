@@ -89,7 +89,7 @@ var GGDSIImarkertypes = App.Openinifile(Gfilepath + "GDSIImarkers.txt");
 var GAlignprocedures = App.Openinifile(Gfilepath + "Alignprocedures.txt");
 var S = createArray(1,1,1);
 var Gnums = -1;
-var i, st, beamoffflag;
+var i, st, beamoffflag, collectinguvflag;
 
 function Succes()			                                            //-- Called if function 'write' was successful
 {
@@ -142,39 +142,40 @@ function LastDatasettoColset()
 
 function MeasBeamCurrent()												//Measures beam current
 {
-   var bc, bcf;
-   bc = createArray(3);
-   if (App.ErrMsg(EC_YESNO, 0, "Do you want to measure the beam current?") == EA_YES)                        //Asks user to perform beam current measurement + dwelltime corrections
-      {
-      if ( Column.CheckConnection() )                                   //If answer is YES, measurement is performed
+	var bc, bcf;
+	bc = createArray(3);
+	if (App.ErrMsg(EC_YESNO, 0, "Do you want to measure the beam current?") == EA_YES)                        //Asks user to perform beam current measurement + dwelltime corrections
+    {
+    	if ( Column.CheckConnection() )                                   //If answer is YES, measurement is performed
       	{
-		 Stage.X = -35; 													//Sets stage coörds to 30,30 (saves time when driving back)
-		 Stage.Y = 39; 
-		 Stage.WaitPositionReached(); 
-		 BeamCurrent(false, false);
-		 bc[0] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
-		 Stage.WaitPositionReached();
-         BeamCurrent(false, false);
-         bc[1] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
-         Stage.WaitPositionReached();
-         BeamCurrent(false, false);
-         bc[2] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
-         if	(Math.max(bc[0], bc[1], bc[2])/Math.min(bc[0], bc[1], bc[2]) >= 1.01)
-         {
-         	if (App.ErrMsg(4,0,"Beam current fluctuation over three measurements(>1%) (" + bc + " nA). Continue?") == 7)
+			Stage.X = -35; 													//Sets stage coörds to 30,30 (saves time when driving back)
+		 	Stage.Y = 39; 
+		 	Stage.WaitPositionReached(); 
+		 	BeamCurrent(false, false);
+		 	bc[0] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
+		 	Stage.WaitPositionReached();
+         	BeamCurrent(false, false);
+         	bc[1] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
+         	Stage.WaitPositionReached();
+         	BeamCurrent(false, false);
+         	bc[2] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
+         	if	(Math.max(bc[0], bc[1], bc[2])/Math.min(bc[0], bc[1], bc[2]) >= 1.01)
          	{
-         		Abort();
-         	}
-         }
-         bcf = ((bc[0]+bc[1]+bc[2])/3);
-         App.ErrMsg(0,0,"Beamcurrent: " + bcf*Math.pow(10,3) + "pA"); //Dit moest van Joren. Hij houdt niet van teveel floating.
-         bcf = bcf.toString();
-         App.SetVariable("BeamCurrent.BeamCurrent", bcf);
-         }
-       }
+         		if (App.ErrMsg(4,0,"Beam current fluctuation over three measurements(>1%) (" + bc + " nA). Continue?") == 7)
+         		{
+         			Abort();
+         		}
+         	}	
+        bcf = ((bc[0]+bc[1]+bc[2])/3);
+        bcfdisp = PreciseRound(bcf*Math.pow(10,3),2);
+        App.ErrMsg(0,0,"Beamcurrent: " + bcfdisp + "pA"); //Dit moest van Joren. Hij houdt niet van teveel floating.
+        bcf = bcf.toString();
+        App.SetVariable("BeamCurrent.BeamCurrent", bcf);
+        }
+    }
 }
 
-function SetStepsizeDwelltime(i, bcflag)
+function SetStepsizeDwelltime(i)
 {
    	var stepsizeline_um, stepsize_um, stepsizec_um, beamcurrent;
 
@@ -182,10 +183,7 @@ function SetStepsizeDwelltime(i, bcflag)
    	stepsize_um = (S[2][6][i]*Math.pow(10,-3));
    	stepsizec_um = (S[3][6][i]*Math.pow(10,-3));
    	beamcurrent = S[7][6][i];
-   	if (bcflag == 1)
-    {  
-	    App.SetVariable("BeamCurrent.BeamCurrent", beamcurrent);
-    }
+	App.SetVariable("BeamCurrent.BeamCurrent", beamcurrent);
 	App.SetVariable("Variables.MetricStepSize", stepsize_um.toString());               //Sets area stepsize y-direction to defined area stepsize
     App.SetVariable("Variables.MetricLineSpacing", stepsize_um.toString());            //Sets area stepsize x-direction to defined area stepsize
     App.SetVariable("BeamControl.CurveStepSize", stepsizec_um.toString());              //Sets curved element stepsize to defined area stepsize
@@ -198,7 +196,7 @@ function SetStepsizeDwelltime(i, bcflag)
 	App.Exec("CorrectDwelltime()");                                           //Corrects area dwelltimes
 }
 
-function StepsizeDwelltime(i,GUIflag)
+function StepsizeDwelltime(i,GUIflag, bcreadflag)
 {
     var msg_setareastepsize, msg_rounding, msg_setlinestepsize, msg_higherthan, beamspeed, minstepsize, advisedbeamspeed, areaminstepsize, stepsize, stepsizec, stepsizeline, criticalbeamspeed, bflag, beamcurrent;
     msg_setareastepsize = "Set AREA stepsize for patterning in nm";
@@ -223,7 +221,15 @@ function StepsizeDwelltime(i,GUIflag)
 	App.SetVariable("Exposure.LineDose",linedose+"");
 	App.SetVariable("Exposure.ExposureLoops",nLoops+"");
 
-	beamcurrent = App.GetVariable("BeamCurrent.BeamCurrent"); 			//Beamcurrent [nA]
+	if (bcreadflag == 1) 
+	{
+		beamcurrent = App.GetVariable("BeamCurrent.BeamCurrent"); 			//Beamcurrent [nA]
+	}
+	else 
+	{
+		beamcurrent = S[7][6][i];
+	}
+
 	minstepsize = App.GetVariable("Beamcontrol.MetricBasicStepSize")*Math.pow(10,3); //Min stepsize in [nm]
 	advisedbeamspeed = 8;                                             	//Sets the advised beamspeed in [mm/s]
     areaminstepsize = Math.ceil(beamcurrent/((advisedbeamspeed*Math.pow(10,-5)*App.GetVariable("Exposure.ResistSensitivity")*minstepsize)))*minstepsize; //Calculates advised beamspeed [nm]
@@ -321,7 +327,10 @@ function Abort()                                                        //-- Abo
    Stage.JoystickEnabled = true;
    App.SetVariable("Adjust.MinAutoMarks","3");
    App.SetVariable("Exposure.ExposureLoops","1"); 						//Let's be nice to the default settings
-
+   if (collectinguvflag == 1)
+   {
+   		Logdata();
+   }
    throw new Error('Execution cancelled by user');                      //Interrupts script by trowing error
 }
 
@@ -461,7 +470,7 @@ function Load(SDflag)
 			S[13][4][i] = inifile.ReadString("GS", "WFMethod", "0");
 			S[10][4][i] = inifile.ReadString("GS", "Markprocedure", "0");
 			S[12][4][i] = inifile.ReadString("GS", "L61", "0"); 
-			S[14][4][i] = parseInt(inifile.ReadString("GS", "Exposureloops", "1"));
+			S[14][4][i] = (inifile.ReadString("GS", "Exposureloops", "1")).toString();
 			 
 			S[1][5][i] = (inifile.ReadString("GS", "WF", "0"));
 			colmode = (inifile.ReadString("GS", "ColMode", "0"));
@@ -498,7 +507,7 @@ function Load(SDflag)
 			S[13][4][i] = inifile.ReadString(it, "WFMethod", "0");
 			S[10][4][i] = inifile.ReadString(it, "Markprocedure", "1");
 			S[12][4][i] = inifile.ReadString(it, "L61", "0");
-			S[14][4][i] = parseInt(inifile.ReadString(it, "Exposureloops", "1"));
+			S[14][4][i] = inifile.ReadString(it, "Exposureloops", "1");
 
 			S[1][5][i] = (inifile.ReadString(it, "WF", "0"));
 			S[2][5][i] = (inifile.ReadString(it, "ColMode", "0"));
@@ -541,8 +550,8 @@ function Load(SDflag)
 				SetSvars(1, 1, 1);
 				Panicbutton();
 				MeasBeamCurrent();
-	    		StepsizeDwelltime(1, 2);
-	    		SetStepsizeDwelltime(1,1);	
+	    		StepsizeDwelltime(1, 2, 1);
+	    		SetStepsizeDwelltime(1);	
 			}
 
     		if (st == 2)
@@ -562,8 +571,8 @@ function Load(SDflag)
 					{
 						if (S[2][5][i] != S[2][5][i-1]) MeasBeamCurrent();	
 					}
-					StepsizeDwelltime(i, 2);
-					SetStepsizeDwelltime(i, 0);			
+					StepsizeDwelltime(i, 2, 1);
+					SetStepsizeDwelltime(i);			
 				}    			
     		}
     		
@@ -583,6 +592,7 @@ function CollectSD(st, GUIflag)
     var mflag = 0;
 	var i, it, wfprocedureloadlist, S14, S24, S34, S44, S54, S64, S74, S84, S94, S104, S124, S134, S144, S15, S25, S35, S45, currpath, fex, currstruct, tl;
 	var GDSmarklist, GDSmark;
+	collectinguvflag = 1;
 	Gnums = App.InputMsg("Select amount of UV alignments (one additional alignment requirement per column change)", "Select a number 1-99", "1");
     S = createArray(99,7,Gnums+1);
 
@@ -602,7 +612,7 @@ function CollectSD(st, GUIflag)
 			//if (mflag == 1) break;
 			if (st == 1) App.Errmsg(0,0, "Enter data for all used chips in the following dialogue boxes.");
 			if (st == 2) App.Errmsg(0,0, "Enter data for " + it + " in the following dialogue boxes.");
-			
+			Panicbutton();
 			S84 = App.InputMsg("Sample name","Enter name for sample(s) (for log)","");
 			
 			if (GUIflag == 2)
@@ -631,7 +641,7 @@ function CollectSD(st, GUIflag)
     		}
 			
 			S134 = App.Inputmsg("Select type of WF alignment","1: All devices, 2: First device per sample, 3: Manual per chip, 4: No alignment", "1");
-			
+			Panicbutton();
 			if (S134 ==  1 || S134 == 2 )
 			{
 				wfprocedureloadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
@@ -641,12 +651,14 @@ function CollectSD(st, GUIflag)
 			{
 				S104 = -1;
 			}
-
+			Panicbutton();
 			if (App.ErrMsg(4,0,"Do you want to use layer 61 (GDSII autoscans)?")==EA_YES)
 			{
 				tl = App.InputMsg("Select layer", "Select layer(s) to use together with layer 61 (separate by ';')","");
+				Panicbutton();
 				GDSmarklist = GGDSIImarkertypes.ReadString("LoadList", "load", "0");
 				GDSmark = App.InputMsg("Select GDSII marker", "Choose: " + GDSmarklist, GDSmarklist[0]);
+				Panicbutton();
 				S124 = GDSmark + "-" + tl;
 				if (App.ErrMsg(4,0,"Do you want to write other layers in a global alignment?")==EA_YES)
 				{
@@ -656,6 +668,7 @@ function CollectSD(st, GUIflag)
 				{
 					S14 = -1;
 				}
+				Panicbutton();
 			}
 			else
 			{
@@ -664,11 +677,15 @@ function CollectSD(st, GUIflag)
 			}
 			S24 = App.InputMsg("Define chip dimensions in x (U)", "Select number of structures: x (U)", "2");
 			S34 = App.InputMsg("Define chip dimensions in y (V)", "Select number of structures: y (V)", "2");
+			Panicbutton();
 			S44 = App.InputMsg("Define structure spacing in (U)", "Select structure spacing in mm: x (U)", "5");
 			S54 = App.InputMsg("Define structure spacing in (V)", "Select structure spacing in mm: y (V)", "5");
+			Panicbutton();
 			S64 = App.InputMsg("Define Global-Local shift (U) for 1st structure", "Select shift in mm: x (U)", "0");
 			S74 = App.InputMsg("Define Global-Local shift (V) for 1st structure", "Select shift in mm: v (V)", "0");
+			Panicbutton();
 			S144 = App.InputMsg("Number of exposureloops per device","#", "1");
+			Panicbutton();
 			//S44 = 5;
 			//S54 = 5;
 			//S64 = 0;
@@ -705,6 +722,7 @@ function CollectSD(st, GUIflag)
 		S[2][5][i] = S25 + "";
 		S[3][5][i] = S35;
 		S[4][5][i] = S45;
+		Logdata();
 		}
 	}
 	S = CollectUV(st, GUIflag);
@@ -726,7 +744,7 @@ function CollectUV(st, GUIflag)
     {	
     	App.ErrMsg(0,0,"Collecting three point alignments for all chips commences. USE GLOBAL ALIGNMENT!");
 	}
-
+	Panicbutton();
 	for (i = 1; i <= Gnums; i++)
     {
 		Stage.GlobalAlignment();
@@ -739,6 +757,7 @@ function CollectUV(st, GUIflag)
 				Logdata();
 				Abort();
 			}
+			Panicbutton();
 		}
 		if (GUIflag == 2)
 		{
@@ -752,7 +771,8 @@ function CollectUV(st, GUIflag)
 			{
 				Logdata();
 				Abort();
-			}		
+			}
+			Panicbutton();		
 		}
 
 	    App.Exec("Halt()");
@@ -767,19 +787,19 @@ function CollectUV(st, GUIflag)
 
 	    App.ErrMsg(0,0,"Check UV alignment + focus after WF change of sample chip " + i + " of " + Gnums);
 	    App.Exec("Halt()");
-
+	    Panicbutton();
 	    if (st == 1 && i == 1) 
 	    {
 	    	MeasBeamCurrent();
-	    	StepsizeDwelltime(i, GUIflag);
-	    	SetStepsizeDwelltime(i,0);
+	    	StepsizeDwelltime(i, GUIflag, 1);
+	    	SetStepsizeDwelltime(i);
 	    }
 		if (st == 2 && i == 1) MeasBeamCurrent();
 		if (st == 2 && i !=1 && S[2][5][i] != S[2][5][i-1]) MeasBeamCurrent();
 		if (st == 2) 
   		{
-   			StepsizeDwelltime(i, GUIflag);
-			SetStepsizeDwelltime(i,0);
+   			StepsizeDwelltime(i, GUIflag, 1);
+			SetStepsizeDwelltime(i);
   		}
 	    for (j = 1; j <= 3; j++)
 		{
@@ -811,7 +831,9 @@ function CollectUV(st, GUIflag)
 		S[8][5][i] = App.GetVariable("Variables.ShiftY");
 		S[9][5][i] = App.GetVariable("Variables.RotX");
 		S[10][5][i] = App.GetVariable("Variables.RotY");
+		Logdata();
 	}
+    collectinguvflag = 0;
     return (S);
 }
 
@@ -1282,7 +1304,7 @@ function ActivateColdata(colset)
 	}
 }
 
-function SetSvars(i, WFflag, msflag)
+function SetSvars(i, WFflag, msflag) //msflag?
 {
 	var ZoomX, ZoomY, ShiftX, ShiftY, RotX, RotY, corrZoomX, corrZoomY, corrShiftX, corrShiftY, corrRotX, corrRotY;
 
@@ -1314,8 +1336,8 @@ function SetSvars(i, WFflag, msflag)
 	}
 	if (msflag == 0)
 	{
-		StepsizeDwelltime(i,0); //GUIflag only 0 in setsvars function. Needed for exposureloops icw MS defined stepsizes.
-		SetStepsizeDwelltime(i,1);	//bcflag should be one, beamcurrent should be set
+		StepsizeDwelltime(i,0,0); //GUIflag only 0 in setsvars function. Needed for exposureloops icw MS defined stepsizes.
+		SetStepsizeDwelltime(i);	//bcflag should be one, beamcurrent should be set
 	}
 	
 }
