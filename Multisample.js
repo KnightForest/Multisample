@@ -64,8 +64,8 @@
 // - Split logfiles into sampledata, markerlog and progress log
 
 // BUGS:
-// - Asks to measure beamcurrent twice during CollectSD
-// 		-> Also asks for beamcurrent if column did not change.. is this ok?
+// - !Collect UV measurement of beamcurrent with measbcflag is broken!
+// - An extra empty logfile is created somewhere in the script.
 // V Auto stepsizedwelltime does not work, always uses 2 nm
 //		V It is possible to change the value for the stepsize in multisample.txt
 //		V In this case, the beamspeed reported in the log is wrong
@@ -87,8 +87,10 @@ var GSDini = App.OpenInifile(Gfilepath + "SDvars.txt");
 var GMarkertypes = App.Openinifile(Gfilepath + "Markers.txt");
 var GGDSIImarkertypes = App.Openinifile(Gfilepath + "GDSIImarkers.txt");
 var GAlignprocedures = App.Openinifile(Gfilepath + "Alignprocedures.txt");
+var Gdatesp = Date().split(":");
 var S = createArray(1,1,1);
 var Gnums = -1;
+var Gmeasbcflag = 1;
 var i, st, beamoffflag, collectinguvflag;
 
 function Succes()			                                            //-- Called if function 'write' was successful
@@ -196,7 +198,7 @@ function SetStepsizeDwelltime(i)
 	App.Exec("CorrectDwelltime()");                                           //Corrects area dwelltimes
 }
 
-function StepsizeDwelltime(i,GUIflag, bcreadflag)
+function StepsizeDwelltime(i,GUIflag, bcreadflag) //GUIflag = 0 means only beamspeeds are calculated and modified. BC and SS are not touched.
 {
     var msg_setareastepsize, msg_rounding, msg_setlinestepsize, msg_higherthan, beamspeed, minstepsize, advisedbeamspeed, areaminstepsize, stepsize, stepsizec, stepsizeline, criticalbeamspeed, bflag, beamcurrent;
     msg_setareastepsize = "Set AREA stepsize for patterning in nm";
@@ -233,10 +235,18 @@ function StepsizeDwelltime(i,GUIflag, bcreadflag)
 	minstepsize = App.GetVariable("Beamcontrol.MetricBasicStepSize")*Math.pow(10,3); //Min stepsize in [nm]
 	advisedbeamspeed = 8;                                             	//Sets the advised beamspeed in [mm/s]
     areaminstepsize = Math.ceil(beamcurrent/((advisedbeamspeed*Math.pow(10,-5)*App.GetVariable("Exposure.ResistSensitivity")*minstepsize)))*minstepsize; //Calculates advised beamspeed [nm]
+	if (GUIflag == 0)
+	{
+		stepsize = S[2][6][i];
+		stepsizeline = S[1][6][i];
+		stepsizecurve = S[3][6][i];
+	}
+
 	if (GUIflag == 1)
 	{
 		stepsize = areaminstepsize;
 		stepsizeline = minstepsize;
+		stepsizecurve = areaminstepsize;
 	}
 
 	if (GUIflag == 2)
@@ -245,13 +255,14 @@ function StepsizeDwelltime(i,GUIflag, bcreadflag)
     
     	if (stepsize < minstepsize) stepsize=minstepsize; //If the user set stepsize is smaller than the minimum stepsize, it is return to this minimum value
     	stepsizeline=(minstepsize*Math.ceil(App.InputMsg(msg_setlinestepsize, msg_rounding + minstepsize + "nm:", minstepsize)/(minstepsize))).toString(); //Asks user to set stepsize for patterning
-    	if (stepsizeline < minstepsize) stepsizeline = minstepsize; 		//If the user set stepsize is smaller than the minimum stepsize, it is returned to this minimum value   	        
+    	if (stepsizeline < minstepsize) stepsizeline = minstepsize; 		//If the user set stepsize is smaller than the minimum stepsize, it is returned to this minimum value
+    	stepsizecurve = stepsize;   	        
 	}
 	                                                                     
 	beamspeed = [];
 	beamspeed[0] = beamcurrent*Math.pow(10,4)/(App.GetVariable("Exposure.LineDose"));  //Calculates line beamspeed in mm/s
   	beamspeed[1] = beamcurrent*Math.pow(10,5)/(stepsize*App.GetVariable("Exposure.ResistSensitivity")); //Calculates area beamspeed in mm/s                                                                        //Lines below calculate the resulting beam speed based on user stepsize
-	beamspeed[2] = beamcurrent*Math.pow(10,5)/(stepsize*App.GetVariable("Exposure.CurveDose")); //Calculates area beamspeed in mm/s 
+	beamspeed[2] = beamcurrent*Math.pow(10,5)/(stepsizecurve*App.GetVariable("Exposure.CurveDose")); //Calculates area beamspeed in mm/s 
 
    	
 
@@ -290,7 +301,7 @@ function StepsizeDwelltime(i,GUIflag, bcreadflag)
    		S[2][6][i] = stepsize;
    		S[3][6][i] = stepsizec;
    	}
-
+   	
    	S[4][6][i] = PreciseRound(beamspeed[0],3);
    	S[5][6][i] = PreciseRound(beamspeed[1],3);
    	S[6][6][i] = PreciseRound(beamspeed[2],3);
@@ -334,7 +345,7 @@ function Abort()                                                        //-- Abo
    throw new Error('Execution cancelled by user');                      //Interrupts script by trowing error
 }
 
-function Detectnums(file, checkflag)
+function Detectnums(file, filename, checkflag)
 {
 	var Gnums2, i, it;
 	
@@ -351,7 +362,7 @@ function Detectnums(file, checkflag)
 			
 			if (Gnums != Gnums2)
 				{
-					App.ErrMsg(0, 0, "Inconsistency in Multisample.txt. Check n-Samples under [GS] and check sample entries.");
+					App.ErrMsg(0, 0, "Inconsistency in " + filename + ". Check n-Samples under [GS] and check sample entries.");
 					Abort();
 				}
 			else if	(App.ErrMsg(4, 0, Gnums + " chips are detected. Is this correct?")==7)
@@ -416,10 +427,8 @@ function CheckPathLength(str, sn)
 function Load(SDflag)
 {	   
     S = createArray(99,7,Gnums+1);
-    var inifile, st, it, j, colmode, GDSIIpath, measbcflag;
+    var inifile, st, it, j, colmode, GDSIIpath;
 
-    measbcflag = 1 //Flag can only change in SDvars.txt is loaded.
-	
 	//First load the list of parameters applicable to all loaded samples:
 	if (SDflag == 0) 
 	{
@@ -493,7 +502,8 @@ function Load(SDflag)
 			S[4][6][i] = (inifile.ReadString("GS", "LineBS", "0"));
    			S[5][6][i] = (inifile.ReadString("GS", "AreaBS", "0"));
    			S[6][6][i] = (inifile.ReadString("GS", "CurveBS", "0"));
-   			S[7][6][i] = (inifile.ReadString("GS", "BeamCurrent", "0"));	
+   			S[7][6][i] = (inifile.ReadString("GS", "BeamCurrent", "0"));
+   			StepsizeDwelltime(i, 0, 0); //This calculated and modifies beamspeeds if they are not correct in Multisample.txt or SDvars.txt
 		}
   	
 		if (st == 2)
@@ -528,7 +538,8 @@ function Load(SDflag)
 			S[4][6][i] = (inifile.ReadString(it, "LineBS", "0"));
    			S[5][6][i] = (inifile.ReadString(it, "AreaBS", "0"));
    			S[6][6][i] = (inifile.ReadString(it, "CurveBS", "0"));
-   			S[7][6][i] = (inifile.ReadString(it, "BeamCurrent", "0"));	
+   			S[7][6][i] = (inifile.ReadString(it, "BeamCurrent", "0"));
+   			StepsizeDwelltime(i, 0, 0); //This calculated and modifies beamspeeds if they are not correct in Multisample.txt or SDvars.txt	
 		}
 	}	
 	
@@ -576,15 +587,15 @@ function Load(SDflag)
 	{
 		if (App.ErrMsg(4, 0,"SDvars.txt successfully loaded. Use pre-set beamcurrent and stepsize?") == 6)
 		{
-			measbcflag = 0;
+			Gmeasbcflag = 0;
 		}
-		CollectUV(st, 2, measbcflag);  //After loading SDvars.txt, start collection of UV coords. Set GUIflag = 2 since all other variables are already loaded.	
+		CollectUV(st, 2);  //After loading SDvars.txt, start collection of UV coords. Set GUIflag = 2 since all other variables are already loaded.	
 	}
     return(S);
 }
 
 
-function CollectSD(st, GUIflag, measbcflag)
+function CollectSD(st, GUIflag)
 {
     var mflag = 0;
 	var i, it, wfprocedureloadlist, S14, S24, S34, S44, S54, S64, S74, S84, S94, S104, S124, S134, S144, S15, S25, S35, S45, currpath, fex, currstruct, tl;
@@ -722,12 +733,12 @@ function CollectSD(st, GUIflag, measbcflag)
 		Logdata();
 		}
 	}
-	S = CollectUV(st, GUIflag, measbcflag);
+	S = CollectUV(st, GUIflag);
 
 	return(S);
 }
 
-function CollectUV(st, GUIflag, measbcflag)
+function CollectUV(st, GUIflag)
 {
 	var i, j, m, maf, wd;
 // Add loop so that this is only asked once if st == 1
@@ -771,6 +782,7 @@ function CollectUV(st, GUIflag, measbcflag)
 		}
 
 	    App.Exec("Halt()");
+	    Panicbutton();
 	    if (S[13][4][i] == 1 || S[13][4][i] == 2)
 		{
 			AlignWF(S[10][4][i], 0, 1, 1, 1); //align a writefield or not depending on S[10][4][i]
@@ -783,7 +795,8 @@ function CollectUV(st, GUIflag, measbcflag)
 	    App.ErrMsg(0,0,"Check UV alignment + focus after WF change of sample chip " + i + " of " + Gnums);
 	    App.Exec("Halt()");
 	    Panicbutton();
-	    if (measbcflag == 1)
+	    App.ErrMsg(0,0,Gmeasbcflag)
+	    if (Gmeasbcflag == 1)
 	    {
 	    	if (st == 1 && i == 1) 
 	    	{
@@ -845,8 +858,7 @@ function Logdata()
 	var datesp, date, Glogini, it, j; 
 
 	st = S[9][4][1];
-	datesp = Date().split(":");
-    date = datesp[0] + "." + datesp[1] + "." + datesp[2];
+    date = Gdatesp[0] + "." + Gdatesp[1] + "." + Gdatesp[2];
 	Glogfilename[2] = "Log " + date + ".txt";
     Glogini = App.OpenInifile(Glogfilename[1] + Glogfilename[2]);
 	Glogini.Writestring("GS","Procedure", S[9][4][1]);
@@ -1474,14 +1486,14 @@ function Start()
 		}
 		else
 		{
-			Gnums = Detectnums(GSDini, 0);
+			Gnums = Detectnums(GSDini, "SDvars.txt", 1);
 			Load(1);
 		}
 
 	}	
 	else
 	{
-		Gnums = Detectnums(Gsampleini, 1);
+		Gnums = Detectnums(Gsampleini, "Multisample.txt", 1);
 		Load(0);
 	}
 	Glogfilename = Logdata();
