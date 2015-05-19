@@ -416,8 +416,10 @@ function CheckPathLength(str, sn)
 function Load(SDflag)
 {	   
     S = createArray(99,7,Gnums+1);
-    var inifile, st, it, j, colmode, GDSIIpath;
+    var inifile, st, it, j, colmode, GDSIIpath, measbcflag;
 
+    measbcflag = 1 //Flag can only change in SDvars.txt is loaded.
+	
 	//First load the list of parameters applicable to all loaded samples:
 	if (SDflag == 0) 
 	{
@@ -493,7 +495,7 @@ function Load(SDflag)
    			S[6][6][i] = (inifile.ReadString("GS", "CurveBS", "0"));
    			S[7][6][i] = (inifile.ReadString("GS", "BeamCurrent", "0"));	
 		}
-  
+  	
 		if (st == 2)
 		{
 			S[1][4][i] = (inifile.ReadString(it, "ExpLayers", "0"));
@@ -520,13 +522,6 @@ function Load(SDflag)
 			}
 			S[3][5][i] = (inifile.ReadString(it, "GDSII", "0"));
 			S[4][5][i] = (inifile.ReadString(it, "Struct", "0"));
-			S[5][5][i] = (inifile.ReadString(it, "WFZoomU", "0"));
-			S[6][5][i] = (inifile.ReadString(it, "WFZoomV", "0"));
-			S[7][5][i] = (inifile.ReadString(it, "WFShiftU", "0"));
-			S[8][5][i] = (inifile.ReadString(it, "WFShiftV", "0"));
-			S[9][5][i] = (inifile.ReadString(it, "WFRotU", "0"));
-			S[10][5][i] = (inifile.ReadString(it, "WFRotV", "0"));
-
 			S[1][6][i] = (inifile.ReadString(it, "SSLine", "0"));
 			S[2][6][i] = (inifile.ReadString(it, "SSArea", "0"));
 			S[3][6][i] = (inifile.ReadString(it, "SSCurve", "0"));
@@ -534,9 +529,8 @@ function Load(SDflag)
    			S[5][6][i] = (inifile.ReadString(it, "AreaBS", "0"));
    			S[6][6][i] = (inifile.ReadString(it, "CurveBS", "0"));
    			S[7][6][i] = (inifile.ReadString(it, "BeamCurrent", "0"));	
-			
 		}
-	}
+	}	
 	
 	if (SDflag == 0)
 	{
@@ -551,7 +545,7 @@ function Load(SDflag)
 				Panicbutton();
 				MeasBeamCurrent();
 	    		StepsizeDwelltime(1, 2, 1);
-	    		SetStepsizeDwelltime(1);	
+	    		SetStepsizeDwelltime(1);
 			}
 
     		if (st == 2)
@@ -577,17 +571,20 @@ function Load(SDflag)
     		}
     		
 		}
-	}
+ 	}
 	else
 	{
-		App.ErrMsg(0, 0,"SDvars.txt successfully loaded, now perform required UV alignments.");
-		CollectUV(st, 2);  //After loading SDvars.txt, start collection of UV coords. Set GUIflag = 2 since all other variables are already loaded.	
+		if (App.ErrMsg(4, 0,"SDvars.txt successfully loaded. Use pre-set beamcurrent and stepsize?") == 6)
+		{
+			measbcflag = 0;
+		}
+		CollectUV(st, 2, measbcflag);  //After loading SDvars.txt, start collection of UV coords. Set GUIflag = 2 since all other variables are already loaded.	
 	}
     return(S);
 }
 
 
-function CollectSD(st, GUIflag)
+function CollectSD(st, GUIflag, measbcflag)
 {
     var mflag = 0;
 	var i, it, wfprocedureloadlist, S14, S24, S34, S44, S54, S64, S74, S84, S94, S104, S124, S134, S144, S15, S25, S35, S45, currpath, fex, currstruct, tl;
@@ -725,16 +722,15 @@ function CollectSD(st, GUIflag)
 		Logdata();
 		}
 	}
-	S = CollectUV(st, GUIflag);
+	S = CollectUV(st, GUIflag, measbcflag);
 
 	return(S);
 }
 
-function CollectUV(st, GUIflag)
+function CollectUV(st, GUIflag, measbcflag)
 {
 	var i, j, m, maf, wd;
 // Add loop so that this is only asked once if st == 1
-
     if (GUIflag == 1)
     {	
     	App.ErrMsg(0,0,"Collecting three point alignments for all chips commences. Activate desired Column dataset and WriteField. USE GLOBAL ALIGNMENT!");
@@ -762,7 +758,6 @@ function CollectUV(st, GUIflag)
 		if (GUIflag == 2)
 		{
 			SetSvars(i, 0, 0);
-				
 			App.Exec("OpenDatabase(" + S[3][5][i] + ")");
 			App.Exec("ViewStructure(" + S[4][5][i] + ")");
 
@@ -788,19 +783,27 @@ function CollectUV(st, GUIflag)
 	    App.ErrMsg(0,0,"Check UV alignment + focus after WF change of sample chip " + i + " of " + Gnums);
 	    App.Exec("Halt()");
 	    Panicbutton();
-	    if (st == 1 && i == 1) 
+	    if (measbcflag == 1)
 	    {
-	    	MeasBeamCurrent();
-	    	StepsizeDwelltime(i, GUIflag, 1);
-	    	SetStepsizeDwelltime(i);
+	    	if (st == 1 && i == 1) 
+	    	{
+	    		MeasBeamCurrent();
+	    		StepsizeDwelltime(i, GUIflag, 1);
+		    	SetStepsizeDwelltime(i);
+	    	}
+			if (st == 2 && i == 1) MeasBeamCurrent();
+			if (st == 2 && i !=1)
+			{
+				if (S[2][5][i] != S[2][5][i-1]) MeasBeamCurrent();
+			}
+			if (st == 2) 
+  			{
+   				StepsizeDwelltime(i, GUIflag, 1);
+				SetStepsizeDwelltime(i);
+  			}
+
 	    }
-		if (st == 2 && i == 1) MeasBeamCurrent();
-		if (st == 2 && i !=1 && S[2][5][i] != S[2][5][i-1]) MeasBeamCurrent();
-		if (st == 2) 
-  		{
-   			StepsizeDwelltime(i, GUIflag, 1);
-			SetStepsizeDwelltime(i);
-  		}
+
 	    for (j = 1; j <= 3; j++)
 		{
 			m = App.GetVariable("GLOBALADJUST.Mark" + j).split(",");
@@ -904,10 +907,10 @@ function Logdata()
 			Glogini.WriteString(it, "SSLine", S[1][6][i] + "");
 			Glogini.WriteString(it, "SSArea", S[2][6][i] + "");
 			Glogini.WriteString(it, "SSCurve", S[3][6][i] + "");
-			Glogini.WriteString(it, "LineBS", S[4][6][1] + "");
-			Glogini.WriteString(it, "AreaBS", S[5][6][1] + "");
-			Glogini.WriteString(it, "CurveBS", S[6][6][1] + "");
-			Glogini.WriteString(it, "BeamCurrent", S[7][6][1] + "");
+			Glogini.WriteString(it, "LineBS", S[4][6][i] + "");
+			Glogini.WriteString(it, "AreaBS", S[5][6][i] + "");
+			Glogini.WriteString(it, "CurveBS", S[6][6][i] + "");
+			Glogini.WriteString(it, "BeamCurrent", S[7][6][i] + "");
 		}
 		
 		for (j = 1; j <= 3; j++)
@@ -992,6 +995,13 @@ function Install(restoreflag)
 	}
 	fso.close;
 }
+
+function RemoveGDSlogflag()
+{
+	p3 = ExpandPath("%userroot%\\System\\");
+	scanini = App.OpenIniFile(p3 + "Scan.ini");
+	scanini.WriteString("Interact", "log", 0);
+}	
 
 function InstallGDSmarker(markertype, k, mj) //Installs GDSII marker properties into system.
 {
@@ -1423,7 +1433,8 @@ function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,mu
 				App.Exec("UnSelectAllExposedLayer()");                      //Deselects al exposed layers
 				App.Exec("SelectExposedLayer(" + S[1][4][i] + ")");
 				if (testmode != 1 && exposure == 1) App.Exec("Exposure");
-			}		
+			}
+		RemoveGDSlogflag();		
 		}
 	}
 	Stage.GlobalAlignment();
@@ -1458,7 +1469,7 @@ function Start()
 		if (st!=1 && st!=2 && st!=3) Abort();  
 		if (st == 1 || st == 2)	
 		{
-			GUIflag = App.InputMsg("Select complex data aquiring procedure","1: Easy automatic collection during UV alignment, 2: Manual collection using GUI","1");
+			GUIflag = App.InputMsg("Select data aquiring procedure","1: Easy automatic collection during UV alignment, 2: Manual collection using GUI","1");
 			S = CollectSD(st, GUIflag);
 		}
 		else
