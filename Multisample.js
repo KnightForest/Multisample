@@ -62,15 +62,16 @@
 // - Make separate capture UV/WF script
 // - Expand on alignprocedures syntax
 // - Split logfiles into sampledata, markerlog and progress log
+// - Redo sampledefinitions in multisample/sdvars. Make them not rely on numbers but use loadlist maybe.
 
 // BUGS:
-// - !Collect UV measurement of beamcurrent with measbcflag is broken!
-// - An extra empty logfile is created somewhere in the script.
+// V Collect UV measurement of beamcurrent with measbcflag is broken!
+// V An extra empty logfile is created somewhere in the script.
 // V Auto stepsizedwelltime does not work, always uses 2 nm
 //		V It is possible to change the value for the stepsize in multisample.txt
 //		V In this case, the beamspeed reported in the log is wrong
-// - Possibly the WF loading does not work properly, needs testing!
-//		-> Without changing beam settings, program works fine
+// V Possibly the WF loading does not work properly, needs testing!
+//		V Without changing beam settings, program works fine
 // V Layer 61 scans do not work for this version.
 // - Probably more :/
 // - Manual alignment on dot within script not possible
@@ -795,7 +796,6 @@ function CollectUV(st, GUIflag)
 	    App.ErrMsg(0,0,"Check UV alignment + focus after WF change of sample chip " + i + " of " + Gnums);
 	    App.Exec("Halt()");
 	    Panicbutton();
-	    App.ErrMsg(0,0,Gmeasbcflag)
 	    if (Gmeasbcflag == 1)
 	    {
 	    	if (st == 1 && i == 1) 
@@ -807,7 +807,8 @@ function CollectUV(st, GUIflag)
 			if (st == 2 && i == 1) MeasBeamCurrent();
 			if (st == 2 && i !=1)
 			{
-				if (S[2][5][i] != S[2][5][i-1]) MeasBeamCurrent();
+				lastcolset = LastDatasettoColset();
+				if (lastcolset != S[2][5][i-1]) MeasBeamCurrent();
 			}
 			if (st == 2) 
   			{
