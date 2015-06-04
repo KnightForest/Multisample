@@ -62,16 +62,22 @@
 // - Make separate capture UV/WF script
 // - Expand on alignprocedures syntax
 // - Split logfiles into sampledata, markerlog and progress log
+// - Redo sampledefinitions in multisample/sdvars. Make them not rely on numbers but use loadlist maybe.
 
 // BUGS:
+<<<<<<< HEAD
 // - GDS2 markerlogs are also made for stage referred markers
 // - Asks to measure beamcurrent twice during CollectSD
 // 		-> Also asks for beamcurrent if column did not change.. is this ok?
+=======
+// V Collect UV measurement of beamcurrent with measbcflag is broken!
+// V An extra empty logfile is created somewhere in the script.
+>>>>>>> experimental
 // V Auto stepsizedwelltime does not work, always uses 2 nm
 //		V It is possible to change the value for the stepsize in multisample.txt
 //		V In this case, the beamspeed reported in the log is wrong
-// - Possibly the WF loading does not work properly, needs testing!
-//		-> Without changing beam settings, program works fine
+// V Possibly the WF loading does not work properly, needs testing!
+//		V Without changing beam settings, program works fine
 // V Layer 61 scans do not work for this version.
 // - Probably more :/
 // - Manual alignment on dot within script not possible
@@ -88,8 +94,10 @@ var GSDini = App.OpenInifile(Gfilepath + "SDvars.txt");
 var GMarkertypes = App.Openinifile(Gfilepath + "Markers.txt");
 var GGDSIImarkertypes = App.Openinifile(Gfilepath + "GDSIImarkers.txt");
 var GAlignprocedures = App.Openinifile(Gfilepath + "Alignprocedures.txt");
+var Gdatesp = Date().split(":");
 var S = createArray(1,1,1);
 var Gnums = -1;
+var Gmeasbcflag = 1;
 var i, st, beamoffflag, collectinguvflag;
 
 function Succes()			                                            //-- Called if function 'write' was successful
@@ -197,7 +205,7 @@ function SetStepsizeDwelltime(i)
 	App.Exec("CorrectDwelltime()");                                           //Corrects area dwelltimes
 }
 
-function StepsizeDwelltime(i,GUIflag, bcreadflag)
+function StepsizeDwelltime(i,GUIflag, bcreadflag) //GUIflag = 0 means only beamspeeds are calculated and modified. BC and SS are not touched.
 {
     var msg_setareastepsize, msg_rounding, msg_setlinestepsize, msg_higherthan, beamspeed, minstepsize, advisedbeamspeed, areaminstepsize, stepsize, stepsizec, stepsizeline, criticalbeamspeed, bflag, beamcurrent;
     msg_setareastepsize = "Set AREA stepsize for patterning in nm";
@@ -234,10 +242,18 @@ function StepsizeDwelltime(i,GUIflag, bcreadflag)
 	minstepsize = App.GetVariable("Beamcontrol.MetricBasicStepSize")*Math.pow(10,3); //Min stepsize in [nm]
 	advisedbeamspeed = 8;                                             	//Sets the advised beamspeed in [mm/s]
     areaminstepsize = Math.ceil(beamcurrent/((advisedbeamspeed*Math.pow(10,-5)*App.GetVariable("Exposure.ResistSensitivity")*minstepsize)))*minstepsize; //Calculates advised beamspeed [nm]
+	if (GUIflag == 0)
+	{
+		stepsize = S[2][6][i];
+		stepsizeline = S[1][6][i];
+		stepsizecurve = S[3][6][i];
+	}
+
 	if (GUIflag == 1)
 	{
 		stepsize = areaminstepsize;
 		stepsizeline = minstepsize;
+		stepsizecurve = areaminstepsize;
 	}
 
 	if (GUIflag == 2)
@@ -246,13 +262,14 @@ function StepsizeDwelltime(i,GUIflag, bcreadflag)
     
     	if (stepsize < minstepsize) stepsize=minstepsize; //If the user set stepsize is smaller than the minimum stepsize, it is return to this minimum value
     	stepsizeline=(minstepsize*Math.ceil(App.InputMsg(msg_setlinestepsize, msg_rounding + minstepsize + "nm:", minstepsize)/(minstepsize))).toString(); //Asks user to set stepsize for patterning
-    	if (stepsizeline < minstepsize) stepsizeline = minstepsize; 		//If the user set stepsize is smaller than the minimum stepsize, it is returned to this minimum value   	        
+    	if (stepsizeline < minstepsize) stepsizeline = minstepsize; 		//If the user set stepsize is smaller than the minimum stepsize, it is returned to this minimum value
+    	stepsizecurve = stepsize;   	        
 	}
 	                                                                     
 	beamspeed = [];
 	beamspeed[0] = beamcurrent*Math.pow(10,4)/(App.GetVariable("Exposure.LineDose"));  //Calculates line beamspeed in mm/s
   	beamspeed[1] = beamcurrent*Math.pow(10,5)/(stepsize*App.GetVariable("Exposure.ResistSensitivity")); //Calculates area beamspeed in mm/s                                                                        //Lines below calculate the resulting beam speed based on user stepsize
-	beamspeed[2] = beamcurrent*Math.pow(10,5)/(stepsize*App.GetVariable("Exposure.CurveDose")); //Calculates area beamspeed in mm/s 
+	beamspeed[2] = beamcurrent*Math.pow(10,5)/(stepsizecurve*App.GetVariable("Exposure.CurveDose")); //Calculates area beamspeed in mm/s 
 
    	
 
@@ -291,7 +308,7 @@ function StepsizeDwelltime(i,GUIflag, bcreadflag)
    		S[2][6][i] = stepsize;
    		S[3][6][i] = stepsizec;
    	}
-
+   	
    	S[4][6][i] = PreciseRound(beamspeed[0],3);
    	S[5][6][i] = PreciseRound(beamspeed[1],3);
    	S[6][6][i] = PreciseRound(beamspeed[2],3);
@@ -335,7 +352,7 @@ function Abort()                                                        //-- Abo
    throw new Error('Execution cancelled by user');                      //Interrupts script by trowing error
 }
 
-function Detectnums(file, checkflag)
+function Detectnums(file, filename, checkflag)
 {
 	var Gnums2, i, it;
 	
@@ -352,7 +369,7 @@ function Detectnums(file, checkflag)
 			
 			if (Gnums != Gnums2)
 				{
-					App.ErrMsg(0, 0, "Inconsistency in Multisample.txt. Check n-Samples under [GS] and check sample entries.");
+					App.ErrMsg(0, 0, "Inconsistency in " + filename + ". Check n-Samples under [GS] and check sample entries.");
 					Abort();
 				}
 			else if	(App.ErrMsg(4, 0, Gnums + " chips are detected. Is this correct?")==7)
@@ -492,9 +509,10 @@ function Load(SDflag)
 			S[4][6][i] = (inifile.ReadString("GS", "LineBS", "0"));
    			S[5][6][i] = (inifile.ReadString("GS", "AreaBS", "0"));
    			S[6][6][i] = (inifile.ReadString("GS", "CurveBS", "0"));
-   			S[7][6][i] = (inifile.ReadString("GS", "BeamCurrent", "0"));	
+   			S[7][6][i] = (inifile.ReadString("GS", "BeamCurrent", "0"));
+   			StepsizeDwelltime(i, 0, 0); //This calculated and modifies beamspeeds if they are not correct in Multisample.txt or SDvars.txt
 		}
-  
+  	
 		if (st == 2)
 		{
 			S[1][4][i] = (inifile.ReadString(it, "ExpLayers", "0"));
@@ -521,23 +539,16 @@ function Load(SDflag)
 			}
 			S[3][5][i] = (inifile.ReadString(it, "GDSII", "0"));
 			S[4][5][i] = (inifile.ReadString(it, "Struct", "0"));
-			S[5][5][i] = (inifile.ReadString(it, "WFZoomU", "0"));
-			S[6][5][i] = (inifile.ReadString(it, "WFZoomV", "0"));
-			S[7][5][i] = (inifile.ReadString(it, "WFShiftU", "0"));
-			S[8][5][i] = (inifile.ReadString(it, "WFShiftV", "0"));
-			S[9][5][i] = (inifile.ReadString(it, "WFRotU", "0"));
-			S[10][5][i] = (inifile.ReadString(it, "WFRotV", "0"));
-
 			S[1][6][i] = (inifile.ReadString(it, "SSLine", "0"));
 			S[2][6][i] = (inifile.ReadString(it, "SSArea", "0"));
 			S[3][6][i] = (inifile.ReadString(it, "SSCurve", "0"));
 			S[4][6][i] = (inifile.ReadString(it, "LineBS", "0"));
    			S[5][6][i] = (inifile.ReadString(it, "AreaBS", "0"));
    			S[6][6][i] = (inifile.ReadString(it, "CurveBS", "0"));
-   			S[7][6][i] = (inifile.ReadString(it, "BeamCurrent", "0"));	
-			
+   			S[7][6][i] = (inifile.ReadString(it, "BeamCurrent", "0"));
+   			StepsizeDwelltime(i, 0, 0); //This calculated and modifies beamspeeds if they are not correct in Multisample.txt or SDvars.txt	
 		}
-	}
+	}	
 	
 	if (SDflag == 0)
 	{
@@ -552,7 +563,7 @@ function Load(SDflag)
 				Panicbutton();
 				MeasBeamCurrent();
 	    		StepsizeDwelltime(1, 2, 1);
-	    		SetStepsizeDwelltime(1);	
+	    		SetStepsizeDwelltime(1);
 			}
 
     		if (st == 2)
@@ -578,10 +589,13 @@ function Load(SDflag)
     		}
     		
 		}
-	}
+ 	}
 	else
 	{
-		App.ErrMsg(0, 0,"SDvars.txt successfully loaded, now perform required UV alignments.");
+		if (App.ErrMsg(4, 0,"SDvars.txt successfully loaded. Use pre-set beamcurrent and stepsize?") == 6)
+		{
+			Gmeasbcflag = 0;
+		}
 		CollectUV(st, 2);  //After loading SDvars.txt, start collection of UV coords. Set GUIflag = 2 since all other variables are already loaded.	
 	}
     return(S);
@@ -735,7 +749,6 @@ function CollectUV(st, GUIflag)
 {
 	var i, j, m, maf, wd;
 // Add loop so that this is only asked once if st == 1
-
     if (GUIflag == 1)
     {	
     	App.ErrMsg(0,0,"Collecting three point alignments for all chips commences. Activate desired Column dataset and WriteField. USE GLOBAL ALIGNMENT!");
@@ -763,7 +776,6 @@ function CollectUV(st, GUIflag)
 		if (GUIflag == 2)
 		{
 			SetSvars(i, 0, 0);
-				
 			App.Exec("OpenDatabase(" + S[3][5][i] + ")");
 			App.Exec("ViewStructure(" + S[4][5][i] + ")");
 
@@ -777,6 +789,7 @@ function CollectUV(st, GUIflag)
 		}
 
 	    App.Exec("Halt()");
+	    Panicbutton();
 	    if (S[13][4][i] == 1 || S[13][4][i] == 2)
 		{
 			AlignWF(S[10][4][i], 0, 1, 1, 1); //align a writefield or not depending on S[10][4][i]
@@ -789,19 +802,28 @@ function CollectUV(st, GUIflag)
 	    App.ErrMsg(0,0,"Check UV alignment + focus after WF change of sample chip " + i + " of " + Gnums);
 	    App.Exec("Halt()");
 	    Panicbutton();
-	    if (st == 1 && i == 1) 
+	    if (Gmeasbcflag == 1)
 	    {
-	    	MeasBeamCurrent();
-	    	StepsizeDwelltime(i, GUIflag, 1);
-	    	SetStepsizeDwelltime(i);
+	    	if (st == 1 && i == 1) 
+	    	{
+	    		MeasBeamCurrent();
+	    		StepsizeDwelltime(i, GUIflag, 1);
+		    	SetStepsizeDwelltime(i);
+	    	}
+			if (st == 2 && i == 1) MeasBeamCurrent();
+			if (st == 2 && i !=1)
+			{
+				lastcolset = LastDatasettoColset();
+				if (lastcolset != S[2][5][i-1]) MeasBeamCurrent();
+			}
+			if (st == 2) 
+  			{
+   				StepsizeDwelltime(i, GUIflag, 1);
+				SetStepsizeDwelltime(i);
+  			}
+
 	    }
-		if (st == 2 && i == 1) MeasBeamCurrent();
-		if (st == 2 && i !=1 && S[2][5][i] != S[2][5][i-1]) MeasBeamCurrent();
-		if (st == 2) 
-  		{
-   			StepsizeDwelltime(i, GUIflag, 1);
-			SetStepsizeDwelltime(i);
-  		}
+
 	    for (j = 1; j <= 3; j++)
 		{
 			m = App.GetVariable("GLOBALADJUST.Mark" + j).split(",");
@@ -843,8 +865,7 @@ function Logdata()
 	var datesp, date, Glogini, it, j; 
 
 	st = S[9][4][1];
-	datesp = Date().split(":");
-    date = datesp[0] + "." + datesp[1] + "." + datesp[2];
+    date = Gdatesp[0] + "." + Gdatesp[1] + "." + Gdatesp[2];
 	Glogfilename[2] = "Log " + date + ".txt";
     Glogini = App.OpenInifile(Glogfilename[1] + Glogfilename[2]);
 	Glogini.Writestring("GS","Procedure", S[9][4][1]);
@@ -905,10 +926,10 @@ function Logdata()
 			Glogini.WriteString(it, "SSLine", S[1][6][i] + "");
 			Glogini.WriteString(it, "SSArea", S[2][6][i] + "");
 			Glogini.WriteString(it, "SSCurve", S[3][6][i] + "");
-			Glogini.WriteString(it, "LineBS", S[4][6][1] + "");
-			Glogini.WriteString(it, "AreaBS", S[5][6][1] + "");
-			Glogini.WriteString(it, "CurveBS", S[6][6][1] + "");
-			Glogini.WriteString(it, "BeamCurrent", S[7][6][1] + "");
+			Glogini.WriteString(it, "LineBS", S[4][6][i] + "");
+			Glogini.WriteString(it, "AreaBS", S[5][6][i] + "");
+			Glogini.WriteString(it, "CurveBS", S[6][6][i] + "");
+			Glogini.WriteString(it, "BeamCurrent", S[7][6][i] + "");
 		}
 		
 		for (j = 1; j <= 3; j++)
@@ -993,6 +1014,13 @@ function Install(restoreflag)
 	}
 	fso.close;
 }
+
+function RemoveGDSlogflag()
+{
+	p3 = ExpandPath("%userroot%\\System\\");
+	scanini = App.OpenIniFile(p3 + "Scan.ini");
+	scanini.WriteString("Interact", "log", 0);
+}	
 
 function InstallGDSmarker(markertype, k, mj) //Installs GDSII marker properties into system.
 {
@@ -1361,7 +1389,7 @@ function WriteMatrix(S, i)
 
 function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,multiple..etc), testmode ornot
 {
-	var N, meander, k, j, mj, l61, l61exp;
+	var N, meander, k, j, mj, l61, l61exp, exposure;
 	
 	N = WriteMatrix(S, i);
 	meander = 1;
@@ -1420,11 +1448,13 @@ function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,mu
 				if (S[13][4][i] == 2 && k == 0 && j == 0)
 				{	
 					exposure = AlignWF(S[10][4][i], 1, i, j, k); //align a writefield or not depending on S[10][4][i]
-				}			
+				}
+				if (S[13][4][i] == 3 || S[13][4][i] == 4) exposure = 1;							
 				App.Exec("UnSelectAllExposedLayer()");                      //Deselects al exposed layers
 				App.Exec("SelectExposedLayer(" + S[1][4][i] + ")");
 				if (testmode != 1 && exposure == 1) App.Exec("Exposure");
-			}		
+			}
+		RemoveGDSlogflag();		
 		}
 	}
 	Stage.GlobalAlignment();
@@ -1459,19 +1489,19 @@ function Start()
 		if (st!=1 && st!=2 && st!=3) Abort();  
 		if (st == 1 || st == 2)	
 		{
-			GUIflag = App.InputMsg("Select complex data aquiring procedure","1: Easy automatic collection during UV alignment, 2: Manual collection using GUI","1");
+			GUIflag = App.InputMsg("Select data aquiring procedure","1: Easy automatic collection during UV alignment, 2: Manual collection using GUI","1");
 			S = CollectSD(st, GUIflag);
 		}
 		else
 		{
-			Gnums = Detectnums(GSDini, 0);
+			Gnums = Detectnums(GSDini, "SDvars.txt", 1);
 			Load(1);
 		}
 
 	}	
 	else
 	{
-		Gnums = Detectnums(Gsampleini, 1);
+		Gnums = Detectnums(Gsampleini, "Multisample.txt", 1);
 		Load(0);
 	}
 	Glogfilename = Logdata();

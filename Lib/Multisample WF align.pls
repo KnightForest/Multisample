@@ -1,31 +1,3 @@
-
-Skip to content
-This repository
-
-    Explore
-    Gist
-    Blog
-    Help
-
-    @KnightForest KnightForest
-
-You don't have any verified emails. We recommend verifying at least one email.
-
-Email verification helps our support team verify ownership if you lose account access and allows you to receive all the notifications you ask for.
-
-2
-1
-
-    0
-
-KnightForest/Multisample
-
-Multisample/Lib/Multisample WF align.pls
-@KnightForest KnightForest 2 hours ago IMPORTANT! Beamcurrent now set properly from S-matrix
-
-1 contributor
-61 lines (57 sloc) 2.18 kb
-
 [HEADER]
 FORMAT=IXYZRTUVWATC,Options,0,Type,0,Size-U,0,Size-V,0,Points-U,0,Points-V,0,Dir,0,Avg,0,Pos1,0,Pos2,0,Pos3,0,Link,0,File,0,Layer,0,Area,0,DoseFactor,0,Dwelltime,0,Stepsize,0,SplDwell,0,SplStep,0,CurveStep,0,CurveDwell,0,DotDwell,0,FBMSArea,0,FBMSLines,0,SplDot,0,Time,0,Timestamp,0,Method,0,Dot,0,Angle,0,MarkSequences,0,Frame,0,LAvg,0
 WAFERLAYOUT=DEFAULT.wlo
@@ -84,9 +56,4 @@ Frame=W:30,VISIBLE,!SHOWDIM
 LAvg=W:25,VISIBLE,!SHOWDIM
 
 [DATA]
-0,0.000000,0.000000,0.000000,0.000000,0.000000,-0.040000,0.040000,0.000000,LE,UV,Multisample WF align,STAY;,ALWF_AUTOLINE,8.0,1.0,0.002,0.002,U,16,,,,,%UserRoot%DATA\SCANPLS\ALIGN055.PLS,,,,,,,,,,,,,,,,,,0.0,15,0,1
-
-    Status API Training Shop Blog About 
-
-    © 2015 GitHub, Inc. Terms Privacy Security Contact 
-
+0,0.000000,0.000000,0.000000,0.000000,0.000000,0.040000,0.040000,0.000000,LE,UV,Multisample WF align,STAY;,ALWF_AUTOLINE,6.0,1.0,0.002,0.002,U,16,,,,,%UserRoot%DATA\SCANPLS\ALIGN004.PLS,,,,,,,,,,,,,,,,,,0.0,15,0,1
