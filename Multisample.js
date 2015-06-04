@@ -1383,7 +1383,7 @@ function WriteMatrix(S, i)
 
 function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,multiple..etc), testmode ornot
 {
-	var N, meander, k, j, mj, l61, l61exp;
+	var N, meander, k, j, mj, l61, l61exp, exposure;
 	
 	N = WriteMatrix(S, i);
 	meander = 1;
@@ -1442,7 +1442,8 @@ function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,mu
 				if (S[13][4][i] == 2 && k == 0 && j == 0)
 				{	
 					exposure = AlignWF(S[10][4][i], 1, i, j, k); //align a writefield or not depending on S[10][4][i]
-				}			
+				}
+				if (S[13][4][i] == 3 || S[13][4][i] == 4) exposure = 1;							
 				App.Exec("UnSelectAllExposedLayer()");                      //Deselects al exposed layers
 				App.Exec("SelectExposedLayer(" + S[1][4][i] + ")");
 				if (testmode != 1 && exposure == 1) App.Exec("Exposure");
