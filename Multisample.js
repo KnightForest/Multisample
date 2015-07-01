@@ -65,14 +65,8 @@
 // - Redo sampledefinitions in multisample/sdvars. Make them not rely on numbers but use loadlist maybe.
 
 // BUGS:
-<<<<<<< HEAD
-// - GDS2 markerlogs are also made for stage referred markers
-// - Asks to measure beamcurrent twice during CollectSD
-// 		-> Also asks for beamcurrent if column did not change.. is this ok?
-=======
 // V Collect UV measurement of beamcurrent with measbcflag is broken!
 // V An extra empty logfile is created somewhere in the script.
->>>>>>> experimental
 // V Auto stepsizedwelltime does not work, always uses 2 nm
 //		V It is possible to change the value for the stepsize in multisample.txt
 //		V In this case, the beamspeed reported in the log is wrong
@@ -240,7 +234,8 @@ function StepsizeDwelltime(i,GUIflag, bcreadflag) //GUIflag = 0 means only beams
 	}
 
 	minstepsize = App.GetVariable("Beamcontrol.MetricBasicStepSize")*Math.pow(10,3); //Min stepsize in [nm]
-	advisedbeamspeed = 8;                                             	//Sets the advised beamspeed in [mm/s]
+	//advisedbeamspeed = beamcurrent*3+8;
+	advisedbeamspeed = 10;                                             	//Sets the advised beamspeed in [mm/s]
     areaminstepsize = Math.ceil(beamcurrent/((advisedbeamspeed*Math.pow(10,-5)*App.GetVariable("Exposure.ResistSensitivity")*minstepsize)))*minstepsize; //Calculates advised beamspeed [nm]
 	if (GUIflag == 0)
 	{
@@ -809,6 +804,16 @@ function CollectUV(st, GUIflag)
 	    		MeasBeamCurrent();
 	    		StepsizeDwelltime(i, GUIflag, 1);
 		    	SetStepsizeDwelltime(i);
+	    	}
+	    	if (st == 1 && i != 1) 
+	    	{
+	    		S[1][6][i] = S[1][6][1]
+	    		S[2][6][i] = S[2][6][1]
+	    		S[3][6][i] = S[3][6][1]
+	    		S[4][6][i] = S[4][6][1]
+	    		S[5][6][i] = S[5][6][1]
+	    		S[6][6][i] = S[6][6][1]
+	    		S[7][6][i] = S[7][6][1]
 	    	}
 			if (st == 2 && i == 1) MeasBeamCurrent();
 			if (st == 2 && i !=1)
