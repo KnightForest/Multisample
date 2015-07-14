@@ -78,17 +78,20 @@
 // 		-> Needs added routine during UV alignment.
 
 var Gsn = "Multisample";
+var Gsharedfolder = "\\\\crswap01.ewi.utwente.nl\\mesalabuser\\NE\\EBLLogs"
 //var Gsnl = parseInt(Gsn.length, 8);
 var Gfilepath = ExpandPath("%userroot%\Script\\" + Gsn + "\\");
 var Glogfilename = createArray(3);
 Glogfilename[1] = Gfilepath + "Logs\\";
+var Gdatesp = Date().split(":");
+var date = Gdatesp[0] + "." + Gdatesp[1] + "." + Gdatesp[2];
+Glogfilename[2] = "Log " + date + ".txt";
 var Glib = Gfilepath + "\\Lib\\";
 var Gsampleini = App.OpenInifile(Gfilepath + "Multisample.txt");
 var GSDini = App.OpenInifile(Gfilepath + "SDvars.txt");
 var GMarkertypes = App.Openinifile(Gfilepath + "Markers.txt");
 var GGDSIImarkertypes = App.Openinifile(Gfilepath + "GDSIImarkers.txt");
 var GAlignprocedures = App.Openinifile(Gfilepath + "Alignprocedures.txt");
-var Gdatesp = Date().split(":");
 var S = createArray(1,1,1);
 var Gnums = -1;
 var Gmeasbcflag = 1;
@@ -127,7 +130,59 @@ function PreciseRound(num, decimals)
 {
 	var t=Math.pow(10, decimals);   
  	return (Math.round((num * t) + (decimals)*((10 / Math.pow(100, decimals)))) / t).toFixed(decimals);
- }
+}
+
+function Progress(s, n, m)
+{
+	var totalstructures, currentstructurepercent
+	totalstructures = 0;
+	currentstructure = 0;
+	for (o = 1; o <= S[11][4][1]; o++)
+	{
+		totalstructures = totalstructures + (parseInt(S[2][4][o]) * parseInt(S[3][4][o]));
+	}
+	for (p = 1; p <= s-1; p++)
+	{
+		currentstructure = currentstructure + (parseInt(S[2][4][s]) * parseInt(S[3][4][s]));
+	//	currentstructure = currentstructure + (parseInt(S[2][4][s])-(n+1))*(m+1) hier klopt nog geen zak van
+	}
+	currentstructure = currentstructure + (m-1)*(parseInt(S[2][4][s])) + n;
+	//jcurrentstructurepercent = currenstructure/totalstructures*100
+}
+
+function GenerateBatchFile()
+{
+    var fso = new ActiveXObject("Scripting.FileSystemObject");
+    if (FileExists(Gfilepath + "Lib\\CopyLog.bat") == 1)
+    {
+    	var file = fso.GetFile(Gfilepath + "Lib\\CopyLog.bat");
+    	file.Delete();
+    }
+	// Create the file, and obtain a file object for the file.
+	var filename = Gfilepath + "Lib\\CopyLog.bat";
+	//fso.CreateTextFile(Gfilepath + "Lib\\CopyLog.bat");
+	fso.CreateTextFile(filename);
+	file = fso.GetFile(filename);
+
+	// Open a text stream for output.
+	var ts = file.OpenAsTextStream(2, -2);
+
+	// Write to the text stream.
+	bline1 = "xcopy \"" + Glogfilename[1] + Glogfilename[2] + "\"" + " " + Gsharedfolder + " /y"
+	ts.WriteLine(bline1);
+	ts.Close();
+}
+
+function ExecFile(file)
+{
+    WshShell = new ActiveXObject("WScript.Shell");
+    WshShell.Run("cmd /c " + file);
+}
+
+function CopyLog()
+{
+    ExecFile(Gfilepath + "Lib\\CopyLog.bat");
+}
 
 function LastDatasettoColset()
 {
@@ -234,8 +289,7 @@ function StepsizeDwelltime(i,GUIflag, bcreadflag) //GUIflag = 0 means only beams
 	}
 
 	minstepsize = App.GetVariable("Beamcontrol.MetricBasicStepSize")*Math.pow(10,3); //Min stepsize in [nm]
-	//advisedbeamspeed = beamcurrent*3+8;
-	advisedbeamspeed = 10;                                             	//Sets the advised beamspeed in [mm/s]
+	advisedbeamspeed = 11*Math.pow(beamcurrent,0.5)+7;       //Sets the advised beamspeed in [mm/s]
     areaminstepsize = Math.ceil(beamcurrent/((advisedbeamspeed*Math.pow(10,-5)*App.GetVariable("Exposure.ResistSensitivity")*minstepsize)))*minstepsize; //Calculates advised beamspeed [nm]
 	if (GUIflag == 0)
 	{
@@ -270,17 +324,17 @@ function StepsizeDwelltime(i,GUIflag, bcreadflag) //GUIflag = 0 means only beams
 
    	if (GUIflag == 2)
    	{
-   	 	criticalbeamspeed = 10;
+   	 	criticalbeamspeed = advisedbeamspeed;
    		bflag = 0;
    		
    		if (beamspeed[0] > criticalbeamspeed) 
       	{
-      		App.Errmsg(EC_INFO ,0 , "WARNING! Line beam speed greater than 10mm/s:    " + Math.ceil(beamspeed[2]*10)/10 + "mm/s, reduce beamcurrent."); 
+      		App.Errmsg(EC_INFO ,0 , "WARNING! Line beam speed greater than 10mm/s:    " + Math.ceil(beamspeed[2]*10)/10 + "mm/s."); 
       		bflag = 1;
       	}      	
    		if (beamspeed[1] > criticalbeamspeed) 
       	{
-      		App.Errmsg(EC_INFO ,0 , "WARNING! Area beam speed greater than 10mm/s:    " + Math.ceil(beamspeed[1]*10)/10 + "mm/s, increase stepsize or reduce beamcurrent.");
+      		App.Errmsg(EC_INFO ,0 , "WARNING! Area beam speed greater than "+ advisedbeamspeed +" mm/s:    " + Math.ceil(beamspeed[1]*10)/10 + "mm/s.");
       		bflag = 1;
       	}
       	//if (beamspeed[2] > critica3	lbeamspeed)                                            //Next lines checks if the calculated beamspeed is not higher than 10 mm/s, else it gives a warning.
@@ -291,7 +345,7 @@ function StepsizeDwelltime(i,GUIflag, bcreadflag) //GUIflag = 0 means only beams
 
    		if (bflag == 1)                                                      //If one of the beamspeeds was too high, the user is asked if they want to continue anyway.
     	{
-	      	if (App.ErrMsg(EC_YESNO, 0, "Continue with high beamspeed? (Okay until ~11 mm/s)" ) == EA_NO) Abort();
+	      	if (App.ErrMsg(EC_YESNO, 0, "Continue with high beamspeed?" ) == EA_NO) Abort();
 	    }
    			bflag = 0; 
    	}
@@ -867,11 +921,9 @@ function CollectUV(st, GUIflag)
 
 function Logdata()
 {
-	var datesp, date, Glogini, it, j; 
+	var Glogini, it, j; 
 
 	st = S[9][4][1];
-    date = Gdatesp[0] + "." + Gdatesp[1] + "." + Gdatesp[2];
-	Glogfilename[2] = "Log " + date + ".txt";
     Glogini = App.OpenInifile(Glogfilename[1] + Glogfilename[2]);
 	Glogini.Writestring("GS","Procedure", S[9][4][1]);
 	Glogini.Writestring("GS","n-Samples", S[11][4][1]);
@@ -954,7 +1006,10 @@ function Logdata()
 		Glogini.WriteString(it, "WFShiftV", S[8][5][i] + "");
 		Glogini.WriteString(it, "WFRotU", S[9][5][i] + "");
 		Glogini.WriteString(it, "WFRotV", S[10][5][i] + "");		
-	}	
+	}
+	CopyLog();
+	fso = new ActiveXObject("Scripting.FileSystemObject");
+	fso.CopyFile(Glogfilename[1] + Glogfilename[2], Glogfilename[1] + "LastLog.txt", true);
     return(Glogfilename);
 }
 
@@ -997,6 +1052,7 @@ function AlignUV(i)
 function Install(restoreflag)
 {
 	var fso, p1 , p2;
+	GenerateBatchFile()
 	App.SetVariable("Automation/Links.0",Gfilepath + Gsn + ".js");
 	fso = new ActiveXObject("Scripting.FileSystemObject");
 	if (fso.FolderExists(Gfilepath))
@@ -1419,7 +1475,7 @@ function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,mu
 			if (S[12][4][i] != -1) //Checks if layer 61 is enabled
 			{
 				l61 = S[12][4][i].split("-");
-
+				CopyLog();
 				if (S[13][4][i] == 1)
 				{
 					AlignWF(S[10][4][i], 1, i, j, k);
@@ -1431,7 +1487,7 @@ function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,mu
 				
 				InstallGDSmarker(l61[0], k, mj);
 				App.Exec("UnSelectAllExposedLayer()");                      //Deselects al exposed layers
-				
+				CopyLog();
 				if (testmode == 1) 
 				{
 					App.Exec("SelectExposedLayer(61)"); 
@@ -1443,9 +1499,11 @@ function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,mu
 					App.Exec("SelectExposedLayer(" + l61exp + ")");			
 				}
 				App.Exec("Exposure");
+				CopyLog();
 			}
 			if (S[1][4][i] != -1) //Checks if a global layer is selected
 			{
+				CopyLog();
 				if (S[13][4][i] == 1)
 				{
 					exposure = AlignWF(S[10][4][i], 1, i, j, k); //align a writefield or not depending on S[10][4][i]
@@ -1455,9 +1513,11 @@ function Write(S, i, testmode) //S-matrix, n-th chip, type of writing (single,mu
 					exposure = AlignWF(S[10][4][i], 1, i, j, k); //align a writefield or not depending on S[10][4][i]
 				}
 				if (S[13][4][i] == 3 || S[13][4][i] == 4) exposure = 1;							
+				CopyLog();
 				App.Exec("UnSelectAllExposedLayer()");                      //Deselects al exposed layers
 				App.Exec("SelectExposedLayer(" + S[1][4][i] + ")");
 				if (testmode != 1 && exposure == 1) App.Exec("Exposure");
+				CopyLog();
 			}
 		RemoveGDSlogflag();		
 		}

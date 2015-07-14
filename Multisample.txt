@@ -1,144 +1,162 @@
 [GS]
 Procedure=1
 n-Samples=4
-ExpLayers=3
-Nx=1
+ExpLayers=0;1;8
+Nx=2
 Ny=2
 Sx=5
 Sy=5
 UuShift=0
 VvShift=0
-Name=W5_1I04-2x2 1I10-2x2
+Name=FGs1_3 x4
 WFMethod=1
-Markprocedure=PhotoEBL
+Markprocedure=Photo
 L61=-1
 Exposureloops=1
-WF=200
-ColMode=60 um aperture /: Sergey / 20 kV 60 um 10 mm
-GDSII=C:\temp\PhotolithoConnect.csf
+WF=100
+ColMode=20 um aperture: Joost / 20 kV 20 um 10 mm
+GDSII=C:\Temp\PhotolithoConnect.csf
 Struct=Chip
-SSLine=5
-SSArea=105
-SSCurve=105
-LineBS=25.136
-AreaBS=7.980
-CurveBS=7.980
-BeamCurrent=1.256822
+SSLine=2
+SSArea=8
+SSCurve=8
+LineBS=1.971
+AreaBS=8.214
+CurveBS=8.214
+BeamCurrent=0.098568
 [S1]
-U1=0.06
-V1=0.06
-WD1=10.122160427
-X1=-28.359685
-Y1=-36.472318
+U1=0
+V1=0
+WD1=10.068519972
+X1=-28.906195
+Y1=16.589718
 Z1=17.500000
 MarkValid1=1
-U2=1.34
-V2=0.06
-WD2=10.123687796
-X2=-27.079949
-Y2=-36.504045
+U2=5
+V2=0
+WD2=10.068219155
+X2=-23.90742
+Y2=16.474251
 Z2=17.500000
 MarkValid2=1
-U3=0.06
-V3=5.06
-WD3=10.123394430
-X3=-28.235905
-Y3=-31.473922
+U3=0
+V3=5
+WD3=10.077302344
+X3=-28.790722
+Y3=21.588534
 Z3=17.500000
 MarkValid3=1
-WFZoomU=0.969076977
-WFZoomV=0.975458969
-WFShiftU=0.412000000
-WFShiftV=0.410000000
-WFRotU=0.754000000
-WFRotV=1.293000000
+WFZoomU=0.968612123
+WFZoomV=0.975482348
+WFShiftU=0.410000000
+WFShiftV=0.079000000
+WFRotU=0.636160599
+WFRotV=1.148160599
 [S2]
-U1=0.06
-V1=0.06
-WD1=10.110815056
-X1=-28.488148
-Y1=-11.326749
+U1=0
+V1=0
+WD1=10.093122721
+X1=-28.932732
+Y1=-12.269374
 Z1=17.500000
 MarkValid1=1
-U2=1.34
-V2=0.06
-WD2=10.110089555
-X2=-27.208071
-Y2=-11.344936
+U2=5
+V2=0
+WD2=10.092380457
+X2=-23.933445
+Y2=-12.355281
 Z2=17.500000
 MarkValid2=1
-U3=0.06
-V3=5.06
-WD3=10.108676739
-X3=-28.417825
-Y3=-6.32742
+U3=0
+V3=5
+WD3=10.098919272
+X3=-28.846807
+Y3=-7.270098
 Z3=17.500000
 MarkValid3=1
-WFZoomU=0.969290171
-WFZoomV=0.975488130
-WFShiftU=0.397000000
-WFShiftV=0.357000000
-WFRotU=0.163000000
-WFRotV=0.698000000
+WFZoomU=0.969038312
+WFZoomV=0.976623662
+WFShiftU=0.230000000
+WFShiftV=0.191000000
+WFRotU=0.353160599
+WFRotV=0.868160599
 [S3]
-U1=0.06
-V1=0.06
-WD1=10.080086999
-X1=-28.322873
-Y1=17.514549
+U1=0
+V1=0
+WD1=10.079384781
+X1=8.104382
+Y1=28.30275
 Z1=17.500000
 MarkValid1=1
-U2=1.34
-V2=0.06
-WD2=10.077988729
-X2=-27.042714
-Y2=17.519377
+U2=5
+V2=0
+WD2=10.074019432
+X2=13.102544
+Y2=28.171695
 Z2=17.500000
 MarkValid2=1
-U3=0.06
-V3=5.06
-WD3=10.080931708
-X3=-28.341587
-Y3=22.514566
+U3=0
+V3=5
+WD3=10.078310966
+X3=8.235701
+Y3=33.301368
 Z3=17.500000
 MarkValid3=1
-WFZoomU=0.969387103
-WFZoomV=0.975370801
-WFShiftU=0.457000000
-WFShiftV=0.285000000
-WFRotU=-0.824000000
-WFRotV=-0.278000000
+WFZoomU=0.969299952
+WFZoomV=0.974865739
+WFShiftU=0.261000000
+WFShiftV=0.091000000
+WFRotU=0.878160599
+WFRotV=1.450160599
 [S4]
-U1=0.06
-V1=0.06
-WD1=10.072658770
-X1=7.201716
-Y1=28.280878
+U1=0
+V1=0
+WD1=10.112117045
+X1=-28.899597
+Y1=-37.196354
 Z1=17.500000
 MarkValid1=1
-U2=1.34
-V2=0.06
-WD2=10.073996149
-X2=8.481488
-Y2=28.275949
+U2=5
+V2=0
+WD2=10.111493059
+X2=-23.900231
+Y2=-37.28227
 Z2=17.500000
 MarkValid2=1
-U3=0.06
-V3=5.06
-WD3=10.078459978
-X3=7.220829
-Y3=33.281008
+U3=0
+V3=5
+WD3=10.119711980
+X3=-28.813745
+Y3=-32.197269
 Z3=17.500000
 MarkValid3=1
-WFZoomU=0.969231988
-WFZoomV=0.975400039
-WFShiftU=0.554000000
-WFShiftV=0.335000000
-WFRotU=-0.382000000
-WFRotV=0.158000000
+WFZoomU=0.968931618
+WFZoomV=0.975567643
+WFShiftU=0.359000000
+WFShiftV=-0.032000000
+WFRotU=0.314160599
+WFRotV=0.852160599
 [Failed markers S1]
-Markprocedure=PhotoEBL
-Device nx/ny[1;1] - Step 1:= M4 = 0, 
-Device nx/ny[1;1] - Step 2:= EBLmarker1 = 0, 
-Device nx/ny[1;2] - Step 1:= M4 = 0, 
-Device nx/ny[1;2] - Step 2:= EBLmarker1 = 0, 
+Markprocedure=Photo
+Device nx/ny[1;1] - Step 1:= M1 = 0, 
+Device nx/ny[2;1] - Step 1:= M1 = 0, 
+Device nx/ny[1;2] - Step 1:= M1 = 0, 
+Device nx/ny[2;2] - Step 1:= M1 = 4, M2 = 0, 
+[Failed markers S2]
+Markprocedure=Photo
+Device nx/ny[1;1] - Step 1:= M1 = 0, 
+Device nx/ny[2;1] - Step 1:= M1 = 3, M2 = 0, 
+Device nx/ny[1;2] - Step 1:= M1 = 0, 
+Device nx/ny[2;2] - Step 1:= M1 = 0, 
+[Failed markers S3]
+Markprocedure=Photo
+Device nx/ny[1;1] - Step 1:= M1 = 0, 
+Device nx/ny[2;1] - Step 1:= M1 = 1, M2 = 0, 
+Device nx/ny[1;2] - Step 1:= M1 = 0, 
+Device nx/ny[2;2] - Step 1:= M1 = 0, 
+[Failed markers S4]
+Markprocedure=Photo
+Device nx/ny[1;1] - Step 1:= M1 = 0, 
+Device nx/ny[2;1] - Step 1:= M1 = 3, M2 = 4, M3 = 3, M4 = 4, 
+Device nx/ny[1;2] - Step 1:= M1 = 2, M2 = 0, 
+Device nx/ny[2;2] - Step 1:= M1 = 0, 

@@ -62,7 +62,6 @@ function PreciseRound(num, decimals)
  	return (Math.round((num * t) + (decimals)*((10 / Math.pow(100, decimals)))) / t).toFixed(decimals);
  }
 
-
 p3 = ExpandPath("%userroot%\\System\\");
 scanini = App.OpenIniFile(p3 + "Scan.ini");
 logflag = scanini.ReadString("Interact","log","0");
