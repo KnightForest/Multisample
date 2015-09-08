@@ -81,15 +81,15 @@
 // 		-> Needs added routine during UV alignment.
 
 var Gsn = "Multisample";
-var Gsharedfolder = "\\\\crswap01.ewi.utwente.nl\\mesalabuser\\NE\\EBLLogs"
+var Gsharedfolder = "\\\\crswap01.ewi.utwente.nl\\mesalabuser\\NE\\EBLLogs";
 //var Gsnl = parseInt(Gsn.length, 8);
 var Gfilepath = ExpandPath("%userroot%\Script\\" + Gsn + "\\");
 var Glogfilename = createArray(3);
 Glogfilename[1] = Gfilepath + "Logs\\";
 var Gdatesp = GetLogDate();
 Glogfilename[2] = Gdatesp + " Log.txt";
-Gprogressfilename = Gdatesp + " Progress.txt"
-var Gstarttime;
+var Gprogressfilename = [];
+Gprogressfilename = Gdatesp + " Progress.txt";
 var Glib = Gfilepath + "\\Lib\\";
 var Gsampleini = App.OpenInifile(Gfilepath + "Multisample.txt");
 var GSDini = App.OpenInifile(Gfilepath + "SDvars.txt");
@@ -139,7 +139,7 @@ function PreciseRound(num, decimals)
 
 function Progress(sample, nx, ny)
 {
-	var totalstructures, currentstructurepercent, structureonsample, currentstructure
+	var totalstructures, currentstructurepercent, structureonsample, currentstructure, totalstructuresonsample, o, p;
 	totalstructures = 0;
 	currentstructure = 0;
 	for (o = 1; o <= S[11][4][1]; o++)  //Loop calculating total amount of structures
@@ -160,7 +160,7 @@ function Progress(sample, nx, ny)
 
 function GetLogDate()
 {
-    var month, day, s; 
+    var month, day, hours, minutes, seconds, s, d; 
     d = new Date();
     month = d.getMonth() + 1;
     day = d.getDate();
@@ -169,7 +169,7 @@ function GetLogDate()
     seconds = d.getSeconds();
 
     if ((month) < 10) month = "0" + month;  
-    if (day < 10) Day = "0" + day;
+    if (day < 10) day = "0" + day;
    	if (hours < 10) hours = "0" + hours;
    	if (minutes < 10) minutes = "0" + minutes;
     if (seconds < 10) seconds = "0" + seconds;
@@ -185,38 +185,39 @@ function GetLogDate()
 
 function Progbarstring(percentage, length)
 {
-	progbarlength = length
-	bars = Math.round(percentage*progbarlength)
-	barstring = "["
+	var progbarlength, bars, barstring, q, tellert;
+	progbarlength = length;
+	bars = Math.round(percentage*progbarlength);
+	barstring = "[";
 	for (q = 0; q < bars; q++)
 	{
-  		barstring += "*"
+  		barstring += "*";
 
  	}
  	for (tellert = bars; tellert < progbarlength; tellert++)
 	{
-  		barstring += " "
+  		barstring += " ";
 	}
-	barstring += "]"
+	barstring += "]";
 	return(barstring);
 }
 
 function TimeandProgress(sample, nydir, meanderxdir, nxdir, starttime, currentsampletime, beforepattswitch)
 {
-	var prog, currentsampletime, elapsedtime, sampletimeint, timetogo, endtime, finishtime;
-	var helapsedtime, hsampletimeint, htimetogo;
-	var progbarlength, bars, barstring;
-	locstarttime = new Array();
-	locsamplestarttime = new Array();
-	locfinishtime = new Array();
-	locactualfinishtime = new Array();
+	var prog, elapsedtime, sampletimeint, timetogo, endtime, finishtime, progresslogfile, actualfinishtime;
+	var helapsedtime, hsampletimeint, htimetogo, sampleendtime;
+	var barstring;
+	var locstarttime = [];
+	var locsamplestarttime = [];
+	var locfinishtime = [];
+	var locactualfinishtime = [];
 	prog = Progress(sample, nxdir, nydir);
 	locstarttime[0] = new Date(starttime).toLocaleDateString();
 	locstarttime[1] = new Date(starttime).toLocaleTimeString();
 	locsamplestarttime[0] = new Date(currentsampletime).toLocaleDateString();
 	locsamplestarttime[1] = new Date(currentsampletime).toLocaleTimeString();
 	//Code for logging data
-	barstring = Progbarstring(prog[0], 20)
+	barstring = Progbarstring(prog[0], 20);
 	progresslogfile = App.OpenInifile(Glogfilename[1] + Gprogressfilename);
 	progresslogfile.Writestring("Total progress", "Starting time ", " " + locstarttime[1] + " on " + locstarttime[0]);
 	progresslogfile.Writestring("Now patterning", "Sample ", " " + sample + " (" + S[8][4][i] + ")");
@@ -261,6 +262,7 @@ function TimeandProgress(sample, nydir, meanderxdir, nxdir, starttime, currentsa
 
 function mstoHours(ms)
 {
+	var str, ms, hours, minutes, seconds;
 	hours = Math.floor(ms/1000/3600);
 	if (hours < 10) hours = "0" + hours;
 	minutes = Math.floor((ms - (hours*1000*3600))/1000/60);
@@ -268,11 +270,12 @@ function mstoHours(ms)
 	seconds = Math.floor((ms - (hours*1000*3600)-(minutes*1000*60))/1000);
 	if (seconds < 10) seconds = "0" + seconds;
 	str = hours + ":" + minutes + ":" + seconds;
-	return([str, hours,minutes,seconds])
+	return([str, hours,minutes,seconds]);
 }
 
 function TimestampUTC()
 {
+	var d, ms;
 	d = new Date();
 	ms = d.getTime();
 	return(ms);
@@ -280,6 +283,7 @@ function TimestampUTC()
 
 function GenerateBatchFile()
 {
+    var bline1, bline2;
     var fso = new ActiveXObject("Scripting.FileSystemObject");
     if (FileExists(Gfilepath + "Lib\\CopyLog.bat") == 1)
     {
@@ -296,8 +300,8 @@ function GenerateBatchFile()
 	var ts = file.OpenAsTextStream(2, -2);
 
 	// Write to the text stream.
-	bline1 = "xcopy \"" + Glogfilename[1] + Glogfilename[2] + "\"" + " " + "\"" + Gsharedfolder + "\"" + " /y"
-	bline2 = "xcopy \"" + Glogfilename[1] + Gprogressfilename + "\"" + " " + "\"" + Gsharedfolder + "\"" + " /y"
+	bline1 = "xcopy \"" + Glogfilename[1] + Glogfilename[2] + "\"" + " " + "\"" + Gsharedfolder + "\"" + " /y";
+	bline2 = "xcopy \"" + Glogfilename[1] + Gprogressfilename + "\"" + " " + "\"" + Gsharedfolder + "\"" + " /y";
 	ts.WriteLine(bline1);
 	ts.WriteLine(bline2);
 	ts.Close();
@@ -330,7 +334,7 @@ function LastDatasettoColset()
 
 function MeasBeamCurrent()												//Measures beam current
 {
-	var bc, bcf;
+	var bc, bcf, bcfdisp;
 	bc = createArray(3);
 	if (App.ErrMsg(EC_YESNO, 0, "Do you want to measure the beam current?") == EA_YES)                        //Asks user to perform beam current measurement + dwelltime corrections
     {
@@ -386,7 +390,7 @@ function SetStepsizeDwelltime(i)
 
 function StepsizeDwelltime(i,GUIflag, bcreadflag) //GUIflag = 0 means only beamspeeds are calculated and modified. BC and SS are not touched.
 {
-    var msg_setareastepsize, msg_rounding, msg_setlinestepsize, msg_higherthan, beamspeed, minstepsize, advisedbeamspeed, areaminstepsize, stepsize, stepsizec, stepsizeline, criticalbeamspeed, bflag, beamcurrent;
+    var msg_setareastepsize, msg_rounding, msg_setlinestepsize, msg_higherthan, beamspeed, minstepsize, advisedbeamspeed, areaminstepsize, stepsize, stepsizec, stepsizeline, criticalbeamspeed, bflag, beamcurrent, stepsizecurve;
     msg_setareastepsize = "Set AREA stepsize for patterning in nm";
 	msg_rounding = "Will be rounded up to a multiple of ";
 	msg_setlinestepsize = "Set LINE stepsize in nm";
@@ -786,7 +790,7 @@ function Load(SDflag)
 function CollectSD(st, GUIflag)
 {
     var mflag = 0;
-	var i, it, wfprocedureloadlist, S14, S24, S34, S44, S54, S64, S74, S84, S94, S104, S124, S134, S144, S15, S25, S35, S45, currpath, fex, currstruct, tl;
+	var i, it, wfprocedureloadlist, S14, S24, S34, S44, S54, S64, S74, S84, S86, S94, S104, S124, S134, S144, S15, S25, S35, S45, currpath, fex, currstruct, tl;
 	var GDSmarklist, GDSmark;
 	collectinguvflag = 1;
 	Gnums = App.InputMsg("Select amount of UV alignments (one additional alignment requirement per column change)", "Select a number 1-99", "1");
@@ -881,7 +885,7 @@ function CollectSD(st, GUIflag)
 			S74 = App.InputMsg("Define Global-Local shift (V) for 1st structure", "Select shift in mm: v (V)", "0");
 			Panicbutton();
 			S144 = App.InputMsg("Number of exposureloops per device","#", "1");
-			S86 = App.InputMsg("Wiritefield overpattern", "Percentage of overpattern (prevents stitching errors)", "0.5")
+			S86 = App.InputMsg("Wiritefield overpattern", "Percentage of overpattern (prevents stitching errors)", "0.5");
 			Panicbutton();
 			//S44 = 5;
 			//S54 = 5;
@@ -905,7 +909,7 @@ function CollectSD(st, GUIflag)
 		S[13][4][i] = S134 + "";
 		S[1][5][i] = S15 + "";	
 		S[14][4][i] = parseInt(S144);
-		S[8][6][i] = parseFloat(S86)
+		S[8][6][i] = parseFloat(S86);
 		//Add a list of parameter that are always applicable to all loaded samples.
 		if (i==1)
 		{
@@ -930,7 +934,7 @@ function CollectSD(st, GUIflag)
 
 function CollectUV(st, GUIflag)
 {
-	var i, j, m, maf, wd, UValignmagnification, userinput;
+	var i, j, m, maf, wd, userinput, awfvars, amf, lastcolset;
 // Add loop so that this is only asked once if st == 1
     if (GUIflag == 1)
     {	
@@ -972,7 +976,7 @@ function CollectUV(st, GUIflag)
 		}
 
 	    App.Exec("Halt()");
-	    App.Exec("BeamOff()")
+	    App.Exec("BeamOff()");
 	    Panicbutton();
 	    if (S[13][4][i] == 1 || S[13][4][i] == 2)
 		{
@@ -980,12 +984,11 @@ function CollectUV(st, GUIflag)
 			while (userinput != 7)
 			{
 				awfvars = AlignWF(S[10][4][i], 0, 1, 1, 1); //align a writefield or not depending on S[10][4][i]
-				amf = awfvars[1]
-				App.ErrMsg(0,0,amf)
+				amf = awfvars[1];
 				if (amf <= 1) break;
 				if (amf >= 2)
 				{
-					userinput = App.ErrMsg(9,0,"Less than three Marks found during procedure. Try scanning again? (Change Markers.txt). Cancel quits script.")
+					userinput = App.ErrMsg(9,0,"Less than three Marks found during procedure. Try scanning again? (Change Markers.txt). Cancel quits script.");
 					if (userinput == 2) Abort();
 				}	
 			}
@@ -1010,13 +1013,13 @@ function CollectUV(st, GUIflag)
 	    	}
 	    	if (st == 1 && i != 1) 
 	    	{
-	    		S[1][6][i] = S[1][6][1]
-	    		S[2][6][i] = S[2][6][1]
-	    		S[3][6][i] = S[3][6][1]
-	    		S[4][6][i] = S[4][6][1]
-	    		S[5][6][i] = S[5][6][1]
-	    		S[6][6][i] = S[6][6][1]
-	    		S[7][6][i] = S[7][6][1]
+	    		S[1][6][i] = S[1][6][1];
+	    		S[2][6][i] = S[2][6][1];
+	    		S[3][6][i] = S[3][6][1];
+	    		S[4][6][i] = S[4][6][1];
+	    		S[5][6][i] = S[5][6][1];
+	    		S[6][6][i] = S[6][6][1];
+	    		S[7][6][i] = S[7][6][1];
 	    	}
 			if (st == 2 && i == 1) MeasBeamCurrent();
 			if (st == 2 && i !=1)
@@ -1203,7 +1206,7 @@ function AlignUV(i)
 function Install(restoreflag)
 {
 	var fso, p1 , p2;
-	GenerateBatchFile()
+	GenerateBatchFile();
 	App.SetVariable("Automation/Links.0",Gfilepath + Gsn + ".js");
 	fso = new ActiveXObject("Scripting.FileSystemObject");
 	if (fso.FolderExists(Gfilepath))
@@ -1229,6 +1232,7 @@ function Install(restoreflag)
 
 function RemoveGDSlogflag()
 {
+	var p3, scanini;
 	p3 = ExpandPath("%userroot%\\System\\");
 	scanini = App.OpenIniFile(p3 + "Scan.ini");
 	scanini.WriteString("Interact", "log", 0);
@@ -1260,7 +1264,7 @@ function InstallGDSmarker(markertype, k, mj) //Installs GDSII marker properties 
 	scanini.WriteString("Interact", "log", GDSmarkertypes[m][8]);
 	scanini.WriteString("Interact", "path", Gfilepath);
 	scanini.WriteString("Interact", "logfile", Glogfilename[1] + Gprogressfilename);
-	scanini.WriteString("Interact", "sample_n", i)
+	scanini.WriteString("Interact", "sample_n", i);
 	scanini.WriteString("Interact", "nx", k);
 	scanini.WriteString("Interact", "ny", mj);
 
@@ -1486,7 +1490,7 @@ function AlignWF(markprocedure, logWFflag, i, j, k) //Main function to start aut
 {
 	if (markprocedure != -1)
 	{
-		var WFAlignprocedures, m, n, a, b, c, d, entries, markers, amf, logfile, logstring;
+		var WFAlignprocedures, m, n, a, b, c, d, entries, markers, amf, logfile, logstring, exposure;
 		WFAlignprocedures = LoadWFAlignProcedures();
 		m = j + 1;
 		n = k + 1;
@@ -1525,7 +1529,7 @@ function AlignWF(markprocedure, logWFflag, i, j, k) //Main function to start aut
 		if (WFAlignprocedures[b][entries+2] == 0 && amf >= 1) exposure = 0; //checks 'alwayswrite' and failed markers of last alignment and sets 'exopsure' accordingly
 		else exposure = 1;
 	}
-	return [exposure, amf];	
+	return[exposure, amf];	
 }
 
 
@@ -1601,7 +1605,7 @@ function WriteMatrix(S, i)
 
 function Write(S, i, testmode, starttime) //S-matrix, n-th chip, type of writing (single,multiple..etc), testmode ornot
 {
-	var N, meander, k, j, mj, l61, l61exp, exposure, currentsampletime;
+	var N, meander, k, j, mj, l61, l61exp, exposure, currentsampletime, awfvars;
 	N = WriteMatrix(S, i);
 	meander = 1;
 	for (k = 0; k <= S[3][4][i]-1; k++)
@@ -1617,7 +1621,7 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th chip, type of writing
 				mj = j;
 			}	
 			currentsampletime = TimestampUTC(); //Timestamp for start current structure
-			TimeandProgress(i, j, mj, k, starttime, currentsampletime, 1)
+			TimeandProgress(i, j, mj, k, starttime, currentsampletime, 1);
 			Panicbutton();
 			Stage.GlobalAlignment();
 			Stage.DriveUV(N[mj+1][k+1][1], N[mj+1][k+1][2]);
@@ -1674,7 +1678,7 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th chip, type of writing
 				WFOverpattern(0);
 				CopyLog();
 			}
-			TimeandProgress(i, k, mj, j, starttime, currentsampletime, 0)
+			TimeandProgress(i, k, mj, j, starttime, currentsampletime, 0);
 			RemoveGDSlogflag();		
 		}
 	}
@@ -1683,6 +1687,8 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th chip, type of writing
 
 function WFOverpattern(instswitch)
 {
+	var ZoomX, ZoomY, ShiftX, ShiftY, RotX, RotY, corrZoomX, corrZoomY, corrShiftX, corrShiftY, corrRotX, corrRotY;
+
 	App.Exec("GetCorrection()");
 	ZoomX = App.GetVariable("Variables.ZoomX");
 	ZoomY = App.GetVariable("Variables.ZoomY");
@@ -1704,7 +1710,7 @@ function WFOverpattern(instswitch)
 	corrShiftY = 0;
 	corrRotX = 0;
 	corrRotY = 0;
-	
+
 	App.Exec("SetCorrection(" + corrZoomX + ", " + corrZoomY + ", " + corrShiftX + ", " + corrShiftY + ", " + corrRotX + ", " + corrRotY + ")");
 }
 
@@ -1720,7 +1726,7 @@ function Start()
 {
 	var GUIflag, beamoffflag, testmode, starttime;
 
-	App.Exec("BeamOff()")
+	App.Exec("BeamOff()");
 	Stage.GlobalAlignment();
     
 	if (App.Errmsg(EC_YESNO, 0 , "Do WF alignment only?") == EA_YES)
