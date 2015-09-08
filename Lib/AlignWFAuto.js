@@ -60,7 +60,7 @@ function PreciseRound(num, decimals)
 {
 	var t=Math.pow(10, decimals);   
  	return (Math.round((num * t) + (decimals)*((10 / Math.pow(100, decimals)))) / t).toFixed(decimals);
- }
+}
 
 p3 = ExpandPath("%userroot%\\System\\");
 scanini = App.OpenIniFile(p3 + "Scan.ini");
@@ -75,7 +75,7 @@ sv = PreciseRound(Stage.V, 2);
 dinges = App.OpenIniFile(logpath);
 if (logflag == 1)
 {
-	dinges.WriteString("Failed GDSII markers S" + i, "Device nx/ny[" + nx + ";" + ny +  "] - Local Stage Coord[" + su + ";" + sv + "]", AutoMarksFailed);
+	dinges.WriteString("Failed GDSII markers S" + i, "Structure nx/ny[" + nx + ";" + ny +  "] - Local Stage Coord[" + su + ";" + sv + "]", AutoMarksFailed);
 }
 
 

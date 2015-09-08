@@ -12,8 +12,8 @@ ScanLength = 10.0
 ScanWidth = 0.5		
 ScanAccuracy = 1	
 WidthTolerance = 0.2 
-ContrastThresholdLow = 45.0
-ContrastThresholdHigh = 55.0
+ContrastThresholdLow = 30.0
+ContrastThresholdHigh = 35.0
 Profile = 1
 
 [M2]
@@ -27,8 +27,8 @@ ScanWidth = 1
 ScanLength = 8.0
 ScanAccuracy = 1.0
 WidthTolerance = 0.2
-ContrastThresholdLow = 45.0
-ContrastThresholdHigh = 55.0
+ContrastThresholdLow = 35.0
+ContrastThresholdHigh = 45.0
 Profile = 1
 
 [M3]
@@ -42,7 +42,7 @@ ScanWidth = 1.5
 ScanLength = 12.0
 ScanAccuracy = 1.0
 WidthTolerance = 0.2
-ContrastThresholdLow = 45.0
+ContrastThresholdLow = 35.0
 ContrastThresholdHigh = 55.0
 Profile = 1
 
