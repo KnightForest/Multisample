@@ -29,7 +29,6 @@ if (ni == 0)
 { //first alignment procedure
 	if ( AutoMarksStored >= MinAutoMarks )
 	{	
-		App.ErrMsg(0,0,"ALIGNE JONGE")
 		App.Exec("SendCorrection()");
 	}
 	else
