@@ -18,7 +18,7 @@ log = 1
 alwayswrite = 1
 
 [Photo]
-1 = M1;M2;M3;M4
+1 = M4;M3;M2;M1
 log = 1
 alwayswrite = 1
 

@@ -30,7 +30,7 @@
 // - Drive z motor to 10.000 after patterning finishes
 // V Add check for design pathlength limit of 100 chars
 // V Allow for aperture/voltage change
-// 		T-> Save WF parameters per beam setting
+// 		V-> Save WF parameters per beam setting
 //		V-> Save and load column parameters
 //		V-> Load dataset from positionlist
 // V Add options to read everything except UV alignment from file
@@ -43,7 +43,7 @@
 // V Fix SetSvars function
 // - Add comments :)
 // - Add initialisation to check if all files are present
-// V Set original magnifiction after AutoWFalign <-- unable to restore, just zooms in to 1um WF now
+// X Set original magnifiction after AutoWFalign <-- so far not possible
 // - Sort order of writing chip by aperture size
 // V Fix GDSII layer 61 scan InstallWF. Use functionality from QDAuto113
 // V Add stepsicdze/beamcurrent to S[5][x][i] column and improve functionality
@@ -64,7 +64,7 @@
 // - Make separate capture UV/WF script
 // 		- Add separate procedure for manual alignment on images.
 // - Expand on alignprocedures syntax
-// - Split logfiles into sampledata, markerlog and progress log
+// V Split logfiles into sampledata, markerlog and progress log
 // - Redo sampledefinitions in multisample/sdvars. Make them not rely on numbers but use loadlist maybe.
 
 // BUGS:
@@ -107,9 +107,7 @@ function Succes()			                                            //-- Called if f
    	Stage.JoystickEnabled = true;                                        //Turns joystick back on
    	App.SetFloatVariable("AlignWriteField.AutoMarksFailed", 0);          //Resets failed automarks counter
    	App.SetVariable("Adjust.MinAutoMarks","3");                          //Resets MinAutoMarks back to 3 (from 2)
-   	App.SetVariable("Exposure.ExposureLoops","1"); 						//Let's be nice to the default settings
-	Stage.X = -35; 											//Sets stage coörds to 30,30 (saves time when driving back)
-	Stage.Y = 39; 
+   	App.SetVariable("Exposure.ExposureLoops","1"); 						//Let's be nice to the default settings 
 	Stage.WaitPositionReached();
   	App.ErrMsg(EC_INFO, 0, "Great Succes!");                             //Displays success message ;) (as long as you don't correct the spelling in the message)
 }
@@ -1702,13 +1700,12 @@ function WFOverpattern(instswitch)
 		corrZoomX = 1 / ((S[8][6][i]/100)+1);
 		corrZoomY = 1 / ((S[8][6][i]/100)+1);		
 	}
-	corrShiftX = ShiftX;
-	corrShiftY = ShiftY;
-	corrRotX = RotX;
-	corrRotY = RotY;
-
+	corrShiftX = 0;
+	corrShiftY = 0;
+	corrRotX = 0;
+	corrRotY = 0;
+	
 	App.Exec("SetCorrection(" + corrZoomX + ", " + corrZoomY + ", " + corrShiftX + ", " + corrShiftY + ", " + corrRotX + ", " + corrRotY + ")");
-}
 
 function FirstWFAlign()
 {
@@ -1768,7 +1765,7 @@ function Start()
 	}
 	else
 	{
-		if (App.Errmsg(EC_YESNO, 0 , "Turn off EHT after writing?") == EA_YES) beamoffflag = 1;
+		if (App.Errmsg(EC_YESNO, 0 , "Turn off EHT and drive to upper exchange position after writing?") == EA_YES) beamoffflag = 1;
 		testmode = 0;
 	}
 	
@@ -1789,6 +1786,14 @@ function Start()
     {
 		Column.HTOnOff = false;
 		App.ProtocolEvent(30, 0, 0, "Beam shutdown.");
+		Stage.X = 72.868; 											//Sets stage coörds to 30,30 (saves time when driving back)
+		Stage.Y = -8.166;
+		Stage.Z = 10.5;
+    }
+    else
+    {
+    	Stage.X = -39.0; 											//Sets stage coörds to 30,30 (saves time when driving back)
+		Stage.Y = 35.0;
     }
 }
 
