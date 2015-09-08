@@ -81,7 +81,7 @@
 // 		-> Needs added routine during UV alignment.
 
 var Gsn = "Multisample";
-var Gsharedfolder = "\\\\crswap01.ewi.utwente.nl\\mesalabuser\\NE\\EBLLogs"
+var Gsharedfolder = "\\\\crswap01.ewikoe.utwente.nl\\mesalabuser\\NE\\EBLLogs"
 //var Gsnl = parseInt(Gsn.length, 8);
 var Gfilepath = ExpandPath("%userroot%\Script\\" + Gsn + "\\");
 var Glogfilename = createArray(3);
@@ -1706,6 +1706,7 @@ function WFOverpattern(instswitch)
 	corrRotY = 0;
 	
 	App.Exec("SetCorrection(" + corrZoomX + ", " + corrZoomY + ", " + corrShiftX + ", " + corrShiftY + ", " + corrRotX + ", " + corrRotY + ")");
+}
 
 function FirstWFAlign()
 {
