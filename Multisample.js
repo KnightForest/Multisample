@@ -20,68 +20,36 @@
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
 // Future plans (- = open, V = fixed, T = needs testing):
-// T Add summary after WF alignment when collecting. Add retry to allow manual change of Marker.
-// - Add manual WF zoom factor compensation for crappy RAITH patterning
 // - Add WF min/max to markers
-// V Change procedure text/behaviour
-// V Add dynamic WF size compatbility 
-// -	--> Working areas?
+// - Add option to change working area per sample
 // - Build in more abort buttons
-// - Drive z motor to 10.000 after patterning finishes
-// V Add check for design pathlength limit of 100 chars
-// V Allow for aperture/voltage change
-// 		V-> Save WF parameters per beam setting
-//		V-> Save and load column parameters
-//		V-> Load dataset from positionlist
-// V Add options to read everything except UV alignment from file
-// V Separate markertypes/procedures in separate files (for editing by users)
 // - Add more checks for user input
-// V Add time estimation calculation
-// V Add logdata:
-//		V Layer61 scan results
-//		V Progress bar (together with time estimation)
-// V Fix SetSvars function
 // - Add comments :)
 // - Add initialisation to check if all files are present
 // X Set original magnifiction after AutoWFalign <-- so far not possible
-// - Sort order of writing chip by aperture size
-// V Fix GDSII layer 61 scan InstallWF. Use functionality from QDAuto113
-// V Add stepsicdze/beamcurrent to S[5][x][i] column and improve functionality
-// 		V-> Also add to Load and Log function
+// X Sort order of writing chip by aperture size
 // - Add ability to do only a GDSII scan on the first device on a sample (one UV alignment)
 // - Add ability to load writematrix from file (for unevenly spaced devices on a sample)
 // 		-> Combine this with loading different designs/layers per UV alignment
-// V Remove reset UV alignment for first sample
-// V Add comment to load new design
 // - Add procedure for manual alignment per chip
-// V Add WFalignment on first sample on the chip only
 // - Add no-GUI mode for using patterning in Plist
-// V Add improved beamcurrent measurement
 // - Add checks for proper procedure naming or stop using capital letters..
-// V Add notifications when finished to file (on swapdrive)
-
-// Maybe later:
-// - Make separate capture UV/WF script
+// - Fix chaos in Progress.txt
+//	-> Fix numbering of samples n(1,1) =/= n(0,0)
+//  -> Use name of sample in logs
+// - Put Markers/procedures etc (user editable files) in a separate folder
+b// - Make separate capture UV/WF script
 // 		- Add separate procedure for manual alignment on images.
 // - Expand on alignprocedures syntax
-// V Split logfiles into sampledata, markerlog and progress log
 // - Redo sampledefinitions in multisample/sdvars. Make them not rely on numbers but use loadlist maybe.
 
 // BUGS:
-// V Collect UV measurement of beamcurrent with measbcflag is broken!
-// V An extra empty logfile is created somewhere in the script.
-// V Auto stepsizedwelltime does not work, always uses 2 nm
-//		V It is possible to change the value for the stepsize in multisample.txt
-//		V In this case, the beamspeed reported in the log is wrong
-// V Possibly the WF loading does not work properly, needs testing!
-//		V Without changing beam settings, program works fine
-// V Layer 61 scans do not work for this version.
-// - Probably more :/
+// - Sometimes progress is not properly updated after last device finished patterning
 // - Manual alignment on dot within script not possible
-// 		-> Needs added routine during UV alignment.
+// 		-> Needs added routine during UV alignment. <- if possible :/
 
 var Gsn = "Multisample";
-var Gsharedfolder = "\\\\crswap01.ewi.utwente.nl\\mesalabuser\\NE\\EBLLogs";
+var Gsharedfolder = "\\\\130.89.7.17\\nanolab\\mesalabuser\\NE\\EBLLogs";
 //var Gsnl = parseInt(Gsn.length, 8);
 var Gfilepath = ExpandPath("%userroot%\Script\\" + Gsn + "\\");
 var Glogfilename = createArray(3);
@@ -609,7 +577,8 @@ function CheckPathLength(str, sn)
 {
 	if (str.length>100)
 	{
-		App.ErrMsg(0,0,"GDSII datapath for sample " + sn + " is too long (100 characters is max, this path is " + str.length + " characters long), change location or pathnames. The script will abort.");
+		App.ErrMsg(0,0,"GDSII datapath for sample " + sn + " is too long (100 characters is 
+			max, this path is " + str.length + " characters long), change location or pathnames. The script will abort.");
 		Abort();
 	}
 }
@@ -1541,7 +1510,8 @@ function ActivateColdata(colset)
 	{
 		multipls = App.OpenIniFile(Glib + "ActivateColumnDataset.pls");
 		multipls.DeleteSection("DATA");
-		multipls.WriteString("DATA", "0,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,VN,UV,set ViCol mode entry,STAY,VICOL,,,,,,,,,,," + colset + ",106,,,,,,,,,,,,,,,,", 0);
+		multipls.WriteString("DATA", "0,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,
+			VN,UV,set ViCol mode entry,STAY,VICOL,,,,,,,,,,," + colset + ",106,,,,,,,,,,,,,,,,", 0);
 		PList = OpenPositionList(Glib + "ActivateColumnDataset.pls");
 		App.Exec("ScanAllPositions()");
 		PList.Save();
