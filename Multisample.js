@@ -18,11 +18,16 @@
 
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// Recent changes:
+// - Added laser stage control to prevent coder use
+
+
  
 // Future plans (- = open, V = fixed, T = needs testing):
 // - Add WF min/max to markers
 // - Add option to change working area per sample
 // - Build in more abort buttons
+// - Build in 'back' functionality
 // - Add more checks for user input
 // - Add comments :)
 // - Add initialisation to check if all files are present
@@ -35,16 +40,16 @@
 // - Add no-GUI mode for using patterning in Plist
 // - Add checks for proper procedure naming or stop using capital letters..
 // - Fix chaos in Progress.txt
-//	-> Fix numbering of samples n(1,1) =/= n(0,0)
 //  -> Use name of sample in logs
+//  -> Organise logfile
 // - Put Markers/procedures etc (user editable files) in a separate folder
-b// - Make separate capture UV/WF script
-// 		- Add separate procedure for manual alignment on images.
+// - Make separate capture UV/WF script
+// 	- > Add separate procedure for manual alignment on images.
 // - Expand on alignprocedures syntax
 // - Redo sampledefinitions in multisample/sdvars. Make them not rely on numbers but use loadlist maybe.
 
 // BUGS:
-// - Sometimes progress is not properly updated after last device finished patterning
+// - Writefield complete screw-up sometimes happens, appears to happen for the last sample. No clue why yet.
 // - Manual alignment on dot within script not possible
 // 		-> Needs added routine during UV alignment. <- if possible :/
 
@@ -116,7 +121,7 @@ function Progress(sample, nx, ny)
 	}
 	for (p = 1; p <= sample-1; p++) 	//Loop determining structure 
 	{
-		currentstructure = currentstructure + (parseInt(S[2][4][sample]) * parseInt(S[3][4][sample]));
+		currentstructure = currentstructure + (parseInt(S[2][4][p]) * parseInt(S[3][4][p]));
 	//	currentstructure = currentstructure + (parseInt(S[2][4][s])-(n+1))*(m+1) hier klopt nog geen zak van
 	}
 	currentstructure = currentstructure + (ny)*(parseInt(S[2][4][sample])) + (nx+1);
@@ -210,13 +215,14 @@ function TimeandProgress(sample, nydir, meanderxdir, nxdir, starttime, currentsa
 		locfinishtime[1] = new Date(finishtime).toLocaleTimeString();
 
 		progresslogfile.Writestring("Total progress", "Grand total", barstring + " (" +  prog[0]*100 + "%), total of structures " + prog[1] + "/" + prog[2]);
-		progresslogfile.Writestring("Total progress", "Current Sample ", " " + sample +" (of " + Gnums + ")" );
-		progresslogfile.Writestring("Total progress", "Current Structure ", " " + prog[3] + " (of " + prog[4] + ")");
+		
+		progresslogfile.Writestring("Total progress", "Last Structure ", " " + prog[3] + " (of " + prog[4] + ")");
+		progresslogfile.Writestring("Total progress", "Of sample ", " " + sample +" (of " + Gnums + ")");
 		progresslogfile.Writestring("Total progress", "Starting time ", " " + locstarttime[1] + " on " + locstarttime[0]);
 		progresslogfile.Writestring("Total progress", "Elapsed time ", " " + helapsedtime[0]);
 		progresslogfile.Writestring("Total progress", "Remaining time (estimate) ", " " + htimetogo[0]);
 		progresslogfile.Writestring("Total progress", "ETA (estimate) ", " " + locfinishtime[1] + " on " + locfinishtime[0]);
-		progresslogfile.Writestring("Timelog Sample " + sample, "Structure nx/ny[" + nxdir + ";" + nydir + "] ", " Duration: " + hsampletimeint[0]+ ", Start: " + locsamplestarttime[1] );
+		progresslogfile.Writestring("Timelog Sample " + sample, "Structure nx/ny[" + parseInt(nxdir + 1) + ";" + parseInt(nydir + 1) + "] ", " Duration: " + hsampletimeint[0]+ ", Start: " + locsamplestarttime[1] );
 
 		if (prog[0] == 1)
 		{	
@@ -285,6 +291,33 @@ function CopyLog()
 {
     ExecFile(Gfilepath + "Lib\\CopyLog.bat");
 }
+
+function ReadLsc(filename)
+{
+  	var lines, string, ts;
+	var fso = new ActiveXObject("Scripting.FileSystemObject");
+  	var lsc = new Array();
+   	var linesused = new Array();
+	file = fso.GetFile(filename);
+	ts = file.OpenAsTextStream(1, 0);
+ 	string = ts.ReadAll();
+ 	lines = string.split(/\r\n|\r|\n/);
+	  for (j=1; j <= lines.length-1; j++)
+  	{
+    	if (lines[j] == "[DATA]") break
+    }
+	for (c=j + 1; c <= lines.length-1; c++)
+  	{
+    	linesused[c-j-1] = lines[c]
+  	}
+  	for (d=0; d <= linesused.length-1; d++)
+  	{
+  		lsc[d] = linesused[d].split(",")
+  	}
+  	ts.Close();
+  	return lsc;
+}
+
 
 function LastDatasettoColset()
 {
@@ -565,10 +598,11 @@ function createArray(length)
     var arr = new Array(length || 0),
         i = length;
 
-    if (arguments.length > 1) {
+    if (arguments.length > 1) 
+    {
         var args = Array.prototype.slice.call(arguments, 1);
         while(i--) arr[length-1 - i] = createArray.apply(this, args);
-}
+	}
 
     return arr;
 }
@@ -577,8 +611,7 @@ function CheckPathLength(str, sn)
 {
 	if (str.length>100)
 	{
-		App.ErrMsg(0,0,"GDSII datapath for sample " + sn + " is too long (100 characters is 
-			max, this path is " + str.length + " characters long), change location or pathnames. The script will abort.");
+		App.ErrMsg(0,0,"GDSII datapath for sample " + sn + " is too long (100 characters is max, this path is " + str.length + " characters long), change location or pathnames. The script will abort.");
 		Abort();
 	}
 }
@@ -1176,6 +1209,7 @@ function Install(restoreflag)
 {
 	var fso, p1 , p2;
 	GenerateBatchFile();
+	App.Exec("SetLaserStageCtrl(LASER)") //Turn on laser stage control, just to be sure
 	App.SetVariable("Automation/Links.0",Gfilepath + Gsn + ".js");
 	fso = new ActiveXObject("Scripting.FileSystemObject");
 	if (fso.FolderExists(Gfilepath))
@@ -1510,8 +1544,7 @@ function ActivateColdata(colset)
 	{
 		multipls = App.OpenIniFile(Glib + "ActivateColumnDataset.pls");
 		multipls.DeleteSection("DATA");
-		multipls.WriteString("DATA", "0,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,
-			VN,UV,set ViCol mode entry,STAY,VICOL,,,,,,,,,,," + colset + ",106,,,,,,,,,,,,,,,,", 0);
+		multipls.WriteString("DATA", "0,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,VN,UV,set ViCol mode entry,STAY,VICOL,,,,,,,,,,," + colset + ",106,,,,,,,,,,,,,,,,", 0);
 		PList = OpenPositionList(Glib + "ActivateColumnDataset.pls");
 		App.Exec("ScanAllPositions()");
 		PList.Save();
@@ -1625,6 +1658,7 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th chip, type of writing
 				}
 				App.Exec("Exposure");
 				CopyLog();
+				RemoveGDSlogflag();
 			}
 			if (S[1][4][i] != -1) //Checks if a global layer is selected
 			{
@@ -1648,8 +1682,7 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th chip, type of writing
 				WFOverpattern(0);
 				CopyLog();
 			}
-			TimeandProgress(i, k, mj, j, starttime, currentsampletime, 0);
-			RemoveGDSlogflag();		
+			TimeandProgress(i, k, mj, j, starttime, currentsampletime, 0);		
 		}
 	}
 	Stage.GlobalAlignment();

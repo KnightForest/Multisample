@@ -79,7 +79,7 @@ sv = PreciseRound(Stage.V, 2);
 dinges = App.OpenIniFile(logpath);
 if (logflag == 1)
 {
-	dinges.WriteString("Failed GDSII markers S" + i, "Structure nx/ny[" + nx + ";" + ny +  "] - Local Stage Coord[" + su + ";" + sv + "]", AutoMarksFailed);
+	dinges.WriteString("Failed GDSII markers S" + i, "Structure nx/ny[" + parseInt(nx + 1) + ";" + parseInt(ny + 1) +  "] - Local Stage Coord[" + su + ";" + sv + "]", AutoMarksFailed);
 }
 
 
