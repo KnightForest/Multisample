@@ -1268,8 +1268,8 @@ function InstallGDSmarker(markertype, k, mj) //Installs GDSII marker properties 
 	scanini.WriteString("Interact", "path", Gfilepath);
 	scanini.WriteString("Interact", "logfile", Glogfilename[1] + Gprogressfilename);
 	scanini.WriteString("Interact", "sample_n", i);
-	scanini.WriteString("Interact", "nx", k);
-	scanini.WriteString("Interact", "ny", mj);
+	scanini.WriteString("Interact", "nx", mj);
+	scanini.WriteString("Interact", "ny", k);
 
 	App.SetVariable("AlignScans.AvgPoints", GDSmarkertypes[m][2]);                    //Sets the number of points in the y-direction
     App.SetVariable("AlignScans.Scanpoints", GDSmarkertypes[m][1]);                 //Sets the number of points in the x-direction
