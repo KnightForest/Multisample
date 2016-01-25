@@ -33,14 +33,13 @@
 // - Add initialisation to check if all files are present
 // X Set original magnifiction after AutoWFalign <-- so far not possible
 // X Sort order of writing chip by aperture size
-// - Add ability to do only a GDSII scan on the first device on a sample (one UV alignment)
+// T Add ability to do only a GDSII scan on the first device on a sample (one UV alignment)
 // - Add ability to load writematrix from file (for unevenly spaced devices on a sample)
 // 		-> Combine this with loading different designs/layers per UV alignment
 // - Add procedure for manual alignment per chip
 // - Add no-GUI mode for using patterning in Plist
 // - Add checks for proper procedure naming or stop using capital letters..
 // - Fix chaos in Progress.txt
-//  -> Use name of sample in logs
 //  -> Organise logfile
 // - Put Markers/procedures etc (user editable files) in a separate folder
 // - Make separate capture UV/WF script
@@ -49,7 +48,7 @@
 // - Redo sampledefinitions in multisample/sdvars. Make them not rely on numbers but use loadlist maybe.
 
 // BUGS:
-// - Writefield complete screw-up sometimes happens, appears to happen for the last sample. No clue why yet.
+// - Sergey: Bug report: sd vars works strange with use preseted beam current? - > no - > measure current - >  no
 // - Manual alignment on dot within script not possible
 // 		-> Needs added routine during UV alignment. <- if possible :/
 
@@ -222,7 +221,7 @@ function TimeandProgress(sample, nydir, meanderxdir, nxdir, starttime, currentsa
 		progresslogfile.Writestring("Total progress", "Elapsed time ", " " + helapsedtime[0]);
 		progresslogfile.Writestring("Total progress", "Remaining time (estimate) ", " " + htimetogo[0]);
 		progresslogfile.Writestring("Total progress", "ETA (estimate) ", " " + locfinishtime[1] + " on " + locfinishtime[0]);
-		progresslogfile.Writestring("Timelog Sample " + sample, "Structure nx/ny[" + parseInt(nxdir + 1) + ";" + parseInt(nydir + 1) + "] ", " Duration: " + hsampletimeint[0]+ ", Start: " + locsamplestarttime[1] );
+		progresslogfile.Writestring("Timelog Sample " + sample + " (" + S[8][4][i] + ")", "Structure nx/ny[" + parseInt(nxdir + 1) + ";" + parseInt(nydir + 1) + "] ", " Duration: " + hsampletimeint[0]+ ", Start: " + locsamplestarttime[1] );
 
 		if (prog[0] == 1)
 		{	
@@ -861,7 +860,8 @@ function CollectSD(st, GUIflag)
 				GDSmarklist = GGDSIImarkertypes.ReadString("LoadList", "load", "0");
 				GDSmark = App.InputMsg("Select GDSII marker", "Choose: " + GDSmarklist, GDSmarklist[0]);
 				Panicbutton();
-				S124 = GDSmark + "-" + tl;
+				GDSproc = App.InputMsg("Select GDSII procedure", "Choose: '1' for scanning all structures, '2' for scanning only the first.", "1");
+				S124 = GDSmark + "-" + GDSproc + "-" + tl;
 				if (App.ErrMsg(4,0,"Do you want to write other layers in a global alignment?")==EA_YES)
 				{
 					S14 = App.InputMsg("Choose layers", "Select (separate by ';') ", "0");
@@ -887,7 +887,7 @@ function CollectSD(st, GUIflag)
 			S74 = App.InputMsg("Define Global-Local shift (V) for 1st structure", "Select shift in mm: v (V)", "0");
 			Panicbutton();
 			S144 = App.InputMsg("Number of exposureloops per device","#", "1");
-			S86 = App.InputMsg("Wiritefield overpattern", "Percentage of overpattern (prevents stitching errors)", "0.5");
+			S86 = App.InputMsg("Writefield overpattern", "Percentage of overpattern (prevents stitching errors, recommended values 0-0.5)", "0.0");
 			Panicbutton();
 			//S44 = 5;
 			//S54 = 5;
@@ -1525,8 +1525,8 @@ function AlignWF(markprocedure, logWFflag, i, j, k) //Main function to start aut
 			if (WFAlignprocedures[b][entries+1] == 1 && logWFflag == 1)
 			{
 				logfile = App.OpenInifile(Glogfilename[1] + Gprogressfilename);
-				logfile.WriteString("Failed markers Sample " + i, "Markprocedure", markprocedure);
-				logfile.WriteString("Failed markers Sample " + i, "Structure nx/ny[" + m + ";" + n + "] - Step " + Math.round(c+1) + ": ", logstring);
+				logfile.WriteString("Failed markers Sample " + i + " (" + S[8][4][i] + ")", "Markprocedure", markprocedure);
+				logfile.WriteString("Failed markers Sample " + i + " (" + S[8][4][i] + ")", "Structure nx/ny[" + m + ";" + n + "] - Step " + Math.round(c+1) + ": ", logstring);
 			}
 		}
 		if (WFAlignprocedures[b][entries+2] == 0 && amf >= 1) exposure = 0; //checks 'alwayswrite' and failed markers of last alignment and sets 'exopsure' accordingly
@@ -1648,12 +1648,17 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th chip, type of writing
 				CopyLog();
 				if (testmode == 1) 
 				{
-					App.Exec("SelectExposedLayer(61)"); 
+					if (l61[1] == 1)
+					{
+						App.Exec("SelectExposedLayer(61)"); 
+					}
+					else if (l61[2] == 2 && k == 0 && j == 0)
+					{}
 				}
 				else 
 				{
 					
-					l61exp = 61 + ";" + l61[1]; 
+					l61exp = 61 + ";" + l61[2]; 
 					App.Exec("SelectExposedLayer(" + l61exp + ")");			
 				}
 				App.Exec("Exposure");
