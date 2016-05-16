@@ -1,9 +1,9 @@
 //-------------------------------------------------------------------
 //    SCRIPT NAME:      Multisample
-//    Internal version: 0.9h
+//    Internal version: 0.99
 //    AUTHOR:           Joost Ridderbos
 // 	  Git hashkey: 		"value"
-//    Copyright 2013-2015 Joost Ridderbos
+//    Copyright 2013-2016 Joost Ridderbos
 //-------------------------------------------------------------------
 
 //    This program is free software: you can redistribute it and/or modify
@@ -18,39 +18,30 @@
 
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-// Recent changes:
-// - Added laser stage control to prevent coder use
-
-
  
 // Future plans (- = open, V = fixed, T = needs testing):
 // - Add WF min/max to markers
 // - Add option to change working area per sample
 // - Build in more abort buttons
 // - Build in 'back' functionality
-// - Add more checks for user input
 // - Add comments :)
 // - Add initialisation to check if all files are present
-// X Set original magnifiction after AutoWFalign <-- so far not possible
-// X Sort order of writing chip by aperture size
 // T Add ability to do only a GDSII scan on the first device on a sample (one UV alignment)
 // - Add ability to load writematrix from file (for unevenly spaced devices on a sample)
 // 		-> Combine this with loading different designs/layers per UV alignment
 // - Add procedure for manual alignment per chip
 // - Add no-GUI mode for using patterning in Plist
-// - Add checks for proper procedure naming or stop using capital letters..
-// - Fix chaos in Progress.txt
-//  -> Organise logfile
 // - Put Markers/procedures etc (user editable files) in a separate folder
-// - Make separate capture UV/WF script
 // 	- > Add separate procedure for manual alignment on images.
 // - Expand on alignprocedures syntax
 // - Redo sampledefinitions in multisample/sdvars. Make them not rely on numbers but use loadlist maybe.
+// - Check if GDS Markertype is valid
 
 // BUGS:
 // - Sergey: Bug report: sd vars works strange with use preseted beam current? - > no - > measure current - >  no
 // - Manual alignment on dot within script not possible
 // 		-> Needs added routine during UV alignment. <- if possible :/
+// - Stepsize bug? 2nd sample has 1 mm/sec lower beamspeed allowance, at least stepsize is higher. Test this.
 
 var Gsn = "Multisample";
 var Gsharedfolder = "\\\\130.89.7.17\\nanolab\\mesalabuser\\NE\\EBLLogs";
@@ -59,14 +50,15 @@ var Gfilepath = ExpandPath("%userroot%\Script\\" + Gsn + "\\");
 var Glogfilename = createArray(3);
 Glogfilename[1] = Gfilepath + "Logs\\";
 var Gdatesp = GetLogDate();
-Glogfilename[2] = Gdatesp + " Log.txt";
+Glogfilename[2] = Gdatesp + " " + App.GetVariable("Variables.LastUser") + " Log.txt";
 var Gprogressfilename = [];
-Gprogressfilename = Gdatesp + " Progress.txt";
+Gprogressfilename = Gdatesp + " " +  App.GetVariable("Variables.LastUser") + " Progress.txt";
 var Glib = Gfilepath + "\\Lib\\";
 var Gsampleini = App.OpenInifile(Gfilepath + "Multisample.txt");
 var GSDini = App.OpenInifile(Gfilepath + "SDvars.txt");
+var GUVini = App.OpenInifile(Gfilepath + "UVvars.txt");
 var GMarkertypes = App.Openinifile(Gfilepath + "Markers.txt");
-var GGDSIImarkertypes = App.Openinifile(Gfilepath + "GDSIImarkers.txt");
+var GGDSIImarkertypes = App.Openinifile(Gfilepath + "L61markers.txt");
 var GAlignprocedures = App.Openinifile(Gfilepath + "Alignprocedures.txt");
 var S = createArray(1,1,1);
 var Gnums = -1;
@@ -235,7 +227,7 @@ function TimeandProgress(sample, nydir, meanderxdir, nxdir, starttime, currentsa
 
 function mstoHours(ms)
 {
-	var str, ms, hours, minutes, seconds;
+	var str, hours, minutes, seconds;
 	hours = Math.floor(ms/1000/3600);
 	if (hours < 10) hours = "0" + hours;
 	minutes = Math.floor((ms - (hours*1000*3600))/1000/60);
@@ -256,7 +248,7 @@ function TimestampUTC()
 
 function GenerateBatchFile()
 {
-    var bline1, bline2;
+    var bline1, bline2, file;
     var fso = new ActiveXObject("Scripting.FileSystemObject");
     if (FileExists(Gfilepath + "Lib\\CopyLog.bat") == 1)
     {
@@ -293,7 +285,7 @@ function CopyLog()
 
 function ReadLsc(filename)
 {
-  	var lines, string, ts;
+  	var lines, string, ts, file, j, c, d;
 	var fso = new ActiveXObject("Scripting.FileSystemObject");
   	var lsc = new Array();
    	var linesused = new Array();
@@ -303,15 +295,15 @@ function ReadLsc(filename)
  	lines = string.split(/\r\n|\r|\n/);
 	  for (j=1; j <= lines.length-1; j++)
   	{
-    	if (lines[j] == "[DATA]") break
+    	if (lines[j] == "[DATA]") break;
     }
 	for (c=j + 1; c <= lines.length-1; c++)
   	{
-    	linesused[c-j-1] = lines[c]
+    	linesused[c-j-1] = lines[c];
   	}
   	for (d=0; d <= linesused.length-1; d++)
   	{
-  		lsc[d] = linesused[d].split(",")
+  		lsc[d] = linesused[d].split(",");
   	}
   	ts.Close();
   	return lsc;
@@ -499,6 +491,20 @@ function StepsizeDwelltime(i,GUIflag, bcreadflag) //GUIflag = 0 means only beams
    	//App.ErrMsg(0,0,"1 - szl:"+S[1][6][i] +stepsizeline+" /sz:"+S[2][6][i]+" /szc:"+S[3][6][i]+" /bsl:"+S[4][6][i]+" /bsa:"+S[5][6][i]+" /bsc:"+S[6][6][i]+" /bc:"+S[7][6][i])
 }
 
+
+function SearchArray(array,string)
+{
+	var n;
+	for (n = 0; n < array.length; n++)
+	{
+		if (array[n] == string)
+		{
+			return n;
+		}
+	}
+	return -1;
+}
+
 function FileExists(filespec)
 {
    var fso, s = filespec;
@@ -630,9 +636,20 @@ function Load(SDflag)
 		inifile = GSDini;
 	}
 	
-	S[9][4][1] = parseFloat(inifile.ReadString("GS","Procedure", "1"));
+	S[9][4][1] = inifile.ReadInteger("GS","Procedure", -9999);
+	if (S[9][4][1] != 1 && S[9][4][1] != 2)
+	{
+		App.ErrMsg(0,0,"'Procedure' could not be read, check Multisample/SDvars.txt" + S[9][4][1]);
+		Abort();
+	}
 	st = S[9][4][1];
-	S[11][4][1] = parseFloat(inifile.ReadString("GS","n-Samples", "1"));		
+	S[11][4][1] = inifile.ReadFloat("GS","n-Samples", -9999);
+	if (S[11][4][1] == -9999)
+	{
+		App.ErrMsg(0,0,"'n-samples' could not be read, check Multisample/SDvars.txt");
+		Abort();
+	}
+	S[15][4][1] = inifile.ReadString("GS", "User", ""); 
 	
     for (i = 1; i <= Gnums; i++)
     {
@@ -642,97 +659,252 @@ function Load(SDflag)
 	    {
 	    	for (j=1; j <= 3; j++)
 			{
-				S[1][j][i] = parseFloat(inifile.ReadString(it, "U" + j, "0"));
-				S[2][j][i] = parseFloat(inifile.ReadString(it, "V" + j, "0"));
-				S[3][j][i] = parseFloat(inifile.ReadString(it, "WD" + j, "0"));
-				S[4][j][i] = parseFloat(inifile.ReadString(it, "X" + j, "0"));
-				S[5][j][i] = parseFloat(inifile.ReadString(it, "Y" + j, "0"));
-				S[6][j][i] = parseFloat(inifile.ReadString(it, "Z" + j, "0"));
-				S[7][j][i] = parseFloat(inifile.ReadString(it, "MarkValid" + j, "0"));
+				S[1][j][i] = inifile.ReadFloat(it, "U" + j, -9999);
+				S[2][j][i] = inifile.ReadFloat(it, "V" + j, -9999);
+				S[3][j][i] = inifile.ReadFloat(it, "WD" + j, -9999);
+				S[4][j][i] = inifile.ReadFloat(it, "X" + j, -9999);
+				S[5][j][i] = inifile.ReadFloat(it, "Y" + j, -9999);
+				S[6][j][i] = inifile.ReadFloat(it, "Z" + j, -9999);
+				S[7][j][i] = inifile.ReadFloat(it, "MarkValid" + j, -9999);
+				for (cnt=1; cnt <= 7; cnt++)
+				{
+					var checklist = ["U","V","WD","X","Y","Z","MarkValid"];
+					if (typeof(S[cnt][j][i]) != "number" || S[cnt][j][i] == -9999)
+					{
+						App.ErrMsg(0,0,"Error in sample " + i + " marker " + j + ", value '" + checklist[cnt] + "', check Multisample.txt");
+						Abort();
+					}
+				}
+			}
 
-				S[5][5][i] = parseFloat(inifile.ReadString(it, "WFZoomU", "0"));
-				S[6][5][i] = parseFloat(inifile.ReadString(it, "WFZoomV", "0"));
-				S[7][5][i] = parseFloat(inifile.ReadString(it, "WFShiftU", "0"));
-				S[8][5][i] = parseFloat(inifile.ReadString(it, "WFShiftV", "0"));
-				S[9][5][i] = parseFloat(inifile.ReadString(it, "WFRotU", "0"));
-				S[10][5][i] = parseFloat(inifile.ReadString(it, "WFRotV", "0"));	
+			S[5][5][i] = inifile.ReadFloat(it, "WFZoomU", -9999);
+			S[6][5][i] = inifile.ReadFloat(it, "WFZoomV", -9999);
+			S[7][5][i] = inifile.ReadFloat(it, "WFShiftU", -9999);
+			S[8][5][i] = inifile.ReadFloat(it, "WFShiftV", -9999);
+			S[9][5][i] = inifile.ReadFloat(it, "WFRotU", -9999);
+			S[10][5][i] = inifile.ReadFloat(it, "WFRotV", -9999);
+			for (cnt=5; cnt <= 10; cnt++)
+			{
+				var checklist = ["WFZoomU","WFZoomV","WFShiftU","WFShiftV","WFRotU","WFRotV"];
+				if (typeof(S[cnt][5][i]) != "number" || S[cnt][5][i] == -9999)
+				{
+					App.ErrMsg(0,0,"Error in sample " + i + ", value '" + checklist[cnt] + "', check Multisample.txt");
+					Abort();
+				}
 			}
 		}
 
 		if (st == 1)
 		{
-			S[1][4][i] = (inifile.ReadString("GS","ExpLayers", "0"));
-			S[2][4][i] = parseInt(inifile.ReadString("GS", "Nx", "0"));
-			S[3][4][i] = parseInt(inifile.ReadString("GS", "Ny", "0"));
-			S[4][4][i] = parseFloat(inifile.ReadString("GS", "Sx", "0"));
-			S[5][4][i] = parseFloat(inifile.ReadString("GS", "Sy", "0"));
-			S[6][4][i] = parseFloat(inifile.ReadString("GS", "UuShift", "0"));			
-			S[7][4][i] = parseFloat(inifile.ReadString("GS", "VvShift", "0"));
-			S[8][4][i] = inifile.ReadString("GS","Name", "0");
-			S[13][4][i] = inifile.ReadString("GS", "WFMethod", "0");
-			S[10][4][i] = inifile.ReadString("GS", "Markprocedure", "0");
-			S[12][4][i] = inifile.ReadString("GS", "L61", "0"); 
-			S[14][4][i] = (inifile.ReadString("GS", "Exposureloops", "1")).toString();
-			 
-			S[1][5][i] = (inifile.ReadString("GS", "WF", "0"));
-			colmode = (inifile.ReadString("GS", "ColMode", "0"));
+			S[1][4][i] = (inifile.ReadString("GS","ExpLayers", "err"));
+			if (S[1][4][i] == "err")
+			{
+				App.ErrMsg(0,0,"Error in 'GS', value 'ExpLayers', check Multisample.txt/SDVars.txt")
+				Abort();
+			}
+			S[2][4][i] = inifile.ReadInteger("GS", "Nx", -9999);
+			S[3][4][i] = inifile.ReadInteger("GS", "Ny", -9999);
+			S[4][4][i] = inifile.ReadFloat("GS", "Sx", -9999);
+			S[5][4][i] = inifile.ReadFloat("GS", "Sy", -9999);
+			S[6][4][i] = inifile.ReadFloat("GS", "UuShift", -9999);			
+			S[7][4][i] = inifile.ReadFloat("GS", "VvShift", -9999);
+			for (cnt=2; cnt <= 7; cnt++)
+			{
+				var checklist = ["Nx","Ny","Sx","Sy","UuShift","VvShift"];
+				if (typeof(S[cnt][4][i]) != "number" || S[cnt][4][i] == -9999)
+				{
+					App.ErrMsg(0,0,"Error in 'GS', value '" + checklist[cnt] + "', check Multisample.txt/SDVars.txt");
+
+					Abort();
+				}
+			}
+
+			S[8][4][i] = inifile.ReadString("GS","Name", "");
+			S[13][4][i] = inifile.ReadInteger("GS", "WFMethod", -9999);
+			if (S[13][4][i] != 1 && S[13][4][i] != 2 && S[13][4][i] != 3 && S[13][4][i] != 4)
+			{
+				App.ErrMsg(0,0,"Error in 'GS', value 'WFMethod', check Multisample.txt/SDVars.txt");
+				Abort();
+			}
+
+			S[10][4][i] = inifile.ReadString("GS", "Markprocedure", "err");
+			wfprocedureloadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
+			if (SearchArray(wfprocedureloadlist,S[10][4][i]) == -1)
+			{
+				App.ErrMsg(0,0,"Value under 'Markprocedure' not found in Loadlist of Alignprocedures.txt.");
+				Abort();
+			}
+
+			S[12][4][i] = inifile.ReadString("GS", "L61", "err"); 
+			var GDSmarkstring = S[12][4][i].split("-");
+			var GDSmarklist = GGDSIImarkertypes.ReadString("LoadList", "load", "0");
+			var GDSarray = GDSmarklist.split(";");
+			if (SearchArray(GDSarray, GDSmarkstring[0]) == -1)
+			{
+				App.ErrMsg(0,0,"Entered 'L61' marker not in Loadlist of L61markers.txt.");
+				Abort();
+			}
+
+			S[14][4][i] = inifile.ReadInteger("GS", "Exposureloops", -9999);
+			if (typeof(S[14][4][i]) != "number" || S[14][4][i] == -9999)
+			{
+				App.ErrMsg(0,0,"Error in 'GS', value 'Exposureloops', check Multisample.txt/SDVars.txt");
+				Abort();
+			}
+ 
+			S[1][5][i] = inifile.ReadFloat("GS", "WF", -9999);
+			if (typeof(S[1][5][i]) != "number" || S[1][5][i] == -9999)
+			{
+				App.ErrMsg(0,0,"Error in 'GS', value 'WF', check Multisample.txt/SDVars.txt");
+				Abort();
+			}
+			colmode = inifile.ReadString("GS", "ColMode", "err");
+			if (S[1][5][i] == "err")
+			{
+				App.ErrMsg(0,0,"Error in 'GS', value 'ColMode', check Multisample.txt/SDVars.txt");
+				Abort();
+			}
 			S[2][5][i] = ReplaceAtbymu(colmode);
-			GDSIIpath = (inifile.ReadString("GS", "GDSII", "0"));
+			GDSIIpath = inifile.ReadString("GS", "GDSII", "err");
 			CheckPathLength(GDSIIpath, i);
 			if (FileExists(GDSIIpath) != 1)
 			{
-				App.ErrMsg(0,0,"Error in Multisample.txt: GDSII file not found. Script will abort.");
+				App.ErrMsg(0,0,"Error in Multisample.txt/SDVars.txt: GDSII file not found.");
 				Abort();
 			}
-			S[3][5][i] = (inifile.ReadString("GS", "GDSII", "0"));
-			S[4][5][i] = (inifile.ReadString("GS", "Struct", "0"));
+			S[3][5][i] = inifile.ReadString("GS", "GDSII", "err");
+			S[4][5][i] = inifile.ReadString("GS", "Struct", "err");
+			if (S[4][5][i] == "err")
+			{
+				App.ErrMsg(0,0,"Error in 'GS', value 'Struct', check Multisample.txt/SDVars.txt");
+				Abort();
+			}
 			
-			S[1][6][i] = (inifile.ReadString("GS", "SSLine", "0"));
-			S[2][6][i] = (inifile.ReadString("GS", "SSArea", "0"));
-			S[3][6][i] = (inifile.ReadString("GS", "SSCurve", "0"));
-			S[4][6][i] = (inifile.ReadString("GS", "LineBS", "0"));
-   			S[5][6][i] = (inifile.ReadString("GS", "AreaBS", "0"));
-   			S[6][6][i] = (inifile.ReadString("GS", "CurveBS", "0"));
-   			S[7][6][i] = (inifile.ReadString("GS", "BeamCurrent", "0"));
-   			S[8][6][i] = (inifile.ReadString("GS", "WFOverpattern", "0"));
+			S[1][6][i] = inifile.ReadFloat("GS", "SSLine", -9999);
+			S[2][6][i] = inifile.ReadFloat("GS", "SSArea", -9999);
+			S[3][6][i] = inifile.ReadFloat("GS", "SSCurve", -9999);
+			S[4][6][i] = inifile.ReadFloat("GS", "LineBS", -9999);
+   			S[5][6][i] = inifile.ReadFloat("GS", "AreaBS", -9999);
+   			S[6][6][i] = inifile.ReadFloat("GS", "CurveBS", -9999);
+   			S[7][6][i] = inifile.ReadFloat("GS", "BeamCurrent", -9999);
+   			S[8][6][i] = inifile.ReadFloat("GS", "WFOverpattern", -9999);
+			for (cnt=1; cnt <= 8; cnt++)
+			{
+				var checklist = ["SSLine","SSArea","SSCurve","LineBS","AreaBS","CurveBS","BeamCurrent","WFOverpattern"];
+				if (typeof(S[cnt][6][i]) != "number" || S[cnt][6][i] == -9999)
+				{
+					App.ErrMsg(0,0,"Error in sample " + i + ", value '" + checklist[cnt] + "', check Multisample.txt/SDVars.txt");
+					Abort();
+				}
+			}
+
    			StepsizeDwelltime(i, 0, 0); //This calculated and modifies beamspeeds if they are not correct in Multisample.txt or SDvars.txt
 		}
   	
 		if (st == 2)
 		{
-			S[1][4][i] = (inifile.ReadString(it, "ExpLayers", "0"));
-			S[2][4][i] = parseInt(inifile.ReadString(it, "Nx", "0"));
-			S[3][4][i] = parseInt(inifile.ReadString(it, "Ny", "0"));
-			S[4][4][i] = parseFloat(inifile.ReadString(it, "Sx", "0"));
-			S[5][4][i] = parseFloat(inifile.ReadString(it, "Sy", "0"));
-			S[6][4][i] = parseFloat(inifile.ReadString(it, "UuShift", "0"));			
-			S[7][4][i] = parseFloat(inifile.ReadString(it, "VvShift", "0"));
-			S[8][4][i] = inifile.ReadString(it, "Name", "0");
-			S[13][4][i] = inifile.ReadString(it, "WFMethod", "0");
-			S[10][4][i] = inifile.ReadString(it, "Markprocedure", "1");
-			S[12][4][i] = inifile.ReadString(it, "L61", "0");
-			S[14][4][i] = inifile.ReadString(it, "Exposureloops", "1");
+			S[1][4][i] = inifile.ReadString(it,"ExpLayers", "err");
+			if (S[1][4][i] == "err")
+			{
+				App.ErrMsg(0,0,"Error in sample " + i + ", value 'ExpLayers', check Multisample.txt/SDVars.txt");
+				Abort();
+			}
+			S[2][4][i] = inifile.ReadInteger(it, "Nx", -9999);
+			S[3][4][i] = inifile.ReadInteger(it, "Ny", -9999);
+			S[4][4][i] = inifile.ReadFloat(it, "Sx", -9999);
+			S[5][4][i] = inifile.ReadFloat(it, "Sy", -9999);
+			S[6][4][i] = inifile.ReadFloat(it, "UuShift", -9999);
+			S[7][4][i] = inifile.ReadFloat(it, "VvShift", -9999);
+			for (cnt=2; cnt <= 7; cnt++)
+			{
+				var checklist = ["Nx","Ny","Sx","Sy","UuShift","VvShift"];
+				if (typeof(S[cnt][4][i]) != "number" || S[cnt][4][i] == -9999)
+				{
+					App.ErrMsg(0,0,"Error in sample " + i + ", value '" + checklist[cnt] + "', check Multisample.txt/SDVars.txt");
 
-			S[1][5][i] = (inifile.ReadString(it, "WF", "0"));
-			S[2][5][i] = (inifile.ReadString(it, "ColMode", "0"));
-			GDSIIpath = (inifile.ReadString(it, "GDSII", "0"));
+					Abort();
+				}
+			}
+
+			S[8][4][i] = inifile.ReadString(it,"Name", "");
+			S[13][4][i] = inifile.ReadInteger(it, "WFMethod", -9999);
+			if (S[13][4][i] != 1 && S[13][4][i] != 2 && S[13][4][i] != 3 && S[13][4][i] != 4)
+			{
+				App.ErrMsg(0,0,"Error in sample " + i + ", value 'WFMethod', check Multisample.txt/SDVars.txt");
+				Abort();
+			}
+
+			S[10][4][i] = inifile.ReadString(it, "Markprocedure", "err");
+			wfprocedureloadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
+			if (SearchArray(wfprocedureloadlist,S[10][4][i]) == -1)
+			{
+				App.ErrMsg(0,0,"Value under 'Markprocedure' for sample " + i + " not found in Loadlist of Alignprocedures.txt.");
+				Abort();
+			}
+
+			S[12][4][i] = inifile.ReadString(it, "L61", "err"); 
+			var GDSmarkstring = S[12][4][i].split("-");
+			var GDSmarklist = GGDSIImarkertypes.ReadString("LoadList", "load", "0");
+			var GDSarray = GDSmarklist.split(";");
+			if (SearchArray(GDSarray, GDSmarkstring[0]) == -1)
+			{
+				App.ErrMsg(0,0,"Entered 'L61' markers for sample" + i + " not found in Loadlist of L61markers.txt.");
+				Abort();
+			}
+
+			S[14][4][i] = parseInt(inifile.ReadString(it, "Exposureloops", "err"));
+			if (typeof(S[14][4][i]) != "number" || S[14][4][i] == "err")
+			{
+				App.ErrMsg(0,0,"Error in sample " + i + ", value 'Exposureloops', check Multisample.txt/SDVars.txt");
+				Abort();
+			}
+ 
+			S[1][5][i] = inifile.ReadFloat(it, "WF", -9999);
+			if (typeof(S[1][5][i]) != "number" || S[1][5][i] == -9999)
+			{
+				App.ErrMsg(0,0,"Error in sample " + i + ", value 'WF', check Multisample.txt/SDVars.txt");
+				Abort();
+			}
+			colmode = inifile.ReadString(it, "ColMode", "err");
+			if (S[1][5][i] == "err")
+			{
+				App.ErrMsg(0,0,"Error in sample " + i + ", value 'ColMode', check Multisample.txt/SDVars.txt");
+				Abort();
+			}
+			S[2][5][i] = ReplaceAtbymu(colmode);
+			GDSIIpath = (inifile.ReadString(it, "GDSII", "err"));
 			CheckPathLength(GDSIIpath, i);
 			if (FileExists(GDSIIpath) != 1)
 			{
-				App.ErrMsg(0,0,"Error in Multisample.txt: GDSII file not found for sample " + i + ". Script will abort.");
+				App.ErrMsg(0,0,"Error in Multisample.txt/SDVars.txt: GDSII file not found.");
 				Abort();
 			}
-			S[3][5][i] = (inifile.ReadString(it, "GDSII", "0"));
-			S[4][5][i] = (inifile.ReadString(it, "Struct", "0"));
-			S[1][6][i] = (inifile.ReadString(it, "SSLine", "0"));
-			S[2][6][i] = (inifile.ReadString(it, "SSArea", "0"));
-			S[3][6][i] = (inifile.ReadString(it, "SSCurve", "0"));
-			S[4][6][i] = (inifile.ReadString(it, "LineBS", "0"));
-   			S[5][6][i] = (inifile.ReadString(it, "AreaBS", "0"));
-   			S[6][6][i] = (inifile.ReadString(it, "CurveBS", "0"));
-   			S[7][6][i] = (inifile.ReadString(it, "BeamCurrent", "0"));
-   			S[8][6][i] = (inifile.ReadString(it, "WFOverpattern", "0"));
-   			StepsizeDwelltime(i, 0, 0); //This calculated and modifies beamspeeds if they are not correct in Multisample.txt or SDvars.txt	
+			S[3][5][i] = (inifile.ReadString(it, "GDSII", "err"));
+			S[4][5][i] = (inifile.ReadString(it, "Struct", "err"));
+			if (S[4][5][i] == "err")
+			{
+				App.ErrMsg(0,0,"Error in sample " + i + ", value 'Struct', check Multisample.txt/SDVars.txt");
+				Abort();
+			}
+			
+			S[1][6][i] = inifile.ReadFloat(it, "SSLine", -9999);
+			S[2][6][i] = inifile.ReadFloat(it, "SSArea", -9999);
+			S[3][6][i] = inifile.ReadFloat(it, "SSCurve", -9999);
+			S[4][6][i] = inifile.ReadFloat(it, "LineBS", -9999);
+   			S[5][6][i] = inifile.ReadFloat(it, "AreaBS", -9999);
+   			S[6][6][i] = inifile.ReadFloat(it, "CurveBS", -9999);
+   			S[7][6][i] = inifile.ReadFloat(it, "BeamCurrent", -9999);
+   			S[8][6][i] = inifile.ReadFloat(it, "WFOverpattern", -9999);
+			for (cnt=1; cnt <= 8; cnt++)
+			{
+				var checklist = ["SSLine","SSArea","SSCurve","LineBS","AreaBS","CurveBS","BeamCurrent","WFOverpattern"];
+				if (typeof(S[cnt][6][i]) != "number" || S[cnt][6][i] == -9999)
+				{
+					App.ErrMsg(0,0,"Error in sample " + i + ", value '" + checklist[cnt] + "', check Multisample.txt/SDVars.txt")
+					Abort();
+				}
+			}
+   			StepsizeDwelltime(i, 0, 0); //This recalculates and modifies beamspeeds if they are not correct in Multisample.txt or SDvars.txt	
 		}
 	}	
 	
@@ -791,10 +963,12 @@ function Load(SDflag)
 function CollectSD(st, GUIflag)
 {
     var mflag = 0;
-	var i, it, wfprocedureloadlist, S14, S24, S34, S44, S54, S64, S74, S84, S86, S94, S104, S124, S134, S144, S15, S25, S35, S45, currpath, fex, currstruct, tl;
+	var i, it, wfprocedureloadlist, S14, S24, S34, S44, S54, S64, S74, S84, S86, S94, S104, S124, S134, S144, S15, S25, S35, S45, currpath, fex, currstruct, tl, check;
 	var GDSmarklist, GDSmark;
+	check = -1;
 	collectinguvflag = 1;
 	Gnums = App.InputMsg("Select amount of UV alignments (one additional alignment requirement per column change)", "Select a number 1-99", "1");
+	if (Gnums == "") Abort();
     S = createArray(99,7,Gnums+1);
 
 	if (Gnums != parseInt(Gnums) || Gnums > 99 || Gnums < 1)
@@ -815,7 +989,11 @@ function CollectSD(st, GUIflag)
 			if (st == 2) App.Errmsg(0,0, "Enter data for " + it + " in the following dialogue boxes.");
 			Panicbutton();
 			S84 = App.InputMsg("Sample name","Enter name for sample(s) (for log)","");
-			
+			if (S84 == "") 
+			{
+				Logdata();
+				Abort();
+			}
 			if (GUIflag == 2)
 			{
 				currpath = App.GetVariable("GDSII.Database");
@@ -823,8 +1001,12 @@ function CollectSD(st, GUIflag)
 				while (fex != 1)
 				{
 					S35 = App.InputMsg("Select GDSII database file.", "Enter the full path", currpath);
+					if (S35 == "") 
+					{
+						Logdata();
+						Abort();
+					}
 					CheckPathLength(S35, i);
-					if (S35 == "") Abort();
 					fex = FileExists(S35);
 					
 					if (fex != 1)
@@ -834,61 +1016,330 @@ function CollectSD(st, GUIflag)
 				}
 				currstruct = App.GetVariable("Variables.StructureName");
 				S45 = App.InputMsg("Choose structure", "Type the name of the structure (case sensitive):", currstruct);
+				if (S45 == "") 
+				{
+					Logdata();
+					Abort();
+				}
 				if (S45 == "") S45 = currstruct;
 
 		    	S15 = App.InputMsg("Choose writefield in µm", "Select 1000, 200, 100, 50, 25 or 1", S15);
+				if (S15 == "") 
+				{
+					Logdata();
+					Abort();
+				}
 				S25 = App.InputMsg("Column settings", "Type name of column dataset (format= group: name). You can use '@' for '\u03BC' symbol.", LastDatasettoColset());
+				if (S25 == "") 
+				{
+					Logdata();
+					Abort();
+				}
 				S25 = ReplaceAtbymu(S25);
     		}
 			
-			S134 = App.Inputmsg("Select type of WF alignment","1: All devices, 2: First device per sample, 3: Manual per chip, 4: No alignment", "1");
-			Panicbutton();
-			if (S134 ==  1 || S134 == 2 )
+			check = -1;
+			while (check != 1)			
 			{
-				wfprocedureloadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
-				S104 = App.InputMsg("Select AutoWFAlign scan procedure", "Select: " + wfprocedureloadlist, wfprocedureloadlist[0]);
+				S134 = App.Inputmsg("Select type of WF alignment","1: All devices, 2: First device per sample, 3: Manual per chip, 4: No alignment", "1");
+				Panicbutton();
+				if (S134 == "") 
+				{
+					Logdata();
+					Abort();
+				}
+				if (S134 == 1 || S134 == 2 || S134 == 3 || S134 == 4)
+				{
+					check = 1;
+				}
+				else
+				{
+					App.ErrMsg(0,0,"Nonvalid entry.");
+					check = -1;
+				}
+				
 			}
-			else
+
+			check = -1;
+			while (check != 1)
 			{
-				S104 = -1;
+				if (S134 ==  1 || S134 == 2 )
+				{
+					wfprocedureloadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
+					S104 = App.InputMsg("Select auto WF align scanmark procedure", "Select: " + wfprocedureloadlist, wfprocedureloadlist[0]);
+					if (S104 == "") 
+					{
+						Logdata();
+						Abort();
+					}
+					Panicbutton();
+					if (SearchArray(wfprocedureloadlist,S104) == -1)
+					{
+						App.ErrMsg(0,0,"Non-existing scan procedure. Check Alignprocedures.txt and re-enter.");
+					}
+					else
+					{
+						check = 1;
+					}
+				}
+				else
+				{
+					S104 = -1;
+					check = 1;
+				}	
 			}
-			Panicbutton();
+			
 			if (App.ErrMsg(4,0,"Do you want to use layer 61 (GDSII autoscans)?")==EA_YES)
 			{
 				tl = App.InputMsg("Select layer", "Select layer(s) to use together with layer 61 (separate by ';')","");
+				tl = tl.replace(",", ";");
+				if (tl == "") 
+				{
+					Logdata();
+					Abort();
+				}
 				Panicbutton();
 				GDSmarklist = GGDSIImarkertypes.ReadString("LoadList", "load", "0");
-				GDSmark = App.InputMsg("Select GDSII marker", "Choose: " + GDSmarklist, GDSmarklist[0]);
-				Panicbutton();
-				GDSproc = App.InputMsg("Select GDSII procedure", "Choose: '1' for scanning all structures, '2' for scanning only the first.", "1");
-				S124 = GDSmark + "-" + GDSproc + "-" + tl;
+				
+				check = -1;
+				while (check != 1)
+				{
+					GDSmark = App.InputMsg("Select GDSII marker", "Choose: " + GDSmarklist, GDSmarklist[0]);
+					Panicbutton();
+					if (GDSmark == "") 
+					{
+						Logdata();
+						Abort();
+					}
+					GDSarray = GDSmarklist.split(";");
+					if (SearchArray(GDSarray, GDSmark) == -1)
+					{
+						App.ErrMsg(0,0,"Non-existing GDS markers. Check GDSmarkers.txt and re-enter");
+					}
+					else
+					{
+						check = 1;
+					}
+				}
+					
+				check = -1;
+				while (check == -1)
+				{
+					GDSproc = App.InputMsg("Select GDSII procedure", "Choose: '1' for scanning all structures, '2' for scanning only the first.", "1");
+					if (GDSproc == "")
+					{
+						Logdata();
+						Abort();
+					} 
+					if (GDSproc == 1 || GDSproc == 2)
+					{
+						check = 1;
+						S124 = GDSmark + "-" + GDSproc + "-" + tl;
+					}
+					else
+					{
+						App.ErrMsg(0,0,"Please choose '1' or '2'")
+					}
+				}
+				
+
 				if (App.ErrMsg(4,0,"Do you want to write other layers in a global alignment?")==EA_YES)
 				{
 					S14 = App.InputMsg("Choose layers", "Select (separate by ';') ", "0");
+					S14 = S14.replace(",",";");
+					if (S14 == "") 
+					{
+						Logdata();
+						Abort();
+					}
+					Panicbutton();
 				}
 				else
 				{
 					S14 = -1;
 				}
-				Panicbutton();
 			}
 			else
 			{
 				S124 = -1;
 				S14 = App.InputMsg("Choose layers", "Select layers to write (separate by ';') ", "0");
+				S14 = S14.replace(",",";");
+				if (S14 == "") 
+				{
+					Logdata();
+					Abort();
+				}
 			}
-			S24 = App.InputMsg("Define chip dimensions in x (U)", "Select number of structures: x (U)", "2");
-			S34 = App.InputMsg("Define chip dimensions in y (V)", "Select number of structures: y (V)", "2");
-			Panicbutton();
-			S44 = App.InputMsg("Define structure spacing in (U)", "Select structure spacing in mm: x (U)", "5");
-			S54 = App.InputMsg("Define structure spacing in (V)", "Select structure spacing in mm: y (V)", "5");
-			Panicbutton();
-			S64 = App.InputMsg("Define Global-Local shift (U) for 1st structure", "Select shift in mm: x (U)", "0");
-			S74 = App.InputMsg("Define Global-Local shift (V) for 1st structure", "Select shift in mm: v (V)", "0");
-			Panicbutton();
-			S144 = App.InputMsg("Number of exposureloops per device","#", "1");
-			S86 = App.InputMsg("Writefield overpattern", "Percentage of overpattern (prevents stitching errors, recommended values 0-0.5)", "0.0");
-			Panicbutton();
+			
+			check = -1;
+			while (check != 1)
+			{
+				S24 = App.InputMsg("Define chip dimensions in x (U)", "Select number of structures: x (U)", "2");
+				Panicbutton();
+				if (S24 == "") 
+				{
+					Logdata();
+					Abort();
+				}
+				if (isNaN(parseInt(S24)))
+				{
+					App.ErrMsg(0,0,"Please input an integer number");
+				}
+				else
+				{
+					check = 1;
+				}
+			}
+
+			check = -1;
+			while (check != 1)
+			{
+				S34 = App.InputMsg("Define chip dimensions in y (V)", "Select number of structures: y (V)", "2");
+				if (S34 == "") 
+				{
+					Logdata();
+					Abort();
+				}
+				Panicbutton();
+				if (isNaN(parseInt(S34)))
+				{
+					App.ErrMsg(0,0,"Please input an integer number");
+				}
+				else
+				{
+					check = 1;
+				}			
+			}
+			
+			if (S24 != 1)
+			{
+				check = -1;
+				while (check != 1)
+				{
+					S44 = App.InputMsg("Define structure spacing in (U)", "Select structure spacing in mm: x (U)", "5");
+					Panicbutton();
+					if (S44 == "") 
+					{
+						Logdata();
+						Abort();
+					}
+					if (isNaN(parseFloat(S44)))
+					{
+						App.ErrMsg(0,0,"Please input a number.");
+					}
+					else
+					{
+						check = 1;
+					}			
+				}	
+			}
+			else
+			{
+				S44 = "1";
+			}
+
+			if (S34 != 1)
+			{
+				check = -1;
+				while (check != 1)
+				{
+					S54 = App.InputMsg("Define structure spacing in (V)", "Select structure spacing in mm: y (V)", "5");
+					if (S54 == "") 
+					{
+						Logdata();
+						Abort();
+					}
+					Panicbutton();
+					if (S54 == "") 
+					{
+						Logdata();
+						Abort();
+					}
+					if (isNaN(parseFloat(S54)))
+					{
+						App.ErrMsg(0,0,"Please input a number.");
+					}
+					else
+					{
+						check = 1;
+					}			
+				}	
+			}
+			else
+			{
+				S54 = "1";
+			}		
+
+			check = -1;
+			while (check != 1)
+			{
+				S64 = App.InputMsg("Define Global-Local shift (U) for 1st structure", "Select shift in mm: x (U)", "0");
+				if (S64 == "") 
+				{
+					Logdata();
+					Abort();
+				}
+				Panicbutton();
+				if (isNaN(parseFloat(S64)))
+				{
+					App.ErrMsg(0,0,"Please input a number.");
+				}
+				else
+				{
+					check = 1;
+				}			
+			}
+
+			check = -1;
+			while (check != 1)
+			{
+				S74 = App.InputMsg("Define Global-Local shift (V) for 1st structure", "Select shift in mm: v (V)", "0");
+				if (S74 == "") 
+				{
+					Logdata();
+					Abort();
+				}
+				Panicbutton();
+				if (isNaN(parseFloat(S74)))
+				{
+					App.ErrMsg(0,0,"Please input a number.");
+				}
+				else
+				{
+					check = 1;
+				}			
+			}		
+			
+			//S144 = App.InputMsg("Number of exposureloops per device","#", "1");
+			S144 = "1";
+
+			if (S14 != -1)
+			{ 
+				
+				check = -1;
+				while (check != 1)
+				{
+					S86 = App.InputMsg("Writefield overpattern (only used in global alignment)", "Percentage of overpattern (prevents stitching errors, recommended values 0-0.5)", "0.2");
+					if (S86 == "") 
+					{
+						Logdata();
+						Abort();
+					}
+					Panicbutton();
+					if (isNaN(parseFloat(S86)))
+					{
+						App.ErrMsg(0,0,"Please input a number.");
+					}
+					else
+					{
+						check = 1;
+					}				
+				}	
+			}
+			else
+			{
+				S86 = "0.0";
+			}
 			//S44 = 5;
 			//S54 = 5;
 			//S64 = 0;
@@ -940,13 +1391,23 @@ function CollectUV(st, GUIflag)
 // Add loop so that this is only asked once if st == 1
     if (GUIflag == 1)
     {	
-    	App.ErrMsg(0,0,"Collecting three point alignments for all chips commences. Activate desired Column dataset and WriteField. USE GLOBAL ALIGNMENT!");
+    	if (App.ErrMsg(8,0,"Collecting three point alignments for all chips commences. Activate desired Column dataset and WriteField. USE GLOBAL ALIGNMENT!") ==2 )
+    	{
+    		Logdata();
+    		Abort();
+    	}
 	}
+
 
 	if (GUIflag == 2)
     {	
-    	App.ErrMsg(0,0,"Collecting three point alignments for all chips commences. USE GLOBAL ALIGNMENT!");
+    	if (App.ErrMsg(8,0,"Collecting three point alignments for all chips commences. USE GLOBAL ALIGNMENT!") == 2)
+    	{
+    		Logdata();
+    		Abort();
+    	}
 	}
+
 	Panicbutton();
 	for (i = 1; i <= Gnums; i++)
     {
@@ -990,8 +1451,12 @@ function CollectUV(st, GUIflag)
 				if (amf <= 1) break;
 				if (amf >= 2)
 				{
-					userinput = App.ErrMsg(9,0,"Less than three Marks found during procedure. Try scanning again? (Change Markers.txt). Cancel quits script.");
-					if (userinput == 2) Abort();
+					userinput = App.ErrMsg(9,0,"Less than three Marks found during procedure. Try scanning again? (Change Markers.txt). No continues while Cancel quits the script.");
+					if (userinput == 2) 
+					{
+						Logdata();
+						Abort();
+					}
 				}	
 			}
 			
@@ -1001,7 +1466,11 @@ function CollectUV(st, GUIflag)
 		 // fix this to be compatble with manual WF alignment	
 		}	    
 
-	    App.ErrMsg(0,0,"Check UV alignment + focus after WF change of sample chip " + i + " of " + Gnums + ". CORRECT GDSII FILE + PARAMETER SET ACTIVATED?");
+	    if (App.ErrMsg(8,0,"Check UV alignment + focus after WF change of sample chip " + i + " of " + Gnums + ". CORRECT GDSII FILE + PARAMETER SET ACTIVATED?") == 2)
+	    	{
+	    		Logdata();
+	    		Abort();
+	    	}
 	    //App.Exec("SetMagnification(100000)")
 	    App.Exec("Halt()");
 	    Panicbutton();
@@ -1073,6 +1542,59 @@ function CollectUV(st, GUIflag)
     return (S);
 }
 
+function GetUVWF()
+{
+		//GetUVdata
+		var m, maf, wd, j;
+		S = createArray(99,7,Gnums+1);
+		for (j = 1; j <= 3; j++)
+		{
+			m = App.GetVariable("GLOBALADJUST.Mark" + j).split(",");
+			maf = App.GetVariable("AUTOFOCUS.Mark" + j).split(",");
+			wd = App.GetVariable("AUTOFOCUS.WD" + j);
+
+			S[1][j][1] = parseFloat(m[1]);
+			S[2][j][1] = parseFloat(m[2]);
+			S[3][j][1] = wd + "";
+			S[4][j][1] = parseFloat(m[3]);
+			S[5][j][1] = parseFloat(m[4]);
+			S[6][j][1] = maf[2] + "";
+			S[7][j][1] = parseFloat(m[0]);
+	    }
+		//GetWFData
+		S[1][5][1] = parseInt(App.GetVariable("Variables.WritefieldHeight"));
+		S[5][5][1] = App.GetVariable("Variables.ZoomX");
+		S[6][5][1] = App.GetVariable("Variables.ZoomY");
+		S[7][5][1] = App.GetVariable("Variables.ShiftX");
+		S[8][5][1] = App.GetVariable("Variables.ShiftY");
+		S[9][5][1] = App.GetVariable("Variables.RotX");
+		S[10][5][1] = App.GetVariable("Variables.RotY");
+
+		//WriteUVData
+		for (j = 1; j <= 3; j++)
+		{	          
+			GUVini.WriteString("Sx", "U" + j, S[1][j][1] + "");
+			GUVini.WriteString("Sx", "V" + j, S[2][j][1] + "");
+			GUVini.WriteString("Sx", "WD" + j, S[3][j][1] + "");
+			GUVini.WriteString("Sx", "X" + j, S[4][j][1] + "");
+			GUVini.WriteString("Sx", "Y" + j, S[5][j][1] + "");
+			GUVini.WriteString("Sx", "Z" + j, S[6][j][1] + "");
+			GUVini.WriteString("Sx", "MarkValid" + j, S[7][j][1] + "");
+		}
+		
+		//WriteWFData
+		App.Exec("GetCorrection()");
+		GUVini.WriteString("Sx", "WF", S[1][5][1] + "");
+		GUVini.WriteString("Sx", "WFZoomU", S[5][5][1] + "");
+		GUVini.WriteString("Sx", "WFZoomV", S[6][5][1] + "");
+		GUVini.WriteString("Sx", "WFShiftU", S[7][5][1] + "");
+		GUVini.WriteString("Sx", "WFShiftV", S[8][5][1] + "");
+		GUVini.WriteString("Sx", "WFRotU", S[9][5][1] + "");
+		GUVini.WriteString("Sx", "WFRotV", S[10][5][1] + "");	
+
+		App.ErrMsg(0,0,"UV alignment and WF values succesfully copied to UVvars.txt");
+}
+
 function Logdata()
 {
 	var Glogini, it, j; 
@@ -1081,9 +1603,13 @@ function Logdata()
     Glogini = App.OpenInifile(Glogfilename[1] + Glogfilename[2]);
 	Glogini.Writestring("GS","Procedure", S[9][4][1]);
 	Glogini.Writestring("GS","n-Samples", S[11][4][1]);
+	Glogini.Writestring("GS", "User", App.GetVariable("Variables.LastUser"));
 	
 	if (st == 1)
 	{
+	    Glogini.Writestring("GS", "Name", S[8][4][1]);
+	    Glogini.WriteString("GS", "GDSII", S[3][5][1] + "");
+		Glogini.WriteString("GS", "Struct", S[4][5][1] + "");
 	    Glogini.WriteString("GS", "ExpLayers", S[1][4][1] + "");
 	    Glogini.WriteString("GS", "Nx", S[2][4][1] + "");
 	    Glogini.WriteString("GS", "Ny", S[3][4][1] + "");
@@ -1091,17 +1617,12 @@ function Logdata()
 	    Glogini.WriteString("GS", "Sy", S[5][4][1] + "");
 		Glogini.WriteString("GS", "UuShift", S[6][4][1] + "");
 		Glogini.WriteString("GS", "VvShift", S[7][4][1] + "");
-		Glogini.Writestring("GS", "Name", S[8][4][1]);
 		Glogini.Writestring("GS", "WFMethod", S[13][4][1] + "");
 		Glogini.Writestring("GS", "Markprocedure", S[10][4][1]);
 		Glogini.Writestring("GS", "L61", S[12][4][1]);	
 		Glogini.Writestring("GS", "Exposureloops", S[14][4][1]);	
-		
 		Glogini.WriteString("GS", "WF", S[1][5][1] + "");
 		Glogini.WriteString("GS", "ColMode", S[2][5][1] + "");
-		Glogini.WriteString("GS", "GDSII", S[3][5][1] + "");
-		Glogini.WriteString("GS", "Struct", S[4][5][1] + "");
-		
 		Glogini.WriteString("GS", "SSLine", S[1][6][1] + "");
 		Glogini.WriteString("GS", "SSArea", S[2][6][1] + "");
 		Glogini.WriteString("GS", "SSCurve", S[3][6][1] + "");
@@ -1117,6 +1638,9 @@ function Logdata()
         it = "S" + i; 
 		if (st == 2)
 		{	
+			Glogini.Writestring(it,"Name", S[8][4][i]);
+			Glogini.WriteString(it,"GDSII", S[3][5][i] + "");
+			Glogini.WriteString(it,"Struct", S[4][5][i] + "");
 			Glogini.WriteString(it, "ExpLayers", S[1][4][i] + "");
 			Glogini.WriteString(it, "Nx", S[2][4][i] + "");
 			Glogini.WriteString(it, "Ny", S[3][4][i] + "");
@@ -1124,17 +1648,12 @@ function Logdata()
 			Glogini.WriteString(it, "Sy", S[5][4][i] + "");
 			Glogini.WriteString(it, "UuShift", S[6][4][i] + "");
 			Glogini.WriteString(it, "VvShift", S[7][4][i] + "");
-			Glogini.Writestring(it,"Name", S[8][4][i]);
 			Glogini.Writestring(it, "WFMethod", S[13][4][i] + "");
 			Glogini.Writestring(it,"Markprocedure", S[10][4][i]);	
 			Glogini.Writestring(it, "L61", S[12][4][i]);
 			Glogini.Writestring(it, "Exposureloops", S[14][4][i]);	
-			
 			Glogini.WriteString(it,"WF", S[1][5][i] + "");
 			Glogini.WriteString(it,"ColMode", S[2][5][i] + "");
-			Glogini.WriteString(it,"GDSII", S[3][5][i] + "");
-			Glogini.WriteString(it,"Struct", S[4][5][i] + "");
-
 			Glogini.WriteString(it, "SSLine", S[1][6][i] + "");
 			Glogini.WriteString(it, "SSArea", S[2][6][i] + "");
 			Glogini.WriteString(it, "SSCurve", S[3][6][i] + "");
@@ -1209,7 +1728,7 @@ function Install(restoreflag)
 {
 	var fso, p1 , p2;
 	GenerateBatchFile();
-	App.Exec("SetLaserStageCtrl(LASER)") //Turn on laser stage control, just to be sure
+	App.Exec("SetLaserStageCtrl(LASER)"); //Turn on laser stage control, just to be sure
 	App.SetVariable("Automation/Links.0",Gfilepath + Gsn + ".js");
 	fso = new ActiveXObject("Scripting.FileSystemObject");
 	if (fso.FolderExists(Gfilepath))
@@ -1325,13 +1844,14 @@ function LoadGDSIIMarkers()
 		markerdata = new Array(parlist.length);
 		for (p = 0; p < parlist.length; p ++) 
 		{
-			markerdata[p] = GGDSIImarkertypes.ReadString(loadlist[q], parlist[p], "undefined");
+			markerdata[p] = GGDSIImarkertypes.ReadFloat(loadlist[q], parlist[p], -9999);
 
-			if (markerdata[p] == "undefined") 
+			if (markerdata[p] == -9999) 
 			{
     			App.ErrMsg(0,0,"Markertype '" + loadlist[q] + "' not configured properly. Check Markers.txt and restart script.");
     			Abort();
 			}
+			markerdata[p] = markerdata[p].toString();
 		}
 		GDSmarkertypes[q][0] = loadlist[q]; 
 		GDSmarkertypes[q][1] = markerdata[0]; //ScanpointsLength
@@ -1427,7 +1947,7 @@ function LoadMarkers()
 
 function LoadWFAlignProcedures() 
 {
-	var loadlist, Alignprocedures, q, p, entries;
+	var loadlist, Alignprocedures, q, p, entries, markerstring;
 	loadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
 	Alignprocedures = createArray(loadlist.length,20);
 
@@ -1444,6 +1964,19 @@ function LoadWFAlignProcedures()
 		for (p = 0; p < entries.length; p ++) 
 		{
 			Alignprocedures[q][p+2] = GAlignprocedures.ReadString(loadlist[q], entries[p], "undefined");
+			if (p < entries.length-2)
+			{
+				markerarray = Alignprocedures[q][p+2].split(";");
+				for (qp = 0; qp < markerarray.length; qp++)
+				{
+					markerloadlist = GMarkertypes.ReadString("LoadList", "load", "0").split(";");
+					if (SearchArray(markerloadlist,markerarray[qp]) == -1)
+					{
+						App.ErrMsg(0,0,"Marker '" + markerarray [qp] + "' in alignprocedure " + loadlist[q] + " not found in Markers.txt" )
+						Abort();
+					}
+				}
+			}
 			if (Alignprocedures[q][p+2] == "undefined") 
 			{
     			App.ErrMsg(0,0,"Align procedure '" + loadlist[q] + "' not configured properly. Check Alignprocedures.txt and restart script.");
@@ -1508,7 +2041,7 @@ function AlignWF(markprocedure, logWFflag, i, j, k) //Main function to start aut
 			}
 		}
 		entries = WFAlignprocedures[b][1];
-		//App.ErrMsg(0,0,WFAlignprocedures[b][entries+1])
+		//App.ErrMsg(0,0,WFAlignprocedures[b][engtries+1])
 		for (c = 0; c < entries-2; c++)
 		{
 			markers = WFAlignprocedures[b][c+2].split(";");
@@ -1628,6 +2161,7 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th chip, type of writing
 			Panicbutton();
 			Stage.GlobalAlignment();
 			Stage.DriveUV(N[mj+1][k+1][1], N[mj+1][k+1][2]);
+			//Stage.W = 
 			Stage.LocalAlignment();
 			OriginCorrection();
 			if (S[12][4][i] != -1) //Checks if layer 61 is enabled
@@ -1650,19 +2184,38 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th chip, type of writing
 				{
 					if (l61[1] == 1)
 					{
-						App.Exec("SelectExposedLayer(61)"); 
+						App.Exec("SelectExposedLayer(61)");
 					}
-					else if (l61[2] == 2 && k == 0 && j == 0)
-					{}
+					else if (l61[1] == 2 && k == 0 && j == 0)
+					{
+						App.Exec("SelectExposedLayer(61)");
+					}
+					else
+					{
+						App.Exec("UnSelectAllExposedLayer()"); 
+					}
 				}
 				else 
 				{
-					
-					l61exp = 61 + ";" + l61[2]; 
-					App.Exec("SelectExposedLayer(" + l61exp + ")");			
+					if (l61[1] == 1)
+					{
+						l61exp = 61 + ";" + l61[2]; 
+						App.Exec("SelectExposedLayer(" + l61exp + ")");	
+					}
+					else if (l61[1] == 2 && k == 0 && j == 0)
+					{
+						l61exp = 61 + ";" + l61[2]; 
+						App.Exec("SelectExposedLayer(" + l61exp + ")");	
+					}
+					else
+					{
+						l61exp = l61[2]; 
+						App.Exec("SelectExposedLayer(" + l61exp + ")");	
+					}				
 				}
 				App.Exec("Exposure");
 				CopyLog();
+				Panicbutton();
 				RemoveGDSlogflag();
 			}
 			if (S[1][4][i] != -1) //Checks if a global layer is selected
@@ -1686,6 +2239,7 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th chip, type of writing
 				if (testmode != 1 && exposure == 1) App.Exec("Exposure");
 				WFOverpattern(0);
 				CopyLog();
+				Panicbutton();
 			}
 			TimeandProgress(i, k, mj, j, starttime, currentsampletime, 0);		
 		}
@@ -1736,12 +2290,22 @@ function Start()
 
 	App.Exec("BeamOff()");
 	Stage.GlobalAlignment();
-    
-	if (App.Errmsg(EC_YESNO, 0 , "Do WF alignment only?") == EA_YES)
+    //LoadWFAlignProcedures();
+	var switchvar = App.InputMsg("What are you up to?","Select '1' to start normally, '2' to do a WF alignment, '3' to grab UV/WF alignment.", "3")
+	switch(parseInt(switchvar))
 	{
-	   FirstWFAlign();
-	   Abort();
+		case 1:
+			break;
+		case 2:
+			FirstWFAlign();
+	   		Abort();
+			break;
+		case 3:
+			GetUVWF();
+			Abort();
+			break;
 	}
+	if (switvar == "") Abort();
 
 	var as = App.InputMsg("Select sample data source","Select '1' to collect sample data or select '2' to read 'Multisample.txt'.", "1");
 	if (as!=1 && as!=2) Abort();  
@@ -1753,6 +2317,7 @@ function Start()
 		if (st == 1 || st == 2)	
 		{
 			GUIflag = App.InputMsg("Select data aquiring procedure","1: Easy automatic collection during UV alignment, 2: Manual collection using GUI","1");
+			if (GUIflag == "") Abort();
 			S = CollectSD(st, GUIflag);
 		}
 		else
