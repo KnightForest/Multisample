@@ -729,7 +729,7 @@ function Load(SDflag)
 
 			S[10][4][i] = inifile.ReadString("GS", "Markprocedure", "err");
 			wfprocedureloadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
-			if (SearchArray(wfprocedureloadlist,S[10][4][i]) == -1)
+			if (SearchArray(wfprocedureloadlist,S[10][4][i]) == -1 && S[10][4][i] != -1)
 			{
 				App.ErrMsg(0,0,"Value under 'Markprocedure' not found in Loadlist of Alignprocedures.txt.");
 				Abort();
@@ -739,7 +739,7 @@ function Load(SDflag)
 			var GDSmarkstring = S[12][4][i].split("-");
 			var GDSmarklist = GGDSIImarkertypes.ReadString("LoadList", "load", "0");
 			var GDSarray = GDSmarklist.split(";");
-			if (SearchArray(GDSarray, GDSmarkstring[0]) == -1)
+			if (SearchArray(GDSarray, GDSmarkstring[0]) == -1 && S[12][4][i] != -1)
 			{
 				App.ErrMsg(0,0,"Entered 'L61' marker not in Loadlist of L61markers.txt.");
 				Abort();
@@ -836,7 +836,7 @@ function Load(SDflag)
 
 			S[10][4][i] = inifile.ReadString(it, "Markprocedure", "err");
 			wfprocedureloadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
-			if (SearchArray(wfprocedureloadlist,S[10][4][i]) == -1)
+			if (SearchArray(wfprocedureloadlist,S[10][4][i]) == -1 && S[10][4][i] != -1)
 			{
 				App.ErrMsg(0,0,"Value under 'Markprocedure' for sample " + i + " not found in Loadlist of Alignprocedures.txt.");
 				Abort();
@@ -846,7 +846,7 @@ function Load(SDflag)
 			var GDSmarkstring = S[12][4][i].split("-");
 			var GDSmarklist = GGDSIImarkertypes.ReadString("LoadList", "load", "0");
 			var GDSarray = GDSmarklist.split(";");
-			if (SearchArray(GDSarray, GDSmarkstring[0]) == -1)
+			if (SearchArray(GDSarray, GDSmarkstring[0]) == -1 && S[12][4][i] != -1)
 			{
 				App.ErrMsg(0,0,"Entered 'L61' markers for sample" + i + " not found in Loadlist of L61markers.txt.");
 				Abort();
@@ -2291,7 +2291,7 @@ function Start()
 	App.Exec("BeamOff()");
 	Stage.GlobalAlignment();
     //LoadWFAlignProcedures();
-	var switchvar = App.InputMsg("What are you up to?","Select '1' to start normally, '2' to do a WF alignment, '3' to grab UV/WF alignment.", "3")
+	var switchvar = App.InputMsg("What are you up to?","Select '1' to start normally, '2' to do a WF alignment, '3' to grab UV/WF alignment.", "1")
 	switch(parseInt(switchvar))
 	{
 		case 1:
@@ -2305,7 +2305,7 @@ function Start()
 			Abort();
 			break;
 	}
-	if (switvar == "") Abort();
+	if (switchvar == "") Abort();
 
 	var as = App.InputMsg("Select sample data source","Select '1' to collect sample data or select '2' to read 'Multisample.txt'.", "1");
 	if (as!=1 && as!=2) Abort();  
