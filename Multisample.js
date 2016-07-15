@@ -43,6 +43,9 @@
 // 		-> Needs added routine during UV alignment. <- if possible :/
 // - Stepsize bug? 2nd sample has 1 mm/sec lower beamspeed allowance, at least stepsize is higher. Test this.
 
+// Feature requests:
+// - Manual BC measurement if the automatic one fails.
+
 var Gsn = "Multisample";
 var Gsharedfolder = "\\\\130.89.7.17\\nanolab\\mesalabuser\\NE\\EBLLogs";
 //var Gsnl = parseInt(Gsn.length, 8);
@@ -326,9 +329,9 @@ function LastDatasettoColset()
 
 function MeasBeamCurrent()												//Measures beam current
 {
-	var bc, bcf, bcfdisp;
+	var bc, bcf, bcfdisp, retval;
 	bc = createArray(3);
-	if (App.ErrMsg(EC_YESNO, 0, "Do you want to measure the beam current?") == EA_YES)                        //Asks user to perform beam current measurement + dwelltime corrections
+	if (App.ErrMsg(EC_YESNO, 0, "Do you want to perform an automated beam current measurement?") == EA_YES)                        //Asks user to perform beam current measurement + dwelltime corrections
     {
     	if ( Column.CheckConnection() )                                   //If answer is YES, measurement is performed
       	{
@@ -345,14 +348,22 @@ function MeasBeamCurrent()												//Measures beam current
          	bc[2] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
          	if	(Math.max(bc[0], bc[1], bc[2])/Math.min(bc[0], bc[1], bc[2]) >= 1.01)
          	{
-         		if (App.ErrMsg(4,0,"Beam current fluctuation over three measurements(>1%) (" + bc + " nA). Continue?") == 7)
+         	    retval = App.ErrMsg(9,0,"Beam current fluctuation over three measurements(>1%) (" + bc + " nA). Pause script for manual measurement?")
+         	    if (retval == 6)
+         	    {
+         	    	App.Exec("Halt()");
+         	    }
+         	    if (retval == 2)
          		{
          			Abort();
          		}
          	}	
         bcf = ((bc[0]+bc[1]+bc[2])/3);
-        bcfdisp = PreciseRound(bcf*Math.pow(10,3),2);
-        App.ErrMsg(0,0,"Beamcurrent: " + bcfdisp + "pA"); //Dit moest van Joren. Hij houdt niet van teveel floating.
+        bcfdisp = PreciseRound(bcf*Math.pow(10,3),2); //Dit moest van Joren. Hij houdt niet van teveel floating.
+        if (App.ErrMsg(4,0,"Beamcurrent: " + bcfdisp + "pA. Continue? 'No' pauzes script for manual measurement.")==7) 
+        {
+        	App.Exec("Halt()");
+        }
         bcf = bcf.toString();
         App.SetVariable("BeamCurrent.BeamCurrent", bcf);
         }
@@ -668,11 +679,12 @@ function Load(SDflag)
 				S[7][j][i] = inifile.ReadFloat(it, "MarkValid" + j, -9999);
 				for (cnt=1; cnt <= 7; cnt++)
 				{
+					//App.ErrMsg(0,0,S[cnt][j][i] + "__"+cnt)
 					var checklist = ["U","V","WD","X","Y","Z","MarkValid"];
 					if (typeof(S[cnt][j][i]) != "number" || S[cnt][j][i] == -9999)
 					{
-						App.ErrMsg(0,0,"Error in sample " + i + " marker " + j + ", value '" + checklist[cnt] + "', check Multisample.txt");
-						Abort();
+						App.ErrMsg(0,0,"Error in sample " + i + " marker " + j + ", value '" + checklist[cnt-1] + "', check Multisample.txt"+S[cnt][j][i]);
+						//Abort();
 					}
 				}
 			}
@@ -688,7 +700,7 @@ function Load(SDflag)
 				var checklist = ["WFZoomU","WFZoomV","WFShiftU","WFShiftV","WFRotU","WFRotV"];
 				if (typeof(S[cnt][5][i]) != "number" || S[cnt][5][i] == -9999)
 				{
-					App.ErrMsg(0,0,"Error in sample " + i + ", value '" + checklist[cnt] + "', check Multisample.txt");
+					App.ErrMsg(0,0,"Error in sample " + i + ", value '" + checklist[cnt-1] + "', check Multisample.txt");
 					Abort();
 				}
 			}
@@ -713,7 +725,7 @@ function Load(SDflag)
 				var checklist = ["Nx","Ny","Sx","Sy","UuShift","VvShift"];
 				if (typeof(S[cnt][4][i]) != "number" || S[cnt][4][i] == -9999)
 				{
-					App.ErrMsg(0,0,"Error in 'GS', value '" + checklist[cnt] + "', check Multisample.txt/SDVars.txt");
+					App.ErrMsg(0,0,"Error in 'GS', value '" + checklist[cnt-1] + "', check Multisample.txt/SDVars.txt");
 
 					Abort();
 				}
@@ -793,7 +805,7 @@ function Load(SDflag)
 				var checklist = ["SSLine","SSArea","SSCurve","LineBS","AreaBS","CurveBS","BeamCurrent","WFOverpattern"];
 				if (typeof(S[cnt][6][i]) != "number" || S[cnt][6][i] == -9999)
 				{
-					App.ErrMsg(0,0,"Error in sample " + i + ", value '" + checklist[cnt] + "', check Multisample.txt/SDVars.txt");
+					App.ErrMsg(0,0,"Error in sample " + i + ", value '" + checklist[cnt-1] + "', check Multisample.txt/SDVars.txt");
 					Abort();
 				}
 			}
@@ -820,7 +832,7 @@ function Load(SDflag)
 				var checklist = ["Nx","Ny","Sx","Sy","UuShift","VvShift"];
 				if (typeof(S[cnt][4][i]) != "number" || S[cnt][4][i] == -9999)
 				{
-					App.ErrMsg(0,0,"Error in sample " + i + ", value '" + checklist[cnt] + "', check Multisample.txt/SDVars.txt");
+					App.ErrMsg(0,0,"Error in sample " + i + ", value '" + checklist[cnt-1] + "', check Multisample.txt/SDVars.txt");
 
 					Abort();
 				}
@@ -900,7 +912,7 @@ function Load(SDflag)
 				var checklist = ["SSLine","SSArea","SSCurve","LineBS","AreaBS","CurveBS","BeamCurrent","WFOverpattern"];
 				if (typeof(S[cnt][6][i]) != "number" || S[cnt][6][i] == -9999)
 				{
-					App.ErrMsg(0,0,"Error in sample " + i + ", value '" + checklist[cnt] + "', check Multisample.txt/SDVars.txt")
+					App.ErrMsg(0,0,"Error in sample " + i + ", value '" + checklist[cnt-1] + "', check Multisample.txt/SDVars.txt")
 					Abort();
 				}
 			}
@@ -2170,11 +2182,11 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th chip, type of writing
 				CopyLog();
 				if (S[13][4][i] == 1)
 				{
-					AlignWF(S[10][4][i], 1, i, j, k);
+					AlignWF(S[10][4][i], 1, i, mj, k);
 				}	
 				if (S[13][4][i] == 2 && k == 0 && j == 0)
 				{	
-					AlignWF(S[10][4][i], 1, i, j, k);
+					AlignWF(S[10][4][i], 1, i, mj, k);
 				}	
 				
 				InstallGDSmarker(l61[0], k, mj);
@@ -2186,7 +2198,7 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th chip, type of writing
 					{
 						App.Exec("SelectExposedLayer(61)");
 					}
-					else if (l61[1] == 2 && k == 0 && j == 0)
+					else if (l61[1] == 2 && k == 0 && mj == 0)
 					{
 						App.Exec("SelectExposedLayer(61)");
 					}
@@ -2202,7 +2214,7 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th chip, type of writing
 						l61exp = 61 + ";" + l61[2]; 
 						App.Exec("SelectExposedLayer(" + l61exp + ")");	
 					}
-					else if (l61[1] == 2 && k == 0 && j == 0)
+					else if (l61[1] == 2 && k == 0 && mj == 0)
 					{
 						l61exp = 61 + ";" + l61[2]; 
 						App.Exec("SelectExposedLayer(" + l61exp + ")");	

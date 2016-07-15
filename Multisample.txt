@@ -1,5 +1,5 @@
 [GS]
-Procedure=2
+Procedure=1
 n-Samples=1
 ExpLayers=-1
 Nx=1
@@ -49,7 +49,7 @@ SSArea=4
 SSCurve=4
 LineBS=0.824
 AreaBS=6.870
-CurveBS=6.870
+CurveBS=6.87
 BeamCurrent=0.041222
 WFOverpattern=0
 U1=1
