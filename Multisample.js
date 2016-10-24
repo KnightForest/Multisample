@@ -22,7 +22,7 @@
 // Future plans (- = open, V = fixed, T = needs testing):
 // - Add WF min/max to markers
 // - Add option to change working area per sample
-// - Build in more abort buttons
+// - Implemented: Build in more abort buttons
 // - Build in 'back' functionality
 // - Add comments :)
 // - Add initialisation to check if all files are present
@@ -44,7 +44,7 @@
 // - Stepsize bug? 2nd sample has 1 mm/sec lower beamspeed allowance, at least stepsize is higher. Test this.
 
 // Feature requests:
-// - Manual BC measurement if the automatic one fails.
+// - Implemented: Manual BC measurement if the automatic one fails.
 
 var Gsn = "Multisample";
 var Gsharedfolder = "\\\\130.89.7.17\\nanolab\\mesalabuser\\NE\\EBLLogs";
@@ -141,12 +141,12 @@ function GetLogDate()
    	if (minutes < 10) minutes = "0" + minutes;
     if (seconds < 10) seconds = "0" + seconds;
    	
-   	s = d.getYear();
-   	s += month;
+   	s = d.getYear() + "";
+   	s += month + "";
    	s += day + " ";
-   	s += hours;
-   	s += minutes;
-   	s += seconds;
+   	s += hours + "";
+   	s += minutes + "";
+   	s += seconds + "";
    	return(s);	
 }
 
@@ -1557,6 +1557,8 @@ function CollectUV(st, GUIflag)
 function GetUVWF()
 {
 		//GetUVdata
+		App.ErrMsg(0,0,"Make sure the Writefield is saved and the UV alignment is correct.")
+		App.Exec("Halt()");
 		var m, maf, wd, j;
 		S = createArray(99,7,Gnums+1);
 		for (j = 1; j <= 3; j++)
@@ -1574,6 +1576,7 @@ function GetUVWF()
 			S[7][j][1] = parseFloat(m[0]);
 	    }
 		//GetWFData
+		App.Exec("GetCorrection()");
 		S[1][5][1] = parseInt(App.GetVariable("Variables.WritefieldHeight"));
 		S[5][5][1] = App.GetVariable("Variables.ZoomX");
 		S[6][5][1] = App.GetVariable("Variables.ZoomY");
@@ -1595,7 +1598,6 @@ function GetUVWF()
 		}
 		
 		//WriteWFData
-		App.Exec("GetCorrection()");
 		GUVini.WriteString("Sx", "WF", S[1][5][1] + "");
 		GUVini.WriteString("Sx", "WFZoomU", S[5][5][1] + "");
 		GUVini.WriteString("Sx", "WFZoomV", S[6][5][1] + "");
