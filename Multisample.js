@@ -21,31 +21,30 @@
  
 // Future plans (- = open, V = fixed, T = needs testing):
 // - Add WF min/max to markers
-// - Add option to change working area per sample
-// - Implemented: Build in more abort buttons
+// T Add option to change working area per sample
 // - Build in 'back' functionality
 // - Add comments :)
 // - Add initialisation to check if all files are present
 // T Add ability to do only a GDSII scan on the first device on a sample (one UV alignment)
 // - Add ability to load writematrix from file (for unevenly spaced devices on a sample)
 // 		-> Combine this with loading different designs/layers per UV alignment
-// - Add procedure for manual alignment per chip
+// V Add procedure for manual alignment per chip --> Grab UV/WF 
 // - Add no-GUI mode for using patterning in Plist
 // - Put Markers/procedures etc (user editable files) in a separate folder
 // 	- > Add separate procedure for manual alignment on images.
 // - Expand on alignprocedures syntax
 // - Redo sampledefinitions in multisample/sdvars. Make them not rely on numbers but use loadlist maybe.
-// - Check if GDS Markertype is valid
+// V Check if GDS Markertype is valid
 
 // BUGS:
-// - Manual BC measurement in script does not work, double menu + value is not recorded.
-// - Sergey: Bug report: sd vars works strange with use preseted beam current? - > no - > measure current - >  no
-// - Manual alignment on dot within script not possible
+// - Fixed, needs a test: Manual BC measurement in script does not work, double menu + value is not recorded.
+// - Fixed, needs a test: Sergey: Bug report: sd vars works strange with use preseted beam current? - > no - > measure current - >  no
+// - Improssibru: Manual alignment on dot within script not possible
 // 		-> Needs added routine during UV alignment. <- if possible :/
 // - Stepsize bug? 2nd sample has 1 mm/sec lower beamspeed allowance, at least stepsize is higher. Test this.
 
 // Feature requests:
-// - Implemented: Manual BC measurement if the automatic one fails.
+// - nothing atm
 
 var Gsn = "Multisample";
 var Gsharedfolder = "\\\\130.89.7.17\\nanolab\\mesalabuser\\NE\\EBLLogs";
@@ -256,7 +255,7 @@ function GenerateBatchFile()
     var fso = new ActiveXObject("Scripting.FileSystemObject");
     if (FileExists(Gfilepath + "Lib\\CopyLog.bat") == 1)
     {
-    	var file = fso.GetFile(Gfilepath + "Lib\\CopyLog.bat");
+    	file = fso.GetFile(Gfilepath + "Lib\\CopyLog.bat");
     	file.Delete();
     }
 	// Create the file, and obtain a file object for the file.
@@ -320,10 +319,10 @@ function GetActiveWorkingArea(gdsfile, structure)
 	workingareaini = App.OpenInifile(workingareafile);
 	activewa = workingareaini.ReadString(structure, "ActiveWA", "");
 	activewastring = "WorkingArea" + activewa;
-	workingareastring = workingareaini.ReadString(structure,activewastring,"")
-	workingarea = workingareastring.split(",")
-	wa = workingarea[0] + ","+ workingarea[1] + "," + workingarea[2] + ","+ workingarea[3]
-	return wa
+	workingareastring = workingareaini.ReadString(structure,activewastring,"");
+	workingarea = workingareastring.split(",");
+	wa = workingarea[0] + ","+ workingarea[1] + "," + workingarea[2] + ","+ workingarea[3];
+	return wa;
 }
 
 
@@ -332,17 +331,18 @@ function GetColDatasetList()
 {
 	var colatts = new Array();
 	var coldatasetlist = new Array();
-	var coldataset = createArray(300,4)
-	var colfolder = createArray(300,4)
-	var colstring
+	var coldataset = createArray(300,4);
+	var colfolder = createArray(300,4);
+	var colstring;
+  var coldatfile;
 	var entrycolset = 0;
 	var entrycolfolder = 0;
-	coldatfilepath = Glib + "ColumnDataSets.txt"
+	coldatfilepath = Glib + "ColumnDataSets.txt";
 	var fso = new ActiveXObject("Scripting.FileSystemObject");
 
 	if (FileExists(coldatfilepath) == 1)
     {
-    	var coldatfile = fso.GetFile(coldatfilepath);
+    	coldatfile = fso.GetFile(coldatfilepath);
     	coldatfile.Delete();
     }
 
@@ -394,7 +394,7 @@ function GetColDatasetList()
     	}
 	}
 	cdf.Close();
-return coldatasetlist
+return coldatasetlist;
 }
 
 function CheckColumnExists(colset)
@@ -456,7 +456,7 @@ function MeasBeamCurrent()												//Measures beam current
          	bcf = ((bc[0]+bc[1]+bc[2])/3);
          	if	(Math.max(bc[0], bc[1], bc[2])/Math.min(bc[0], bc[1], bc[2]) >= 1.01)
          	{
-         	    retval = App.ErrMsg(9,0,"Beam current fluctuation over three measurements(>1%) (" + bc + " nA). Pause script for manual measurement?")
+         	    retval = App.ErrMsg(9,0,"Beam current fluctuation over three measurements(>1%) (" + bc + " nA). Pause script for manual measurement?");
          	    if (retval == 6)
          	    {
          	    	App.Exec("Halt()");
@@ -749,7 +749,7 @@ function CheckPathLength(str, sn)
 function Load(SDflag)
 {	   
     S = createArray(99,7,Gnums+1);
-    var inifile, st, it, j, colmode, GDSIIpath;
+    var inifile, st, it, j, colmode, GDSIIpath, checklist, GDSmarkstring, GDSmarklist, GDSarray, cce;
 
 	//First load the list of parameters applicable to all loaded samples:
 	if (SDflag == 0) 
@@ -794,7 +794,7 @@ function Load(SDflag)
 				for (cnt=1; cnt <= 7; cnt++)
 				{
 					//App.ErrMsg(0,0,S[cnt][j][i] + "__"+cnt)
-					var checklist = ["U","V","WD","X","Y","Z","MarkValid"];
+					checklist = ["U","V","WD","X","Y","Z","MarkValid"];
 					if (typeof(S[cnt][j][i]) != "number" || S[cnt][j][i] == -9999)
 					{
 						App.ErrMsg(0,0,"Error in sample " + i + " marker " + j + ", value '" + checklist[cnt-1] + "', check Multisample.txt"+S[cnt][j][i]);
@@ -811,7 +811,7 @@ function Load(SDflag)
 			S[10][5][i] = inifile.ReadFloat(it, "WFRotV", -9999);
 			for (cnt=5; cnt <= 10; cnt++)
 			{
-				var checklist = ["WFZoomU","WFZoomV","WFShiftU","WFShiftV","WFRotU","WFRotV"];
+				checklist = ["WFZoomU","WFZoomV","WFShiftU","WFShiftV","WFRotU","WFRotV"];
 				if (typeof(S[cnt][5][i]) != "number" || S[cnt][5][i] == -9999)
 				{
 					App.ErrMsg(0,0,"Error in sample " + i + ", value '" + checklist[cnt-1] + "', check Multisample.txt");
@@ -825,7 +825,7 @@ function Load(SDflag)
 			S[1][4][i] = (inifile.ReadString("GS","ExpLayers", "err"));
 			if (S[1][4][i] == "err")
 			{
-				App.ErrMsg(0,0,"Error in 'GS', value 'ExpLayers', check Multisample.txt/SDVars.txt")
+				App.ErrMsg(0,0,"Error in 'GS', value 'ExpLayers', check Multisample.txt/SDVars.txt");
 				Abort();
 			}
 			S[2][4][i] = inifile.ReadInteger("GS", "Nx", -9999);
@@ -836,7 +836,7 @@ function Load(SDflag)
 			S[7][4][i] = inifile.ReadFloat("GS", "VvShift", -9999);
 			for (cnt=2; cnt <= 7; cnt++)
 			{
-				var checklist = ["Nx","Ny","Sx","Sy","UuShift","VvShift"];
+				vchecklist = ["Nx","Ny","Sx","Sy","UuShift","VvShift"];
 				if (typeof(S[cnt][4][i]) != "number" || S[cnt][4][i] == -9999)
 				{
 					App.ErrMsg(0,0,"Error in 'GS', value '" + checklist[cnt-1] + "', check Multisample.txt/SDVars.txt");
@@ -862,9 +862,9 @@ function Load(SDflag)
 			}
 
 			S[12][4][i] = inifile.ReadString("GS", "L61", "err"); 
-			var GDSmarkstring = S[12][4][i].split("-");
-			var GDSmarklist = GGDSIImarkertypes.ReadString("LoadList", "load", "0");
-			var GDSarray = GDSmarklist.split(";");
+			GDSmarkstring = S[12][4][i].split("-");
+			GDSmarklist = GGDSIImarkertypes.ReadString("LoadList", "load", "0");
+			GDSarray = GDSmarklist.split(";");
 			if (SearchArray(GDSarray, GDSmarkstring[0]) == -1 && S[12][4][i] != -1)
 			{
 				App.ErrMsg(0,0,"Entered 'L61' marker not in Loadlist of L61markers.txt.");
@@ -886,7 +886,7 @@ function Load(SDflag)
 			}
 			colmode = inifile.ReadString("GS", "ColMode", "");
 			S[2][5][i] = ReplaceAtbymu(colmode);
-			var cce = CheckColumnExists(S[2][5][i])
+			cce = CheckColumnExists(S[2][5][i]);
 			if (cce == -1)
 			{
 				App.ErrMsg(0,0,"Error 'ColMode' in 'GS' does not exist, check /Lib/Columndatasets.txt");
@@ -914,7 +914,7 @@ function Load(SDflag)
 				App.ErrMsg(0,0,"Error in 'GS', value 'WorkingArea', check Multisample.txt/SDVars.txt");
 				Abort();
 			}
-			S[11][5][i] = wa
+			S[11][5][i] = wa;
 
 
 			S[1][6][i] = inifile.ReadFloat("GS", "SSLine", -9999);
@@ -927,7 +927,7 @@ function Load(SDflag)
    			S[8][6][i] = inifile.ReadFloat("GS", "WFOverpattern", -9999);
 			for (cnt=1; cnt <= 8; cnt++)
 			{
-				var checklist = ["SSLine","SSArea","SSCurve","LineBS","AreaBS","CurveBS","BeamCurrent","WFOverpattern"];
+				checklist = ["SSLine","SSArea","SSCurve","LineBS","AreaBS","CurveBS","BeamCurrent","WFOverpattern"];
 				if (typeof(S[cnt][6][i]) != "number" || S[cnt][6][i] == -9999)
 				{
 					App.ErrMsg(0,0,"Error in sample " + i + ", value '" + checklist[cnt-1] + "', check Multisample.txt/SDVars.txt");
@@ -954,7 +954,7 @@ function Load(SDflag)
 			S[7][4][i] = inifile.ReadFloat(it, "VvShift", -9999);
 			for (cnt=2; cnt <= 7; cnt++)
 			{
-				var checklist = ["Nx","Ny","Sx","Sy","UuShift","VvShift"];
+				checklist = ["Nx","Ny","Sx","Sy","UuShift","VvShift"];
 				if (typeof(S[cnt][4][i]) != "number" || S[cnt][4][i] == -9999)
 				{
 					App.ErrMsg(0,0,"Error in sample " + i + ", value '" + checklist[cnt-1] + "', check Multisample.txt/SDVars.txt");
@@ -980,9 +980,9 @@ function Load(SDflag)
 			}
 
 			S[12][4][i] = inifile.ReadString(it, "L61", "err"); 
-			var GDSmarkstring = S[12][4][i].split("-");
-			var GDSmarklist = GGDSIImarkertypes.ReadString("LoadList", "load", "0");
-			var GDSarray = GDSmarklist.split(";");
+			GDSmarkstring = S[12][4][i].split("-");
+			GDSmarklist = GGDSIImarkertypes.ReadString("LoadList", "load", "0");
+			GDSarray = GDSmarklist.split(";");
 			if (SearchArray(GDSarray, GDSmarkstring[0]) == -1 && S[12][4][i] != -1)
 			{
 				App.ErrMsg(0,0,"Entered 'L61' markers for sample" + i + " not found in Loadlist of L61markers.txt.");
@@ -1004,7 +1004,7 @@ function Load(SDflag)
 			}
 			colmode = inifile.ReadString(it, "ColMode", "");
 			S[2][5][i] = ReplaceAtbymu(colmode);
-			var cce = CheckColumnExists(S[2][5][i])
+			cce = CheckColumnExists(S[2][5][i]);
 			if (cce == -1)
 			{
 				App.ErrMsg(0,0,"Error 'ColMode' for sample " + i + " does not exist, check /Lib/Columndatasets.txt");
@@ -1026,13 +1026,13 @@ function Load(SDflag)
 			}
 
 			wa = inifile.ReadString(it, "WorkingArea", "err");
-			workingarea = wa.split(",")
+			workingarea = wa.split(",");
 			if (isNaN(workingarea[0]) == 1 || isNaN(workingarea[1]) == 1 || isNaN(workingarea[2]) == 1 || isNaN(workingarea[3]) == 1 )
 			{
 				App.ErrMsg(0,0,"Error in sample " + i + ", value 'WorkingArea', check Multisample.txt/SDVars.txt");
 				Abort();
 			}
-			S[11][5][i] = wa
+			S[11][5][i] = wa;
 			
 			S[1][6][i] = inifile.ReadFloat(it, "SSLine", -9999);
 			S[2][6][i] = inifile.ReadFloat(it, "SSArea", -9999);
@@ -1044,10 +1044,10 @@ function Load(SDflag)
    			S[8][6][i] = inifile.ReadFloat(it, "WFOverpattern", -9999);
 			for (cnt=1; cnt <= 8; cnt++)
 			{
-				var checklist = ["SSLine","SSArea","SSCurve","LineBS","AreaBS","CurveBS","BeamCurrent","WFOverpattern"];
+				checklist = ["SSLine","SSArea","SSCurve","LineBS","AreaBS","CurveBS","BeamCurrent","WFOverpattern"];
 				if (typeof(S[cnt][6][i]) != "number" || S[cnt][6][i] == -9999)
 				{
-					App.ErrMsg(0,0,"Error in sample " + i + ", value '" + checklist[cnt-1] + "', check Multisample.txt/SDVars.txt")
+					App.ErrMsg(0,0,"Error in sample " + i + ", value '" + checklist[cnt-1] + "', check Multisample.txt/SDVars.txt");
 					Abort();
 				}
 			}
@@ -1181,7 +1181,7 @@ function CollectSD(st, GUIflag)
 				}
 				S25 = App.InputMsg("Column settings", "Type name of column dataset (format= group: name). You can use '@' for '\u03BC' symbol.", LastDatasettoColset());
 				S25 = ReplaceAtbymu(S25);
-				var cce = CheckColumnExists(S25)
+				var cce = CheckColumnExists(S25);
 				if (cce == -1)
 				{
 					App.ErrMsg(0,0,"Error 'ColMode' in 'GS' does not exist, check /Lib/Columndatasets.txt");
@@ -1297,7 +1297,7 @@ function CollectSD(st, GUIflag)
 					}
 					else
 					{
-						App.ErrMsg(0,0,"Please choose '1' or '2'")
+						App.ErrMsg(0,0,"Please choose '1' or '2'");
 					}
 				}
 				
@@ -1704,7 +1704,7 @@ function CollectUV(st, GUIflag)
 function GetUVWF()
 {
 		//GetUVdata
-		App.ErrMsg(0,0,"Make sure the Writefield is saved and the UV alignment is correct.")
+		App.ErrMsg(0,0,"Make sure the Writefield is saved and the UV alignment is correct.");
 		App.Exec("Halt()");
 		var m, maf, wd, j;
 		S = createArray(99,7,Gnums+1);
@@ -1912,7 +1912,7 @@ function Install(restoreflag)
 	{
 		fso.CopyFile(Glib + "AlignWFAuto.js", p2, true);
 	}
-	fso.close;
+	fso.Close;
 }
 
 function RemoveGDSlogflag()
@@ -2135,7 +2135,7 @@ function LoadWFAlignProcedures()
 					markerloadlist = GMarkertypes.ReadString("LoadList", "load", "0").split(";");
 					if (SearchArray(markerloadlist,markerarray[qp]) == -1)
 					{
-						App.ErrMsg(0,0,"Marker '" + markerarray [qp] + "' in alignprocedure " + loadlist[q] + " not found in Markers.txt" )
+						App.ErrMsg(0,0,"Marker '" + markerarray [qp] + "' in alignprocedure " + loadlist[q] + " not found in Markers.txt" );
 						Abort();
 					}
 				}
@@ -2187,9 +2187,9 @@ function AutoWFAlign(markertype) //Aligns WF according to markertype, called fro
 
 function AlignWF(markprocedure, logWFflag, i, j, k) //Main function to start automatic WF alignment
 {
-	if (markprocedure != -1)
-	{
-		var WFAlignprocedures, m, n, a, b, c, d, entries, markers, amf, logfile, logstring, exposure;
+	var WFAlignprocedures, m, n, a, b, c, d, entries, markers, amf, logfile, logstring, exposure;
+  if (markprocedure != -1)
+	{	
 		WFAlignprocedures = LoadWFAlignProcedures();
 		m = j + 1;
 		n = k + 1;
@@ -2259,7 +2259,7 @@ function SetSvars(i, WFflag, msflag) //msflag?
 	ActivateColdata(S[2][5][i]);
 	App.Exec("OpenDatabase(" + S[3][5][i] + ")");
 	App.Exec("ViewStructure(" + S[4][5][i] + ")");
-	App.Exec("SetWorkingArea(" + S[11][5][i] + ")")
+	App.Exec("SetWorkingArea(" + S[11][5][i] + ")");
 	if (WFflag == 1)
 	{
 		App.Exec("GetCorrection()");
