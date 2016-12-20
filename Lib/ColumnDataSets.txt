@@ -1,0 +1,11 @@
+10 um aperture /: 10 kV 10 µm 10 mm
+30 um aperture /: 10kV 30 µm 10mm
+60 um aperture /: asdasd / 20 kV 60 µm 10 mm
+30 um aperture /: 20 kV 30 µm 10 mm
+10 um aperture /: 20 kV 10 µm 10 mm
+30 um aperture /: 30 kV 30 µm 10 mm
+10 um aperture /: 30 kV 10 µm 10 mm
+60 um aperture /: 30 kV 60 µm 10 mm
+60 um aperture /: 10 kV 60 µm 10 mm dikkieblaf
+20 um aperture /: 20 kV 20 µm 10 mm
+30 um aperture /: 10 kV 30 µm 10 mm

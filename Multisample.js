@@ -38,6 +38,7 @@
 // - Check if GDS Markertype is valid
 
 // BUGS:
+// - Manual BC measurement in script does not work, double menu + value is not recorded.
 // - Sergey: Bug report: sd vars works strange with use preseted beam current? - > no - > measure current - >  no
 // - Manual alignment on dot within script not possible
 // 		-> Needs added routine during UV alignment. <- if possible :/
@@ -312,24 +313,130 @@ function ReadLsc(filename)
   	return lsc;
 }
 
+function GetActiveWorkingArea(gdsfile, structure)
+{
+	var workingareafile, workingareaini, activewa, activewastring, workingarea;
+	workingareafile = gdsfile.substring(0,gdsfile.length-3)+"wor";
+	workingareaini = App.OpenInifile(workingareafile);
+	activewa = workingareaini.ReadString(structure, "ActiveWA", "");
+	activewastring = "WorkingArea" + activewa;
+	workingareastring = workingareaini.ReadString(structure,activewastring,"")
+	workingarea = workingareastring.split(",")
+	wa = workingarea[0] + ","+ workingarea[1] + "," + workingarea[2] + ","+ workingarea[3]
+	return wa
+}
+
+
+
+function GetColDatasetList()
+{
+	var colatts = new Array();
+	var coldatasetlist = new Array();
+	var coldataset = createArray(300,4)
+	var colfolder = createArray(300,4)
+	var colstring
+	var entrycolset = 0;
+	var entrycolfolder = 0;
+	coldatfilepath = Glib + "ColumnDataSets.txt"
+	var fso = new ActiveXObject("Scripting.FileSystemObject");
+
+	if (FileExists(coldatfilepath) == 1)
+    {
+    	var coldatfile = fso.GetFile(coldatfilepath);
+    	coldatfile.Delete();
+    }
+
+	// Create the file, and obtain a file object for the file.
+	var filename = coldatfilepath;
+	fso.CreateTextFile(filename);
+	coldatfile = fso.GetFile(filename);
+	var cdf = coldatfile.OpenAsTextStream(2, -2);
+
+	for (c_c=0; c_c<300; c_c++)
+	{
+    	colstring = "ColEBeam/" + c_c;
+    	attribute = ["DSD_Name", "DSD_GroupID", "DSD_ID"];
+    	colatts[0] = App.GetVariable(colstring + "." + attribute[0]);
+    	colatts[1] = App.GetVariable(colstring + "." + attribute[1]);
+    	colatts[2] = App.GetVariable(colstring + "." + attribute[2]);
+
+    	if (colatts[1].length != 0 && colatts[1] != -1)
+    	{
+        	coldataset[entrycolset][0] = colatts[0];
+        	coldataset[entrycolset][1] = colatts[1];
+        	coldataset[entrycolset][2] = colatts[2];
+        	coldataset[entrycolset][3] = c_c;
+        	entrycolset = entrycolset + 1; 
+    	}
+    	if (colatts[1].length != 0 && colatts[1] == -1)
+    	{
+        	colfolder[entrycolfolder][0] = colatts[0];
+        	colfolder[entrycolfolder][1] = colatts[1];
+        	colfolder[entrycolfolder][2] = colatts[2];
+        	colfolder[entrycolfolder][3] = c_c;
+        	entrycolfolder = entrycolfolder + 1; 
+    	}         
+	}
+	for (d_c=0; d_c<entrycolset; d_c++)
+	{
+	    for (e_c=0; e_c<entrycolfolder+1; e_c++)
+	    {
+        	if (coldataset[d_c][1] == colfolder[e_c][2])
+        	{
+           		charding = coldataset[d_c][0].substring(0,1);
+           		if (coldataset[d_c][0].substring(0,1) == "/")
+           		{
+              		coldataset[d_c][0] = coldataset[d_c][0].substring(2,coldataset[d_c][0].length); 
+           		}
+           		coldatasetlist[d_c] = colfolder[e_c][0] + ": " + coldataset[d_c][0];
+           	cdf.WriteLine(coldatasetlist[d_c]);
+        	}
+    	}
+	}
+	cdf.Close();
+return coldatasetlist
+}
+
+function CheckColumnExists(colset)
+{
+ 	coldatasetlist = GetColDatasetList();
+ 	var exists = -1;
+ 	for (f_c=0; f_c<coldatasetlist.length; f_c++)
+ 	{
+     	if (colset == coldatasetlist[f_c])
+     	{
+     		exists = 1;
+     		break;
+     	}
+ 	}
+	return exists; 
+}
 
 function LastDatasettoColset()
 {
 	var dataset, splitdataset, splitdataset2, partonecolset, parttwocolset, colset;
 
 	dataset = (App.GetSysVariable("Vicol.LastDataset"));
-	splitdataset = dataset.split("(");
-	splitdataset2 = splitdataset[1].substring(0, splitdataset[1].length - 1);
-	partonecolset = splitdataset2;
-	parttwocolset = splitdataset[0].substring(0, splitdataset[0].length - 1);
-	colset = partonecolset + ": " + parttwocolset;
-	colset = ReplaceAtbymu(colset);
+	if (dataset.length != 0)
+	{
+		splitdataset = dataset.split("(");
+		splitdataset2 = splitdataset[1].substring(0, splitdataset[1].length - 1);
+		partonecolset = splitdataset2;
+		parttwocolset = splitdataset[0].substring(0, splitdataset[0].length - 1);
+		colset = partonecolset + ": " + parttwocolset;
+		colset = ReplaceAtbymu(colset);
+	}
+	else
+	{
+		colset = "";
+	}
 	return colset;
 }
 
 function MeasBeamCurrent()												//Measures beam current
 {
-	var bc, bcf, bcfdisp, retval;
+	var bc, bcf, bcfdisp, retval, manmeasswitch;
+	manmeasswitch = 0;
 	bc = createArray(3);
 	if (App.ErrMsg(EC_YESNO, 0, "Do you want to perform an automated beam current measurement?") == EA_YES)                        //Asks user to perform beam current measurement + dwelltime corrections
     {
@@ -346,26 +453,33 @@ function MeasBeamCurrent()												//Measures beam current
          	Stage.WaitPositionReached();
          	BeamCurrent(false, false);
          	bc[2] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
+         	bcf = ((bc[0]+bc[1]+bc[2])/3);
          	if	(Math.max(bc[0], bc[1], bc[2])/Math.min(bc[0], bc[1], bc[2]) >= 1.01)
          	{
          	    retval = App.ErrMsg(9,0,"Beam current fluctuation over three measurements(>1%) (" + bc + " nA). Pause script for manual measurement?")
          	    if (retval == 6)
          	    {
          	    	App.Exec("Halt()");
+         	    	bcf = App.GetVariable("BeamCurrent.BeamCurrent");
+         	    	manmeasswitch = 1;
          	    }
          	    if (retval == 2)
          		{
          			Abort();
          		}
-         	}	
-        bcf = ((bc[0]+bc[1]+bc[2])/3);
-        bcfdisp = PreciseRound(bcf*Math.pow(10,3),2); //Dit moest van Joren. Hij houdt niet van teveel floating.
-        if (App.ErrMsg(4,0,"Beamcurrent: " + bcfdisp + "pA. Continue? 'No' pauzes script for manual measurement.")==7) 
-        {
-        	App.Exec("Halt()");
-        }
-        bcf = bcf.toString();
-        App.SetVariable("BeamCurrent.BeamCurrent", bcf);
+         	}	        	
+        	if (manmeasswitch == 0)
+        	{
+        		if (App.ErrMsg(4,0,"Beamcurrent: " + bcfdisp + "pA. Continue? 'No' pauzes script for manual measurement.")==7) 
+        		{
+	        		App.Exec("Halt()");
+	        		bcf = App.GetVariable("BeamCurrent.BeamCurrent");
+         	    	manmeasswitch = 1;
+    	    	}
+    	    }
+        	bcf = bcf.toString();
+        	bcfdisp = PreciseRound(bcf*Math.pow(10,3),2); //Dit moest van Joren. Hij houdt niet van teveel floating.
+        	App.SetVariable("BeamCurrent.BeamCurrent", bcf);
         }
     }
 }
@@ -770,13 +884,15 @@ function Load(SDflag)
 				App.ErrMsg(0,0,"Error in 'GS', value 'WF', check Multisample.txt/SDVars.txt");
 				Abort();
 			}
-			colmode = inifile.ReadString("GS", "ColMode", "err");
-			if (S[1][5][i] == "err")
+			colmode = inifile.ReadString("GS", "ColMode", "");
+			S[2][5][i] = ReplaceAtbymu(colmode);
+			var cce = CheckColumnExists(S[2][5][i])
+			if (cce == -1)
 			{
-				App.ErrMsg(0,0,"Error in 'GS', value 'ColMode', check Multisample.txt/SDVars.txt");
+				App.ErrMsg(0,0,"Error 'ColMode' in 'GS' does not exist, check /Lib/Columndatasets.txt");
 				Abort();
 			}
-			S[2][5][i] = ReplaceAtbymu(colmode);
+
 			GDSIIpath = inifile.ReadString("GS", "GDSII", "err");
 			CheckPathLength(GDSIIpath, i);
 			if (FileExists(GDSIIpath) != 1)
@@ -791,7 +907,16 @@ function Load(SDflag)
 				App.ErrMsg(0,0,"Error in 'GS', value 'Struct', check Multisample.txt/SDVars.txt");
 				Abort();
 			}
-			
+			wa = inifile.ReadString("GS", "WorkingArea", "err");
+			workingarea = wa.split(",")
+			if (isNaN(workingarea[0]) == 1 || isNaN(workingarea[1]) == 1 || isNaN(workingarea[2]) == 1 || isNaN(workingarea[3]) == 1 )
+			{
+				App.ErrMsg(0,0,"Error in 'GS', value 'WorkingArea', check Multisample.txt/SDVars.txt");
+				Abort();
+			}
+			S[11][5][i] = wa
+
+
 			S[1][6][i] = inifile.ReadFloat("GS", "SSLine", -9999);
 			S[2][6][i] = inifile.ReadFloat("GS", "SSArea", -9999);
 			S[3][6][i] = inifile.ReadFloat("GS", "SSCurve", -9999);
@@ -877,13 +1002,14 @@ function Load(SDflag)
 				App.ErrMsg(0,0,"Error in sample " + i + ", value 'WF', check Multisample.txt/SDVars.txt");
 				Abort();
 			}
-			colmode = inifile.ReadString(it, "ColMode", "err");
-			if (S[1][5][i] == "err")
+			colmode = inifile.ReadString(it, "ColMode", "");
+			S[2][5][i] = ReplaceAtbymu(colmode);
+			var cce = CheckColumnExists(S[2][5][i])
+			if (cce == -1)
 			{
-				App.ErrMsg(0,0,"Error in sample " + i + ", value 'ColMode', check Multisample.txt/SDVars.txt");
+				App.ErrMsg(0,0,"Error 'ColMode' for sample " + i + " does not exist, check /Lib/Columndatasets.txt");
 				Abort();
 			}
-			S[2][5][i] = ReplaceAtbymu(colmode);
 			GDSIIpath = (inifile.ReadString(it, "GDSII", "err"));
 			CheckPathLength(GDSIIpath, i);
 			if (FileExists(GDSIIpath) != 1)
@@ -898,6 +1024,15 @@ function Load(SDflag)
 				App.ErrMsg(0,0,"Error in sample " + i + ", value 'Struct', check Multisample.txt/SDVars.txt");
 				Abort();
 			}
+
+			wa = inifile.ReadString(it, "WorkingArea", "err");
+			workingarea = wa.split(",")
+			if (isNaN(workingarea[0]) == 1 || isNaN(workingarea[1]) == 1 || isNaN(workingarea[2]) == 1 || isNaN(workingarea[3]) == 1 )
+			{
+				App.ErrMsg(0,0,"Error in sample " + i + ", value 'WorkingArea', check Multisample.txt/SDVars.txt");
+				Abort();
+			}
+			S[11][5][i] = wa
 			
 			S[1][6][i] = inifile.ReadFloat(it, "SSLine", -9999);
 			S[2][6][i] = inifile.ReadFloat(it, "SSArea", -9999);
@@ -1035,13 +1170,25 @@ function CollectSD(st, GUIflag)
 				}
 				if (S45 == "") S45 = currstruct;
 
-		    	S15 = App.InputMsg("Choose writefield in µm", "Select 1000, 200, 100, 50, 25 or 1", S15);
+				currwa = GetActiveWorkingArea(S35, S45);
+				S115 = App.InputMsg("Set Working Area", "Bottomleft U, V, TopRight U, V (separate by ',')", currwa);
+
+		    	S15 = App.InputMsg("Choose writefield in µm", "Select writefield size, make sure it exists", S15);
 				if (S15 == "") 
 				{
 					Logdata();
 					Abort();
 				}
 				S25 = App.InputMsg("Column settings", "Type name of column dataset (format= group: name). You can use '@' for '\u03BC' symbol.", LastDatasettoColset());
+				S25 = ReplaceAtbymu(S25);
+				var cce = CheckColumnExists(S25)
+				if (cce == -1)
+				{
+					App.ErrMsg(0,0,"Error 'ColMode' in 'GS' does not exist, check /Lib/Columndatasets.txt");
+					Abort();
+				}
+
+
 				if (S25 == "") 
 				{
 					Logdata();
@@ -1438,9 +1585,9 @@ function CollectUV(st, GUIflag)
 		if (GUIflag == 2)
 		{
 			SetSvars(i, 0, 0);
-			App.Exec("OpenDatabase(" + S[3][5][i] + ")");
-			App.Exec("ViewStructure(" + S[4][5][i] + ")");
-
+			//App.Exec("OpenDatabase(" + S[3][5][i] + ")");
+			//App.Exec("ViewStructure(" + S[4][5][i] + ")");
+			//App.Exec("SetWorkingArea(" + S[11][5][i] + ")")
 
 			if (App.ErrMsg(8,0,"Column and writefield set, now perform UV alignment on sample chip " + i + " of " + Gnums + ".") == 2)
 			{
@@ -1478,12 +1625,12 @@ function CollectUV(st, GUIflag)
 		 // fix this to be compatble with manual WF alignment	
 		}	    
 
-	    if (App.ErrMsg(8,0,"Check UV alignment + focus after WF change of sample chip " + i + " of " + Gnums + ". CORRECT GDSII FILE + PARAMETER SET ACTIVATED?") == 2)
+	    if (App.ErrMsg(8,0,"Check UV alignment + focus after WF change of sample chip " + i + " of " + Gnums + ". CORRECT DESIGN FILE / WORKINGAREA / WRITEFIELD / COLUMN ACTIVATED?") == 2)
 	    	{
 	    		Logdata();
 	    		Abort();
 	    	}
-	    //App.Exec("SetMagnification(100000)")
+	    //COLUMN_Mag(100000.)
 	    App.Exec("Halt()");
 	    Panicbutton();
 	    if (Gmeasbcflag == 1)
@@ -1515,7 +1662,6 @@ function CollectUV(st, GUIflag)
    				StepsizeDwelltime(i, GUIflag, 1);
 				SetStepsizeDwelltime(i);
   			}
-
 	    }
 
 	    for (j = 1; j <= 3; j++)
@@ -1539,6 +1685,7 @@ function CollectUV(st, GUIflag)
 			S[2][5][i] = LastDatasettoColset();
 			S[3][5][i] = App.GetVariable("GDSII.Database");
 			S[4][5][i] = App.GetVariable("Variables.StructureName");
+			S[11][5][i] = GetActiveWorkingArea(S[3][5][i]);
 		}
 		
 		App.Exec("GetCorrection()");
@@ -1615,9 +1762,9 @@ function Logdata()
 
 	st = S[9][4][1];
     Glogini = App.OpenInifile(Glogfilename[1] + Glogfilename[2]);
-	Glogini.Writestring("GS","Procedure", S[9][4][1]);
-	Glogini.Writestring("GS","n-Samples", S[11][4][1]);
-	Glogini.Writestring("GS", "User", App.GetVariable("Variables.LastUser"));
+	Glogini.WriteString("GS","Procedure", S[9][4][1]);
+	Glogini.WriteString("GS","n-Samples", S[11][4][1]);
+	Glogini.WriteString("GS", "User", App.GetVariable("Variables.LastUser"));
 	
 	if (st == 1)
 	{
@@ -1645,6 +1792,7 @@ function Logdata()
 		Glogini.WriteString("GS", "CurveBS", S[6][6][1] + "");
 		Glogini.WriteString("GS", "BeamCurrent", S[7][6][1] + "");
 		Glogini.WriteString("GS", "WFOverpattern", S[8][6][1] + "");
+		Glogini.WriteString("GS", "WorkingArea", S[11][5][1] + "");
 	}	
 
     for (i = 1; i <= Gnums; i++)
@@ -1676,6 +1824,7 @@ function Logdata()
 			Glogini.WriteString(it, "CurveBS", S[6][6][i] + "");
 			Glogini.WriteString(it, "BeamCurrent", S[7][6][i] + "");
 			Glogini.WriteString(it, "WFOverpattern", S[8][6][i] + "");
+			Glogini.WriteString(it, "WorkingArea", S[11][5][i] + "");
 		}
 		
 		for (j = 1; j <= 3; j++)
@@ -2110,6 +2259,7 @@ function SetSvars(i, WFflag, msflag) //msflag?
 	ActivateColdata(S[2][5][i]);
 	App.Exec("OpenDatabase(" + S[3][5][i] + ")");
 	App.Exec("ViewStructure(" + S[4][5][i] + ")");
+	App.Exec("SetWorkingArea(" + S[11][5][i] + ")")
 	if (WFflag == 1)
 	{
 		App.Exec("GetCorrection()");

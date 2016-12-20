@@ -1,3 +1,14 @@
+Multisample is a versatile tool for mix and match electron-beam lithography writing on the RAITH-150(TWO). In addition to the standard software it adds the following main features:
+
+- Sample batching, including their aligment properties
+- Automated writefield alignment
+- Fully customisabe alignment marker database and alignment procedures
+- Complete sample set-up wizard 
+- On-the-fly saving, modifying and reloading of all sample parameters
+- Automated beam-switching
+- Improved beam current measurement procedure
+- Extensive logging including time prediction
+
 [Installation]
 1. Copy the folder 'Multisample' into your RAITH istallation folder under scripts. Most likely in:
    C:\RAITH150-TWO\User\{yourusername}\Scripts\
@@ -19,3 +30,5 @@
 6. (Optional) 'SDvars.txt': This file can be used in the same way as 'Multisample.txt'. I contains all
    writing properties except the UV and writefield alignment. This way, all settings that do not require
    a loaded sample can be defined beforehand.
+
+Refer to 'Manual.rtf' for more extensive documentation
