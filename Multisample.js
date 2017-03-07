@@ -331,8 +331,8 @@ function GetColDatasetList()
 {
 	var colatts = new Array();
 	var coldatasetlist = new Array();
-	var coldataset = createArray(300,4);
-	var colfolder = createArray(300,4);
+	var coldataset = createArray(999,4);
+	var colfolder = createArray(999,4);
 	var colstring;
   var coldatfile;
 	var entrycolset = 0;
@@ -352,7 +352,7 @@ function GetColDatasetList()
 	coldatfile = fso.GetFile(filename);
 	var cdf = coldatfile.OpenAsTextStream(2, -2);
 
-	for (c_c=0; c_c<300; c_c++)
+	for (c_c=0; c_c<999; c_c++)
 	{
     	colstring = "ColEBeam/" + c_c;
     	attribute = ["DSD_Name", "DSD_GroupID", "DSD_ID"];
