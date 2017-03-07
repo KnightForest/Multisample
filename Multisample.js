@@ -470,7 +470,7 @@ function MeasBeamCurrent()												//Measures beam current
          	}	        	
         	if (manmeasswitch == 0)
         	{
-        		if (App.ErrMsg(4,0,"Beamcurrent: " + bcfdisp + "pA. Continue? 'No' pauzes script for manual measurement.")==7) 
+        		if (App.ErrMsg(4,0,"Beamcurrent: " + bcf + "pA. Continue? 'No' pauzes script for manual measurement.")==7) 
         		{
 	        		App.Exec("Halt()");
 	        		bcf = App.GetVariable("BeamCurrent.BeamCurrent");
@@ -478,7 +478,7 @@ function MeasBeamCurrent()												//Measures beam current
     	    	}
     	    }
         	bcf = bcf.toString();
-        	bcfdisp = PreciseRound(bcf*Math.pow(10,3),2); //Dit moest van Joren. Hij houdt niet van teveel floating.
+        	//bcfdisp = PreciseRound(bcf*Math.pow(10,3),2); //Dit moest van Joren. Hij houdt niet van teveel floating.
         	App.SetVariable("BeamCurrent.BeamCurrent", bcf);
         }
     }
@@ -1685,7 +1685,7 @@ function CollectUV(st, GUIflag)
 			S[2][5][i] = LastDatasettoColset();
 			S[3][5][i] = App.GetVariable("GDSII.Database");
 			S[4][5][i] = App.GetVariable("Variables.StructureName");
-			S[11][5][i] = GetActiveWorkingArea(S[3][5][i]);
+			S[11][5][i] = GetActiveWorkingArea(S[3][5][i], S[4][5][i]);
 		}
 		
 		App.Exec("GetCorrection()");
