@@ -686,7 +686,7 @@ function Detectnums(file, filename, checkflag)
 					App.ErrMsg(0, 0, "Inconsistency in " + filename + ". Check n-Samples under [GS] and check sample entries.");
 					Abort();
 				}
-			else if	(App.ErrMsg(4, 0, Gnums + " chips are detected. Is this correct?")==7)
+			else if	(App.ErrMsg(4, 0, Gnums + " samples are detected. Is this correct?")==7)
 				{
 					App.ErrMsg(0, 0, "Please do all kinds of stuff to make things not wrong.");
 					Abort();
@@ -1126,13 +1126,13 @@ function CollectSD(st, GUIflag)
 	
 	for (i = 1; i <= Gnums; i++)   
 	{
-		it = "chip " + i;
+		it = "sample " + i;
 		
 		if (i <= Gnums && mflag == 0)
 		{
 				
 			//if (mflag == 1) break;
-			if (st == 1) App.Errmsg(0,0, "Enter data for all used chips in the following dialogue boxes.");
+			if (st == 1) App.Errmsg(0,0, "Enter data for all used samples in the following dialogue boxes.");
 			if (st == 2) App.Errmsg(0,0, "Enter data for " + it + " in the following dialogue boxes.");
 			Panicbutton();
 			S84 = App.InputMsg("Sample name","Enter name for sample(s) (for log)","");
@@ -1200,7 +1200,7 @@ function CollectSD(st, GUIflag)
 			check = -1;
 			while (check != 1)			
 			{
-				S134 = App.Inputmsg("Select type of WF alignment","1: All devices, 2: First device per sample, 3: Manual per chip, 4: No alignment", "1");
+				S134 = App.Inputmsg("Select type of WF alignment","1: All structures, 2: First structure per sample, 3: Manual per sample, 4: No alignment", "1");
 				Panicbutton();
 				if (S134 == "") 
 				{
@@ -1333,7 +1333,7 @@ function CollectSD(st, GUIflag)
 			check = -1;
 			while (check != 1)
 			{
-				S24 = App.InputMsg("Define chip dimensions in x (U)", "Select number of structures: x (U)", "2");
+				S24 = App.InputMsg("Define sample dimensions in x (U)", "Select number of structures: x (U)", "2");
 				Panicbutton();
 				if (S24 == "") 
 				{
@@ -1353,7 +1353,7 @@ function CollectSD(st, GUIflag)
 			check = -1;
 			while (check != 1)
 			{
-				S34 = App.InputMsg("Define chip dimensions in y (V)", "Select number of structures: y (V)", "2");
+				S34 = App.InputMsg("Define sample dimensions in y (V)", "Select number of structures: y (V)", "2");
 				if (S34 == "") 
 				{
 					Logdata();
@@ -1550,7 +1550,7 @@ function CollectUV(st, GUIflag)
 // Add loop so that this is only asked once if st == 1
     if (GUIflag == 1)
     {	
-    	if (App.ErrMsg(8,0,"Collecting three point alignments for all chips commences. Activate desired Column dataset and WriteField. USE GLOBAL ALIGNMENT!") ==2 )
+    	if (App.ErrMsg(8,0,"Collecting three point alignments for all samples commences. Activate desired Column dataset and WriteField. USE GLOBAL ALIGNMENT!") ==2 )
     	{
     		Logdata();
     		Abort();
@@ -1560,7 +1560,7 @@ function CollectUV(st, GUIflag)
 
 	if (GUIflag == 2)
     {	
-    	if (App.ErrMsg(8,0,"Collecting three point alignments for all chips commences. USE GLOBAL ALIGNMENT!") == 2)
+    	if (App.ErrMsg(8,0,"Collecting three point alignments for all samples commences. USE GLOBAL ALIGNMENT!") == 2)
     	{
     		Logdata();
     		Abort();
@@ -1575,7 +1575,7 @@ function CollectUV(st, GUIflag)
 
 	    if (GUIflag == 1)
 		{
-			if (App.ErrMsg(8,0,"Perform UV alignment on sample chip " + i + " of " + Gnums + ". The now opened GDSII file and structure are logged and used for exposure.") == 2)
+			if (App.ErrMsg(8,0,"Perform UV alignment on sample " + i + " of " + Gnums + ". The now opened GDSII file and structure are logged and used for exposure.") == 2)
 			{
 				Logdata();
 				Abort();
@@ -1589,7 +1589,7 @@ function CollectUV(st, GUIflag)
 			//App.Exec("ViewStructure(" + S[4][5][i] + ")");
 			//App.Exec("SetWorkingArea(" + S[11][5][i] + ")")
 
-			if (App.ErrMsg(8,0,"Column and writefield set, now perform UV alignment on sample chip " + i + " of " + Gnums + ".") == 2)
+			if (App.ErrMsg(8,0,"Column and writefield set, now perform UV alignment on sample " + i + " of " + Gnums + ".") == 2)
 			{
 				Logdata();
 				Abort();
@@ -1625,7 +1625,7 @@ function CollectUV(st, GUIflag)
 		 // fix this to be compatble with manual WF alignment	
 		}	    
 
-	    if (App.ErrMsg(8,0,"Check UV alignment + focus after WF change of sample chip " + i + " of " + Gnums + ". CORRECT DESIGN FILE / WORKINGAREA / WRITEFIELD / COLUMN ACTIVATED?") == 2)
+	    if (App.ErrMsg(8,0,"Check UV alignment + focus after WF change of sample " + i + " of " + Gnums + ". CORRECT DESIGN FILE / WORKINGAREA / WRITEFIELD / COLUMN ACTIVATED?") == 2)
 	    	{
 	    		Logdata();
 	    		Abort();
@@ -2303,7 +2303,7 @@ function WriteMatrix(S, i)
 	return(N);	
 }
 
-function Write(S, i, testmode, starttime) //S-matrix, n-th chip, type of writing (single,multiple..etc), testmode ornot
+function Write(S, i, testmode, starttime) //S-matrix, n-th sample, type of writing (single,multiple..etc), testmode ornot
 {
 	var N, meander, k, j, mj, l61, l61exp, exposure, currentsampletime, awfvars;
 	N = WriteMatrix(S, i);
