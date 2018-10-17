@@ -329,71 +329,73 @@ function GetActiveWorkingArea(gdsfile, structure)
 
 function GetColDatasetList()
 {
-	var colatts = new Array();
-	var coldatasetlist = new Array();
-	var coldataset = createArray(999,4);
-	var colfolder = createArray(999,4);
-	var colstring;
-  var coldatfile;
-	var entrycolset = 0;
-	var entrycolfolder = 0;
-	coldatfilepath = Glib + "ColumnDataSets.txt";
-	var fso = new ActiveXObject("Scripting.FileSystemObject");
 
-	if (FileExists(coldatfilepath) == 1)
-    {
-    	coldatfile = fso.GetFile(coldatfilepath);
-    	coldatfile.Delete();
-    }
 
-	// Create the file, and obtain a file object for the file.
-	var filename = coldatfilepath;
-	fso.CreateTextFile(filename);
-	coldatfile = fso.GetFile(filename);
-	var cdf = coldatfile.OpenAsTextStream(2, -2);
+	// var colatts = new Array();
+	// var coldatasetlist = new Array();
+	// var coldataset = createArray(999,4);
+	// var colfolder = createArray(999,4);
+	// var colstring;
+ //  var coldatfile;
+	// var entrycolset = 0;
+	// var entrycolfolder = 0;
+	// coldatfilepath = Glib + "ColumnDataSets.txt";
+	// var fso = new ActiveXObject("Scripting.FileSystemObject");
 
-	for (c_c=0; c_c<999; c_c++)
-	{
-    	colstring = "ColEBeam/" + c_c;
-    	attribute = ["DSD_Name", "DSD_GroupID", "DSD_ID"];
-    	colatts[0] = App.GetVariable(colstring + "." + attribute[0]);
-    	colatts[1] = App.GetVariable(colstring + "." + attribute[1]);
-    	colatts[2] = App.GetVariable(colstring + "." + attribute[2]);
+	// if (FileExists(coldatfilepath) == 1)
+ //    {
+ //    	coldatfile = fso.GetFile(coldatfilepath);
+ //    	coldatfile.Delete();
+ //    }
 
-    	if (colatts[1].length != 0 && colatts[1] != -1)
-    	{
-        	coldataset[entrycolset][0] = colatts[0];
-        	coldataset[entrycolset][1] = colatts[1];
-        	coldataset[entrycolset][2] = colatts[2];
-        	coldataset[entrycolset][3] = c_c;
-        	entrycolset = entrycolset + 1; 
-    	}
-    	if (colatts[1].length != 0 && colatts[1] == -1)
-    	{
-        	colfolder[entrycolfolder][0] = colatts[0];
-        	colfolder[entrycolfolder][1] = colatts[1];
-        	colfolder[entrycolfolder][2] = colatts[2];
-        	colfolder[entrycolfolder][3] = c_c;
-        	entrycolfolder = entrycolfolder + 1; 
-    	}         
-	}
-	for (d_c=0; d_c<entrycolset; d_c++)
-	{
-	    for (e_c=0; e_c<entrycolfolder+1; e_c++)
-	    {
-        	if (coldataset[d_c][1] == colfolder[e_c][2])
-        	{
-           		charding = coldataset[d_c][0].substring(0,1);
-           		if (coldataset[d_c][0].substring(0,1) == "/")
-           		{
-              		coldataset[d_c][0] = coldataset[d_c][0].substring(2,coldataset[d_c][0].length); 
-           		}
-           		coldatasetlist[d_c] = colfolder[e_c][0] + ": " + coldataset[d_c][0];
-           	cdf.WriteLine(coldatasetlist[d_c]);
-        	}
-    	}
-	}
-	cdf.Close();
+	// // Create the file, and obtain a file object for the file.
+	// var filename = coldatfilepath;
+	// fso.CreateTextFile(filename);
+	// coldatfile = fso.GetFile(filename);
+	// var cdf = coldatfile.OpenAsTextStream(2, -2);
+
+	// for (c_c=0; c_c<999; c_c++)
+	// {
+ //    	colstring = "ColEBeam/" + c_c;
+ //    	attribute = ["DSD_Name", "DSD_GroupID", "DSD_ID"];
+ //    	colatts[0] = App.GetVariable(colstring + "." + attribute[0]);
+ //    	colatts[1] = App.GetVariable(colstring + "." + attribute[1]);
+ //    	colatts[2] = App.GetVariable(colstring + "." + attribute[2]);
+
+ //    	if (colatts[1].length != 0 && colatts[1] != -1)
+ //    	{
+ //        	coldataset[entrycolset][0] = colatts[0];
+ //        	coldataset[entrycolset][1] = colatts[1];
+ //        	coldataset[entrycolset][2] = colatts[2];
+ //        	coldataset[entrycolset][3] = c_c;
+ //        	entrycolset = entrycolset + 1; 
+ //    	}
+ //    	if (colatts[1].length != 0 && colatts[1] == -1)
+ //    	{
+ //        	colfolder[entrycolfolder][0] = colatts[0];
+ //        	colfolder[entrycolfolder][1] = colatts[1];
+ //        	colfolder[entrycolfolder][2] = colatts[2];
+ //        	colfolder[entrycolfolder][3] = c_c;
+ //        	entrycolfolder = entrycolfolder + 1; 
+ //    	}         
+	// }
+	// for (d_c=0; d_c<entrycolset; d_c++)
+	// {
+	//     for (e_c=0; e_c<entrycolfolder+1; e_c++)
+	//     {
+ //        	if (coldataset[d_c][1] == colfolder[e_c][2])
+ //        	{
+ //           		charding = coldataset[d_c][0].substring(0,1);
+ //           		if (coldataset[d_c][0].substring(0,1) == "/")
+ //           		{
+ //              		coldataset[d_c][0] = coldataset[d_c][0].substring(2,coldataset[d_c][0].length); 
+ //           		}
+ //           		coldatasetlist[d_c] = colfolder[e_c][0] + ": " + coldataset[d_c][0];
+ //           	cdf.WriteLine(coldatasetlist[d_c]);
+ //        	}
+ //    	}
+	// }
+	// cdf.Close();
 return coldatasetlist;
 }
 
@@ -433,55 +435,57 @@ function LastDatasettoColset()
 	return colset;
 }
 
-function MeasBeamCurrent()												//Measures beam current
+function MeasBeamCurrent()	//Not available on elphy											//Measures beam current
 {
-	var bc, bcf, bcfdisp, retval, manmeasswitch;
-	manmeasswitch = 0;
-	bc = createArray(3);
-	if (App.ErrMsg(EC_YESNO, 0, "Do you want to perform an automated beam current measurement?") == EA_YES)                        //Asks user to perform beam current measurement + dwelltime corrections
-    {
-    	if ( Column.CheckConnection() )                                   //If answer is YES, measurement is performed
-      	{
-			Stage.X = -35; 													//Sets stage coörds to 30,30 (saves time when driving back)
-		 	Stage.Y = 39; 
-		 	Stage.WaitPositionReached(); 
-		 	BeamCurrent(false, false);
-		 	bc[0] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
-		 	Stage.WaitPositionReached();
-         	BeamCurrent(false, false);
-         	bc[1] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
-         	Stage.WaitPositionReached();
-         	BeamCurrent(false, false);
-         	bc[2] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
-         	bcf = ((bc[0]+bc[1]+bc[2])/3);
-         	if	(Math.max(bc[0], bc[1], bc[2])/Math.min(bc[0], bc[1], bc[2]) >= 1.01)
-         	{
-         	    retval = App.ErrMsg(9,0,"Beam current fluctuation over three measurements(>1%) (" + bc + " nA). Pause script for manual measurement?");
-         	    if (retval == 6)
-         	    {
-         	    	App.Exec("Halt()");
-         	    	bcf = App.GetVariable("BeamCurrent.BeamCurrent");
-         	    	manmeasswitch = 1;
-         	    }
-         	    if (retval == 2)
-         		{
-         			Abort();
-         		}
-         	}	        	
-        	if (manmeasswitch == 0)
-        	{
-        		if (App.ErrMsg(4,0,"Beamcurrent: " + bcf + "pA. Continue? 'No' pauzes script for manual measurement.")==7) 
-        		{
-	        		App.Exec("Halt()");
-	        		bcf = App.GetVariable("BeamCurrent.BeamCurrent");
-         	    	manmeasswitch = 1;
-    	    	}
-    	    }
-        	bcf = bcf.toString();
-        	//bcfdisp = PreciseRound(bcf*Math.pow(10,3),2); //Dit moest van Joren. Hij houdt niet van teveel floating.
-        	App.SetVariable("BeamCurrent.BeamCurrent", bcf);
-        }
-    }
+	// var bc, bcf, bcfdisp, retval, manmeasswitch;
+	// manmeasswitch = 0;
+	// bc = createArray(3);
+	// if (App.ErrMsg(EC_YESNO, 0, "Do you want to perform an automated beam current measurement?") == EA_YES)                        //Asks user to perform beam current measurement + dwelltime corrections
+ //    {
+ //    	if ( Column.CheckConnection() )                                   //If answer is YES, measurement is performed
+ //      	{
+	// 		Stage.X = -35; 													//Sets stage coörds to 30,30 (saves time when driving back)
+	// 	 	Stage.Y = 39; 
+	// 	 	Stage.WaitPositionReached(); 
+	// 	 	BeamCurrent(false, false);
+	// 	 	bc[0] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
+	// 	 	Stage.WaitPositionReached();
+ //         	BeamCurrent(false, false);
+ //         	bc[1] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
+ //         	Stage.WaitPositionReached();
+ //         	BeamCurrent(false, false);
+ //         	bc[2] = parseFloat(App.GetVariable("BeamCurrent.BeamCurrent"));
+ //         	bcf = ((bc[0]+bc[1]+bc[2])/3);
+ //         	if	(Math.max(bc[0], bc[1], bc[2])/Math.min(bc[0], bc[1], bc[2]) >= 1.01)
+ //         	{
+ //         	    retval = App.ErrMsg(9,0,"Beam current fluctuation over three measurements(>1%) (" + bc + " nA). Pause script for manual measurement?");
+ //         	    if (retval == 6)
+ //         	    {
+ //         	    	App.Exec("Halt()");
+ //         	    	bcf = App.GetVariable("BeamCurrent.BeamCurrent");
+ //         	    	manmeasswitch = 1;
+ //         	    }
+ //         	    if (retval == 2)
+ //         		{
+ //         			Abort();
+ //         		}
+ //         	}	        	
+ //        	if (manmeasswitch == 0)
+ //        	{
+ //        		if (App.ErrMsg(4,0,"Beamcurrent: " + bcf + "pA. Continue? 'No' pauzes script for manual measurement.")==7) 
+ //        		{
+	//         		App.Exec("Halt()");
+	//         		bcf = App.GetVariable("BeamCurrent.BeamCurrent");
+ //         	    	manmeasswitch = 1;
+ //    	    	}
+ //    	    }
+ //        	bcf = bcf.toString();
+ //        	//bcfdisp = PreciseRound(bcf*Math.pow(10,3),2); //Dit moest van Joren. Hij houdt niet van teveel floating.
+ //        	App.SetVariable("BeamCurrent.BeamCurrent", bcf);
+ //        }
+ //    }
+ 	App.InputMsg("Enter beamcurrent in nA for currently activated aperture/voltage", 0, 0).toString();
+ 	App.SetVariable("BeamCurrent.BeamCurrent", bcf);
 }
 
 function SetStepsizeDwelltime(i)
@@ -1062,7 +1066,7 @@ function Load(SDflag)
 
     		if (st == 1)
 			{
-				App.ErrMsg(0, 0, "Column parameters will be activated. Measure beamcurrent and modify stepsizes.");
+				App.ErrMsg(0, 0, "Column parameters will be activated. Enter beamcurrent and modify stepsizes.");
 				Panicbutton();
 				SetSvars(1, 1, 1);
 				Panicbutton();
@@ -1200,7 +1204,7 @@ function CollectSD(st, GUIflag)
 			check = -1;
 			while (check != 1)			
 			{
-				S134 = App.Inputmsg("Select type of WF alignment","1: All structures, 2: First structure per sample, 3: Manual per sample, 4: No alignment", "1");
+				S134 = App.Inputmsg("Select type of rough WF alignment","1: All structures, 2: First structure per sample, 3: Manual per sample, 4: No alignment", "1");
 				Panicbutton();
 				if (S134 == "") 
 				{
@@ -1225,7 +1229,7 @@ function CollectSD(st, GUIflag)
 				if (S134 ==  1 || S134 == 2 )
 				{
 					wfprocedureloadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
-					S104 = App.InputMsg("Select auto WF align scanmark procedure", "Select: " + wfprocedureloadlist, wfprocedureloadlist[0]);
+					S104 = App.InputMsg("Select rough WF align scanmark procedure", "Select: " + wfprocedureloadlist, wfprocedureloadlist[0]);
 					if (S104 == "") 
 					{
 						Logdata();
@@ -1248,7 +1252,7 @@ function CollectSD(st, GUIflag)
 				}	
 			}
 			
-			if (App.ErrMsg(4,0,"Do you want to use layer 61 (GDSII autoscans)?")==EA_YES)
+			if (App.ErrMsg(4,0,"Use fine WF alignment using L61 GDSII auto linescans?")==EA_YES)
 			{
 				tl = App.InputMsg("Select layer", "Select layer(s) to use together with layer 61 (separate by ';')","");
 				tl = tl.replace(",", ";");
@@ -1263,7 +1267,7 @@ function CollectSD(st, GUIflag)
 				check = -1;
 				while (check != 1)
 				{
-					GDSmark = App.InputMsg("Select GDSII marker", "Choose: " + GDSmarklist, GDSmarklist[0]);
+					GDSmark = App.InputMsg("Select GDSII marker corresponding to scans drawn in design", "Choose: " + GDSmarklist, GDSmarklist[0]);
 					Panicbutton();
 					if (GDSmark == "") 
 					{
@@ -1284,7 +1288,7 @@ function CollectSD(st, GUIflag)
 				check = -1;
 				while (check == -1)
 				{
-					GDSproc = App.InputMsg("Select GDSII procedure", "Choose: '1' for scanning all structures, '2' for scanning only the first.", "1");
+					GDSproc = App.InputMsg("Select GDSII procedure when stitching", "Choose: '1' for scanning all writefields, '2' for scanning only the first.", "1");
 					if (GDSproc == "")
 					{
 						Logdata();
@@ -1550,7 +1554,7 @@ function CollectUV(st, GUIflag)
 // Add loop so that this is only asked once if st == 1
     if (GUIflag == 1)
     {	
-    	if (App.ErrMsg(8,0,"Collecting three point alignments for all samples commences. Activate desired Column dataset and WriteField. USE GLOBAL ALIGNMENT!") ==2 )
+    	if (App.ErrMsg(8,0,"Collecting three point alignments for all samples commences. Activate desired Column settings and WriteField. USE GLOBAL UV ALIGNMENT!") ==2 )
     	{
     		Logdata();
     		Abort();
@@ -1560,7 +1564,7 @@ function CollectUV(st, GUIflag)
 
 	if (GUIflag == 2)
     {	
-    	if (App.ErrMsg(8,0,"Collecting three point alignments for all samples commences. USE GLOBAL ALIGNMENT!") == 2)
+    	if (App.ErrMsg(8,0,"Collecting three point alignments for all samples commences. USE GLOBAL UV ALIGNMENT!") == 2)
     	{
     		Logdata();
     		Abort();
@@ -1891,7 +1895,7 @@ function Install(restoreflag)
 {
 	var fso, p1 , p2;
 	GenerateBatchFile();
-	App.Exec("SetLaserStageCtrl(LASER)"); //Turn on laser stage control, just to be sure
+	//App.Exec("SetLaserStageCtrl(LASER)"); //Turn on laser stage control, just to be sure, not for Elphy unfortunately :*(
 	App.SetVariable("Automation/Links.0",Gfilepath + Gsn + ".js");
 	fso = new ActiveXObject("Scripting.FileSystemObject");
 	if (fso.FolderExists(Gfilepath))
@@ -1906,11 +1910,19 @@ function Install(restoreflag)
 	p2 = ExpandPath("%root%\\Lib\\System\\");
 	if (restoreflag == 1)
 	{
+		App.SetVariable("Exposure.SingleField", "ON") //Software needs restart for option to work.
+		App.SetVariable("ScanManager.LaserStage", "OFF")
+		App.SetVariable("JoinElements.DosePercent", "10")
 		fso.CopyFile(Glib + "AlignWForg\\AlignWFAuto.js", p2, true);
+		App.Exec("ResetModule(Scan Manager)");
 	}
 	else
 	{
+		//App.SetVariable("Exposure.SingleField", "OFF") //Software needs restart for option to work.
+		App.SetVariable("ScanManager.LaserStage", "ON")
+		App.SetVariable("JoinElements.DosePercent", "20") //Experimental!!
 		fso.CopyFile(Glib + "AlignWFAuto.js", p2, true);
+		//App.Exec("ResetModule(Scan Manager)");
 	}
 	fso.Close;
 }
@@ -2234,18 +2246,18 @@ function AlignWF(markprocedure, logWFflag, i, j, k) //Main function to start aut
 
 function ActivateColdata(colset)
 {
-	var multipls, PList, lastcolset;
-	lastcolset = LastDatasettoColset();
-	if (lastcolset != colset)
-	{
-		multipls = App.OpenIniFile(Glib + "ActivateColumnDataset.pls");
-		multipls.DeleteSection("DATA");
-		multipls.WriteString("DATA", "0,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,VN,UV,set ViCol mode entry,STAY,VICOL,,,,,,,,,,," + colset + ",106,,,,,,,,,,,,,,,,", 0);
-		PList = OpenPositionList(Glib + "ActivateColumnDataset.pls");
-		App.Exec("ScanAllPositions()");
-		PList.Save();
-		PList.Close();	
-	}
+	// var multipls, PList, lastcolset;
+	// lastcolset = LastDatasettoColset();
+	// if (lastcolset != colset)
+	// {
+	// 	multipls = App.OpenIniFile(Glib + "ActivateColumnDataset.pls");
+	// 	multipls.DeleteSection("DATA");
+	// 	multipls.WriteString("DATA", "0,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,VN,UV,set ViCol mode entry,STAY,VICOL,,,,,,,,,,," + colset + ",106,,,,,,,,,,,,,,,,", 0);
+	// 	PList = OpenPositionList(Glib + "ActivateColumnDataset.pls");
+	// 	App.Exec("ScanAllPositions()");
+	// 	PList.Save();
+	// 	PList.Close();	
+	// }
 }
 
 function SetSvars(i, WFflag, msflag) //msflag?
@@ -2448,6 +2460,12 @@ function FirstWFAlign()
 	AlignWF(markprocedure, 0, 1, 1, 1);
 }
 
+function SaveColumn()
+{
+	
+}
+
+
 function Start()
 {
 	var GUIflag, beamoffflag, testmode, starttime;
@@ -2455,7 +2473,7 @@ function Start()
 	App.Exec("BeamOff()");
 	Stage.GlobalAlignment();
     //LoadWFAlignProcedures();
-	var switchvar = App.InputMsg("What are you up to?","Select '1' to start normally, '2' to do a WF alignment, '3' to grab UV/WF alignment.", "1")
+	var switchvar = App.InputMsg("What are you up to? Select '1' to start normally,'2' to do ","rough WF alignment,'3' to grab UV/WF alignment., '4' to save Column settings", "1")
 	switch(parseInt(switchvar))
 	{
 		case 1:
@@ -2466,6 +2484,10 @@ function Start()
 			break;
 		case 3:
 			GetUVWF();
+			Abort();
+			break;
+		case 4:
+			SaveColumn();
 			Abort();
 			break;
 	}
@@ -2530,14 +2552,14 @@ function Start()
     {
 		Column.HTOnOff = false;
 		App.ProtocolEvent(30, 0, 0, "Beam shutdown.");
-		Stage.X = 72.868; 											//Sets stage coörds to 30,30 (saves time when driving back)
-		Stage.Y = -8.166;
-		Stage.Z = 10.5;
+		//Stage.X = 72.868;	//Needs new values for Elphy 											//Sets stage coörds to 30,30 (saves time when driving back)
+		//Stage.Y = -8.166;
+		//Stage.Z = 10.5;
     }
     else
     {
-    	Stage.X = -39.0; 											//Sets stage coörds to 30,30 (saves time when driving back)
-		Stage.Y = 35.0;
+    	//Stage.X = -39.0; 	//Needs new values for Elpy										//Sets stage coörds to 30,30 (saves time when driving back)
+		//Stage.Y = 35.0;
     }
 }
 
