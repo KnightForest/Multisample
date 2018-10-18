@@ -2072,8 +2072,8 @@ function LoadMarkers()
 		{
 			Markertypes[q][6] = Math.ceil(App.GetVariable("Beamcontrol.MetricBasicStepSize")/(markerdata[8]*App.GetVariable("Beamcontrol.MetricBasicStepSize")))*App.GetVariable("Beamcontrol.MetricBasicStepSize");
 		}
-		Markertypes[q][7] = markerdata[6]/Markertypes[q][5]; //PointsU
-		Markertypes[q][8] = markerdata[7]/Markertypes[q][6]; //PointsV
+		Markertypes[q][7] = parseInt(markerdata[6]/Markertypes[q][5]); //PointsU
+		Markertypes[q][8] = parseInt(markerdata[7]/Markertypes[q][6]); //PointsV
 		Markertypes[q][9] = Math.ceil(markerdata[5]*markerdata[3]*10)/10; //MarkOffsetU
 		Markertypes[q][10] = Math.ceil(markerdata[5]*markerdata[4]*10)/10; //MarkOffsetV
 		Markertypes[q][11] = Math.floor(Column.GetWriteField()/2 - Math.abs(markerdata[6] / 2) - Math.abs(Markertypes[q][9])); //MarkplaceU
