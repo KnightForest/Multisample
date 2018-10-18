@@ -2243,23 +2243,6 @@ function AlignWF(markprocedure, logWFflag, i, j, k) //Main function to start aut
 	return[exposure, amf];	
 }
 
-
-function ActivateColdata(colset)
-{
-	// var multipls, PList, lastcolset;
-	// lastcolset = LastDatasettoColset();
-	// if (lastcolset != colset)
-	// {
-	// 	multipls = App.OpenIniFile(Glib + "ActivateColumnDataset.pls");
-	// 	multipls.DeleteSection("DATA");
-	// 	multipls.WriteString("DATA", "0,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,VN,UV,set ViCol mode entry,STAY,VICOL,,,,,,,,,,," + colset + ",106,,,,,,,,,,,,,,,,", 0);
-	// 	PList = OpenPositionList(Glib + "ActivateColumnDataset.pls");
-	// 	App.Exec("ScanAllPositions()");
-	// 	PList.Save();
-	// 	PList.Close();	
-	// }
-}
-
 function SetSvars(i, WFflag, msflag) //msflag?
 {
 	var ZoomX, ZoomY, ShiftX, ShiftY, RotX, RotY, corrZoomX, corrZoomY, corrShiftX, corrShiftY, corrRotX, corrRotY;
@@ -2460,10 +2443,90 @@ function FirstWFAlign()
 	AlignWF(markprocedure, 0, 1, 1, 1);
 }
 
-function SaveColumn()
+function GetColumnparam()
 {
-	
+	var col = createArray(10,1);
+	col[1][0] = parseFloat(Column.ApertureSize);
+	col[2][0] = parseFloat(Column.ApertureX);
+	col[3][0] = parseFloat(Column.ApertureY);
+	col[4][0] = parseFloat(Column.StigmatorX);
+	col[5][0] = parseFloat(Column.StigmatorY);
+	col[6][0] = parseFloat(Column.Magnification);
+	col[7][0] = parseInt(Column.HighTension);
+	col[0][0] = col[7][0] + " kV; " + col[1][0] + " um aperture";
+	col[0][0] = App.InputMsg("Choose name of column parameter set", "Enter name", col[0,0]);
+	App.ErrMsg(0,0,col)
+	SaveColumnparam(col)
 }
+
+function ActivateColdata(colset)
+{
+	var coldatfilepath, coldatini;
+	coldatfilepath = Glib + "ColumnDataSets.txt";
+	coldatini = App.OpenIniFile(coldatfilepath);
+	if (coldatini.SectionExists(colset)==0)
+	{
+		App.ErrMsg(0,0,"Column name does not exist")
+		Start();
+	}
+	else
+	{
+		var col = LoadColumnparam(colset)
+		//if (float(col[1][0]) != 7.5)
+		//App.ErrMsg(0,0,"activerendiehandel" + col)
+		Column.ApertureSize = (col[1][0]);
+		Column.ApertureX = (col[2][0]);
+		Column.ApertureY = (col[3][0]);
+		Column.StigmatorX = (col[4][0]);
+		Column.StigmatorY = (col[5][0]);
+		Column.Magnification = (col[6][0]);
+		Column.HighTension = (col[7][0]);
+		//Column.HighTension = 30;
+	}
+
+	// var multipls, PList, lastcolset;
+	// lastcolset = LastDatasettoColset();
+	// if (lastcolset != colset)
+	// {
+	// 	multipls = App.OpenIniFile(Glib + "ActivateColumnDataset.pls");
+	// 	multipls.DeleteSection("DATA");
+	// 	multipls.WriteString("DATA", "0,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,VN,UV,set ViCol mode entry,STAY,VICOL,,,,,,,,,,," + colset + ",106,,,,,,,,,,,,,,,,", 0);
+	// 	PList = OpenPositionList(Glib + "ActivateColumnDataset.pls");
+	// 	App.Exec("ScanAllPositions()");
+	// 	PList.Save();
+	// 	PList.Close();	
+	// }
+}
+
+function LoadColumnparam(colset)
+{
+	var col = createArray(10,1);
+	coldatfilepath = Glib + "ColumnDataSets.txt";
+	coldatini = App.OpenIniFile(coldatfilepath);
+	col[1][0] = coldatini.ReadFloat(colset, "Aperture", col[1][0]);
+	col[2][0] = coldatini.ReadFloat(colset, "ApertureShiftX", col[2][0]);
+	col[3][0] = coldatini.ReadFloat(colset, "ApertureShiftY", col[3][0]);
+	col[4][0] = coldatini.ReadFloat(colset, "StigmatorShiftX", col[4][0]);
+	col[5][0] = coldatini.ReadFloat(colset, "StigmatorShiftY", col[5][0]);
+	col[6][0] = coldatini.ReadFloat(colset, "Magnification", col[6][0]);
+	col[7][0] = coldatini.ReadFloat(colset, "HighTension", col[7][0]);
+	//App.ErrMsg(0,0,"ladenlul"+ col)
+	return(col)
+}
+
+function SaveColumnparam(col)
+{
+	coldatfilepath = Glib + "ColumnDataSets.txt";
+	coldatini = App.OpenIniFile(coldatfilepath);
+	coldatini.WriteString(col[0][0], "Aperture", col[1][0]);
+	coldatini.WriteString(col[0][0], "ApertureShiftX", col[2][0]);
+	coldatini.WriteString(col[0][0], "ApertureShiftY", col[3][0]);
+	coldatini.WriteString(col[0][0], "StigmatorShiftX", col[4][0]);
+	coldatini.WriteString(col[0][0], "StigmatorShiftY", col[5][0]);
+	coldatini.WriteString(col[0][0], "Magnification", col[6][0]);
+	coldatini.WriteString(col[0][0], "HighTension", col[7][0]);
+}	
+
 
 
 function Start()
@@ -2473,7 +2536,7 @@ function Start()
 	App.Exec("BeamOff()");
 	Stage.GlobalAlignment();
     //LoadWFAlignProcedures();
-	var switchvar = App.InputMsg("What are you up to? Select '1' to start normally,'2' to do ","rough WF alignment,'3' to grab UV/WF alignment., '4' to save Column settings", "1")
+	var switchvar = App.InputMsg("What are you up to? Select '1' to start normally,'2' to do ","rough WF alignment,'3' to grab UV/WF alignment., '4' to save or activate Column settings", "1")
 	switch(parseInt(switchvar))
 	{
 		case 1:
@@ -2487,9 +2550,20 @@ function Start()
 			Abort();
 			break;
 		case 4:
-			SaveColumn();
-			Abort();
+			var switchvar2 = App.Inputmsg("Save or activate column settings","Select '1' to save current column, '2' to activate column form saved dataset","1")
+				switch(parseInt(switchvar2))
+		{
+			case 1:
+				GetColumnparam();
+				Abort();
+				break;
+			case 2:
+				colset = App.InputMsg("Select column dataset","Enter the name of the saved column dataset to activate:","x kV; y um aperture")
+				ActivateColdata(colset);
+				Abort()
+				break;
 			break;
+		}
 	}
 	if (switchvar == "") Abort();
 
