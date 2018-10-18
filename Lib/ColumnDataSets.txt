@@ -6,3 +6,19 @@ StigmatorShiftX=2.2
 StigmatorShiftY=5.5
 Magnification=500
 HighTension=25
+[0 kV; 30 um aperture]
+Aperture=30
+ApertureShiftX=0
+ApertureShiftY=0
+StigmatorShiftX=8.297
+StigmatorShiftY=0.2275
+Magnification=240
+HighTension=0
+[30 kV; 120 um aperture]
+Aperture=120
+ApertureShiftX=14.8672
+ApertureShiftY=-12.87508
+StigmatorShiftX=-2.982
+StigmatorShiftY=1.049
+Magnification=3007
+HighTension=30

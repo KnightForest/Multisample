@@ -47,7 +47,7 @@
 // - nothing atm
 
 var Gsn = "Multisample";
-var Gsharedfolder = "\\\\130.89.7.17\\nanolab\\mesalabuser\\NE\\EBLLogs";
+var Gsharedfolder = "\\\\phys-mekhong.physik.unibas.ch\\meso-share\\Elphy_Multisample_Logs";
 //var Gsnl = parseInt(Gsn.length, 8);
 var Gfilepath = ExpandPath("%userroot%\Script\\" + Gsn + "\\");
 var Glogfilename = createArray(3);
@@ -396,6 +396,7 @@ function GetColDatasetList()
  //    	}
 	// }
 	// cdf.Close();
+	coldatasetlist ="Test" //Fix this :)
 return coldatasetlist;
 }
 
@@ -416,23 +417,24 @@ function CheckColumnExists(colset)
 
 function LastDatasettoColset()
 {
-	var dataset, splitdataset, splitdataset2, partonecolset, parttwocolset, colset;
+//	var dataset, splitdataset, splitdataset2, partonecolset, parttwocolset, colset;
 
-	dataset = (App.GetSysVariable("Vicol.LastDataset"));
-	if (dataset.length != 0)
-	{
-		splitdataset = dataset.split("(");
-		splitdataset2 = splitdataset[1].substring(0, splitdataset[1].length - 1);
-		partonecolset = splitdataset2;
-		parttwocolset = splitdataset[0].substring(0, splitdataset[0].length - 1);
-		colset = partonecolset + ": " + parttwocolset;
-		colset = ReplaceAtbymu(colset);
-	}
-	else
-	{
-		colset = "";
-	}
-	return colset;
+//	dataset = (App.GetSysVariable("Vicol.LastDataset"));
+//	if (dataset.length != 0)
+//	{
+//		splitdataset = dataset.split("(");
+//		splitdataset2 = splitdataset[1].substring(0, splitdataset[1].length - 1);
+//		partonecolset = splitdataset2;
+//		parttwocolset = splitdataset[0].substring(0, splitdataset[0].length - 1);
+//		colset = partonecolset + ": " + parttwocolset;
+//		colset = ReplaceAtbymu(colset);
+//	}
+//	else
+//	{
+//		colset = "";
+//	}
+colset = "Test"
+return colset;
 }
 
 function MeasBeamCurrent()	//Not available on elphy											//Measures beam current
@@ -484,7 +486,7 @@ function MeasBeamCurrent()	//Not available on elphy											//Measures beam cu
  //        	App.SetVariable("BeamCurrent.BeamCurrent", bcf);
  //        }
  //    }
- 	App.InputMsg("Enter beamcurrent in nA for currently activated aperture/voltage", 0, 0).toString();
+ 	bcf = App.InputMsg("Enter beamcurrent in nA for currently activated aperture/voltage", 0, 0).toString();
  	App.SetVariable("BeamCurrent.BeamCurrent", bcf);
 }
 
@@ -518,9 +520,9 @@ function StepsizeDwelltime(i,GUIflag, bcreadflag) //GUIflag = 0 means only beams
 	msg_higherthan = "nm: (recommended higher than ";
 	
 	var nLoops = S[14][4][i];
-	var curvedose = 150;
+	var curvedose = 200;
 	var dotdose = 0.01;
-	var resistsensitivity = 150;
+	var resistsensitivity = 200;
 	var linedose = 500;
 	
 	curvedose = curvedose / nLoops;
@@ -894,7 +896,7 @@ function Load(SDflag)
 			if (cce == -1)
 			{
 				App.ErrMsg(0,0,"Error 'ColMode' in 'GS' does not exist, check /Lib/Columndatasets.txt");
-				Abort();
+				//Abort();  //Fix this
 			}
 
 			GDSIIpath = inifile.ReadString("GS", "GDSII", "err");
@@ -1911,8 +1913,8 @@ function Install(restoreflag)
 	if (restoreflag == 1)
 	{
 		App.SetVariable("Exposure.SingleField", "ON") //Software needs restart for option to work.
-		App.SetVariable("ScanManager.LaserStage", "OFF")
-		App.SetVariable("JoinElements.DosePercent", "10")
+		//App.SetVariable("ScanManager.LaserStage", "OFF")
+		//App.SetVariable("JoinElements.DosePercent", "10")
 		fso.CopyFile(Glib + "AlignWForg\\AlignWFAuto.js", p2, true);
 		App.Exec("ResetModule(Scan Manager)");
 	}
@@ -1920,9 +1922,9 @@ function Install(restoreflag)
 	{
 		//App.SetVariable("Exposure.SingleField", "OFF") //Software needs restart for option to work.
 		App.SetVariable("ScanManager.LaserStage", "ON")
-		App.SetVariable("JoinElements.DosePercent", "20") //Experimental!!
+		//App.SetVariable("JoinElements.DosePercent", "20") //Experimental!!
 		fso.CopyFile(Glib + "AlignWFAuto.js", p2, true);
-		//App.Exec("ResetModule(Scan Manager)");
+		App.Exec("ResetModule(Scan Manager)");
 	}
 	fso.Close;
 }
@@ -2467,7 +2469,7 @@ function ActivateColdata(colset)
 	if (coldatini.SectionExists(colset)==0)
 	{
 		App.ErrMsg(0,0,"Column name does not exist")
-		Start();
+		//Start(); //All depends on correct colset, fix this too
 	}
 	else
 	{
@@ -2481,6 +2483,7 @@ function ActivateColdata(colset)
 		Column.StigmatorY = (col[5][0]);
 		Column.Magnification = (col[6][0]);
 		Column.HighTension = (col[7][0]);
+		Column.HTOnOff = ON
 		//Column.HighTension = 30;
 	}
 

@@ -1,5 +1,10 @@
 [LoadList]
-load = PhotoEBL;EBL;Photo;DoNothing;EBL_s;Demo
+load = Test; Do_Nothing
+
+[Test]
+1 = M1
+log = 1
+alwayswrite = 1
 
 [PhotoEBL]
 1 = M4;M3;M2;M1
@@ -7,32 +12,6 @@ load = PhotoEBL;EBL;Photo;DoNothing;EBL_s;Demo
 log = 1
 alwayswrite = 1
 
-[EBL]
-1 = EBLmarker1;EBLmarker2;EBLmarker3
-log = 1
-alwayswrite = 1
-
-
-[Demo]
-1 = Demo1;Demo2
-log = 1
-alwayswrite = 1
-
-[EBL_s]
-1 = EBLMarker1_c;EBLMarker2_c;EBLMarker3_c
-log = 1
-alwayswrite = 1
-
-[Photo]
-1 = M4;M3;M2;M1
-log = 1
-alwayswrite = 1
-
-[DoNothing]
+[Do_Nothing]
 log = 0
-alwayswrite = 1
-
-[Photo1]
-1 = M1
-log = 1
 alwayswrite = 1
