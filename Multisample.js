@@ -507,10 +507,25 @@ function SetStepsizeDwelltime(i)
     App.SetVariable("BeamControl.CurveLineSpacing", stepsizec_um.toString());           //Sets curved line stepsize to defined area stepsize
     App.SetVariable("BeamControl.SplStepSize", stepsizeline_um.toString());            //Sets line stepsize to defined area stepsize
     App.Exec("SetExposureParameter()");                                  //Actually activates the previous defined settings
-    App.Exec("CorrectCurvedElementsDwellTime()");                        //Corrects curved elements dwelltimes
-    App.Exec("CorrectDotDwelltime()");                                   //Corrects dot dwelltimes
-    App.Exec("CorrectSPLDwelltime()");                                   //Corrects line dwelltimes
-	App.Exec("CorrectDwelltime()");                                           //Corrects area dwelltimes
+    //Dwelltime correction officially not available for Elphy, calculating manually.. :/
+    //App.Exec("CorrectCurvedElementsDwellTime()");                        //Corrects curved elements dwelltimes
+    //App.Exec("CorrectDotDwelltime()");                                   //Corrects dot dwelltimes
+    //App.Exec("CorrectSPLDwelltime()");                                   //Corrects line dwelltimes
+	//App.Exec("CorrectDwelltime()");                                           //Corrects area dwelltimes
+	areadose = App.GetVariable("Exposure.ResistSensitivity");
+	dotdose = App.GetVariable("Exposure.DotDose");
+	linedose = App.GetVariable("Exposure.LineDose");
+	curvedose = App.GetVariable("Exposure.CurveDose");
+
+	areadwelltime = Math.pow(10,-2)*areadose*stepsize_um*stepsize_um/(beamcurrent)
+	curvedwelltime = Math.pow(10,-2)*curvedose*stepsize_um*stepsize_um/(beamcurrent)
+	linedwelltime = Math.pow(10,-4)*linedose*stepsizeline_um/(beamcurrent)
+	dotdwelltime = dotdose/beamcurrent
+
+	App.SetVariable("BeamControl.Dwelltime", areadwelltime.toString()); 
+	App.SetVariable("BeamControl.CurveDwelltime", curvedwelltime.toString()); 
+	App.SetVariable("BeamControl.SplDwellTime", linedwelltime.toString()); 
+	App.SetVariable("BeamControl.DotDwellTime", dotdwelltime.toString()); 
 }
 
 function StepsizeDwelltime(i,GUIflag, bcreadflag) //GUIflag = 0 means only beamspeeds are calculated and modified. BC and SS are not touched.
@@ -532,6 +547,8 @@ function StepsizeDwelltime(i,GUIflag, bcreadflag) //GUIflag = 0 means only beams
 	resistsensitivity = resistsensitivity / nLoops;
 	linedose = linedose / nLoops;
 
+	App.SetVariable("BeamControl.EqualCurveStepsUV", "ON");
+	App.SetVariable("BeamControl.EqualStepsUV", "ON");
 	App.SetVariable("Exposure.CurveDose", curvedose+""); 
 	App.SetVariable("Exposure.DotDose",dotdose+"") ;
 	App.SetVariable("Exposure.ResistSensitivity",resistsensitivity+"");
@@ -552,7 +569,7 @@ function StepsizeDwelltime(i,GUIflag, bcreadflag) //GUIflag = 0 means only beams
     areaminstepsize = Math.ceil(beamcurrent/((advisedbeamspeed*Math.pow(10,-5)*App.GetVariable("Exposure.ResistSensitivity")*minstepsize)))*minstepsize; //Calculates advised beamspeed [nm]
 	if (GUIflag == 0)
 	{
-		stepsize = S[2][6][i];
+		stepsize = S[2][6][i]; //Add check to see if stepsize is multiple of MetricBasicStepSize
 		stepsizeline = S[1][6][i];
 		stepsizecurve = S[3][6][i];
 	}
@@ -1915,17 +1932,17 @@ function Install(restoreflag)
 	if (restoreflag == 1)
 	{
 		App.SetVariable("Exposure.SingleField", "ON") //Software needs restart for option to work.
-		//App.SetVariable("ScanManager.LaserStage", "OFF")
 		//App.SetVariable("JoinElements.DosePercent", "10")
 		fso.CopyFile(Glib + "AlignWForg\\AlignWFAuto.js", p2, true);
+		App.SetVariable("ScanManager.LaserStage", "OFF")
 		App.Exec("ResetModule(Scan Manager)");
 	}
 	else
 	{
-		//App.SetVariable("Exposure.SingleField", "OFF") //Software needs restart for option to work.
-		App.SetVariable("ScanManager.LaserStage", "ON")
+		App.SetVariable("Exposure.SingleField", "OFF") //Software needs restart for option to work.
 		//App.SetVariable("JoinElements.DosePercent", "20") //Experimental!!
 		fso.CopyFile(Glib + "AlignWFAuto.js", p2, true);
+		App.SetVariable("ScanManager.LaserStage", "ON")
 		App.Exec("ResetModule(Scan Manager)");
 	}
 	fso.Close;
@@ -2484,7 +2501,7 @@ function ActivateColdata(colset)
 		Column.StigmatorY = (col[5][0]);
 		Column.Magnification = (col[6][0]);
 		Column.HighTension = (col[7][0]);
-		Column.HTOnOff = ON
+		Column.HTOnOff = true
 		//Column.HighTension = 30;
 	}
 
@@ -2507,6 +2524,7 @@ function LoadColumnparam(colset)
 	var col = createArray(10,1);
 	coldatfilepath = Glib + "ColumnDataSets.txt";
 	coldatini = App.OpenIniFile(coldatfilepath);
+	col[0][0] = colset
 	col[1][0] = coldatini.ReadFloat(colset, "Aperture", col[1][0]);
 	col[2][0] = coldatini.ReadFloat(colset, "ApertureShiftX", col[2][0]);
 	col[3][0] = coldatini.ReadFloat(colset, "ApertureShiftY", col[3][0]);
