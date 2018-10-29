@@ -1,15 +1,15 @@
 [LoadList]
-load = GDS1;GDS2
+load = TiPd;GDS2
 
-[GDS1]
+[TiPd]
 ScanpointsLength = 2000
 ScanpointsWidth = 120
 Averaging = 24
-MarkerWidth = 0.2
+MarkerWidth = 10
 WidthTolerance = 0.2
-ContrastThresholdLow = 50.0
-ContrastThresholdHigh = 80.0
-Profile = 1
+ContrastThresholdLow = 10.0
+ContrastThresholdHigh = 20.0
+Profile = 0
 Log = 1
 
 [GDS2]

@@ -16,11 +16,11 @@ Magnification=240
 HighTension=0
 [30 kV; 120 um aperture]
 Aperture=120
-ApertureShiftX=14.8672
-ApertureShiftY=-12.87508
+ApertureShiftX=14.867
+ApertureShiftY=-12.875
 StigmatorShiftX=-2.982
 StigmatorShiftY=1.049
-Magnification=3007
+Magnification=79
 HighTension=30
 [10 kV; 10 um aperture]
 Aperture=10
@@ -28,5 +28,13 @@ ApertureShiftX=0
 ApertureShiftY=0
 StigmatorShiftX=0
 StigmatorShiftY=0
-Magnification=50
+Magnification=30
 HighTension=10
+[30 kV; 60 um aperture]
+Aperture=60
+ApertureShiftX=-3.579
+ApertureShiftY=4.282
+StigmatorShiftX=1.152
+StigmatorShiftY=-6.056
+Magnification=31
+HighTension=30

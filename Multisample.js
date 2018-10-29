@@ -505,27 +505,49 @@ function SetStepsizeDwelltime(i)
     App.SetVariable("Variables.MetricLineSpacing", stepsize_um.toString());            //Sets area stepsize x-direction to defined area stepsize
     App.SetVariable("BeamControl.CurveStepSize", stepsizec_um.toString());              //Sets curved element stepsize to defined area stepsize
     App.SetVariable("BeamControl.CurveLineSpacing", stepsizec_um.toString());           //Sets curved line stepsize to defined area stepsize
-    App.SetVariable("BeamControl.SplStepSize", stepsizeline_um.toString());            //Sets line stepsize to defined area stepsize
-    App.Exec("SetExposureParameter()");                                  //Actually activates the previous defined settings
+    App.SetVariable("BeamControl.SplStepSize", stepsizeline_um.toString());            //Sets line stepsize to defined area stepsize                                //Actually activates the previous defined settings
     //Dwelltime correction officially not available for Elphy, calculating manually.. :/
     //App.Exec("CorrectCurvedElementsDwellTime()");                        //Corrects curved elements dwelltimes
     //App.Exec("CorrectDotDwelltime()");                                   //Corrects dot dwelltimes
     //App.Exec("CorrectSPLDwelltime()");                                   //Corrects line dwelltimes
 	//App.Exec("CorrectDwelltime()");                                           //Corrects area dwelltimes
-	areadose = App.GetVariable("Exposure.ResistSensitivity");
-	dotdose = App.GetVariable("Exposure.DotDose");
-	linedose = App.GetVariable("Exposure.LineDose");
-	curvedose = App.GetVariable("Exposure.CurveDose");
+	areadose = parseFloat(App.GetVariable("Exposure.ResistSensitivity"));
+	dotdose = parseFloat(App.GetVariable("Exposure.DotDose"));
+	linedose = parseFloat(App.GetVariable("Exposure.LineDose"));
+	curvedose = parseFloat(App.GetVariable("Exposure.CurveDose"));
 
-	areadwelltime = Math.pow(10,-2)*areadose*stepsize_um*stepsize_um/(beamcurrent)
-	curvedwelltime = Math.pow(10,-2)*curvedose*stepsize_um*stepsize_um/(beamcurrent)
-	linedwelltime = Math.pow(10,-4)*linedose*stepsizeline_um/(beamcurrent)
-	dotdwelltime = dotdose/beamcurrent
+	// Lines for debugging
+	// App.ErrMsg(0,0,'Areaddose:' + areadose + ', Curvedose:' + curvedose + ', linedose:' + linedose + ', dotdose:' + dotdose);
+	// App.ErrMsg(0,0,'stepzizeum:' + stepsize_um + ', beamcurrent:' + beamcurrent);
 
-	App.SetVariable("BeamControl.Dwelltime", areadwelltime.toString()); 
+	areadwelltime = Math.pow(10,-2)*areadose*stepsize_um*stepsize_um/(beamcurrent);
+	curvedwelltime = Math.pow(10,-2)*curvedose*stepsize_um*stepsize_um/(beamcurrent);
+	linedwelltime = Math.pow(10,-4)*linedose*stepsizeline_um/(beamcurrent);
+	if (linedwelltime < 0.00017)
+	{
+		linedwelltime = 0.0003
+		stepsizeline_um = Math.pow(10,4)*beamcurrent*linedwelltime/(linedose)// Math.ceil()*minsteps
+		App.ErrMsg(0,0,'stepsizeline_um' + stepsizeline_um)
+		minstepsize_um = parseFloat(App.GetVariable("VARIABLES.MetricStepX"))// um in this case *Math.pow(10,3)
+		stepsizeline_um = minstepsize_um*(Math.ceil(stepsizeline_um/minstepsize_um)) //Ensures multiple of minstepsize
+		linedwelltime = Math.pow(10,-4)*linedose*stepsizeline_um/(beamcurrent); //recalculate correct linedwelltime...
+		App.SetVariable("BeamControl.SplStepSize", stepsizeline_um.toString());  
+		S[1][6][i] = Math.pow(10,3)*stepsizeline_um; //re-add line stepsize
+		linebeamspeed = beamcurrent*Math.pow(10,4)/(App.GetVariable("Exposure.LineDose")) //recalculate and add new linebeamspeed
+		App.ErrMsg(0,0,linebeamspeed)
+		S[4][6][i] = PreciseRound(linebeamspeed,3)
+
+	}
+	dotdwelltime = dotdose/beamcurrent;
+
+	// App.ErrMsg(0,0,'Areadwell:' + areadwelltime + ', Curvedwelltime:' + curvedwelltime + ', linedwelltime:' + linedwelltime + ', dotdwelltime:' + dotdwelltime);
+
+	App.SetVariable("VARIABLES.Dwelltime", areadwelltime.toString()); //For some reason this resides in variables :(
 	App.SetVariable("BeamControl.CurveDwelltime", curvedwelltime.toString()); 
 	App.SetVariable("BeamControl.SplDwellTime", linedwelltime.toString()); 
 	App.SetVariable("BeamControl.DotDwellTime", dotdwelltime.toString()); 
+	App.Exec("ResetModule(Patterning)");
+	App.Exec("SetExposureParameter()");  
 }
 
 function StepsizeDwelltime(i,GUIflag, bcreadflag) //GUIflag = 0 means only beamspeeds are calculated and modified. BC and SS are not touched.
@@ -564,7 +586,10 @@ function StepsizeDwelltime(i,GUIflag, bcreadflag) //GUIflag = 0 means only beams
 		beamcurrent = S[7][6][i];
 	}
 
-	minstepsize = App.GetVariable("Beamcontrol.MetricBasicStepSize")*Math.pow(10,3); //Min stepsize in [nm]
+	//minstepsize = App.GetVariable("Beamcontrol.MetricBasicStepSize")*Math.pow(10,3); //Min stepsize in [nm]
+	minstepsize = parseFloat(App.GetVariable("VARIABLES.MetricStepX"))*Math.pow(10,3); //For some reason this works, not MetricBasicStepSize
+	App.ErrMsg(0,0,'minstep' + minstepsize)
+
 	advisedbeamspeed = 11*Math.pow(beamcurrent,0.5)+7;       //Sets the advised beamspeed in [mm/s]
     areaminstepsize = Math.ceil(beamcurrent/((advisedbeamspeed*Math.pow(10,-5)*App.GetVariable("Exposure.ResistSensitivity")*minstepsize)))*minstepsize; //Calculates advised beamspeed [nm]
 	if (GUIflag == 0)
@@ -2499,7 +2524,7 @@ function ActivateColdata(colset)
 		Column.ApertureY = (col[3][0]);
 		Column.StigmatorX = (col[4][0]);
 		Column.StigmatorY = (col[5][0]);
-		Column.Magnification = (col[6][0]);
+		//Column.Magnification = (col[6][0]);
 		Column.HighTension = (col[7][0]);
 		Column.HTOnOff = true
 		//Column.HighTension = 30;
