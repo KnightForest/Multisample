@@ -329,8 +329,6 @@ function GetActiveWorkingArea(gdsfile, structure)
 
 function GetColDatasetList()
 {
-
-
 	// var colatts = new Array();
 	// var coldatasetlist = new Array();
 	// var coldataset = createArray(999,4);
@@ -402,17 +400,25 @@ return coldatasetlist;
 
 function CheckColumnExists(colset)
 {
- 	coldatasetlist = GetColDatasetList();
- 	var exists = -1;
- 	for (f_c=0; f_c<coldatasetlist.length; f_c++)
- 	{
-     	if (colset == coldatasetlist[f_c])
-     	{
-     		exists = 1;
-     		break;
-     	}
- 	}
-	return exists; 
+ 	// coldatasetlist = GetColDatasetList();
+ // 	var exists = -1;
+ // 	for (f_c=0; f_c<coldatasetlist.length; f_c++)
+ // 	{
+ //     	if (colset == coldatasetlist[f_c])
+ //     	{
+ //     		exists = 1;
+ //     		break;
+ //     	}
+ // 	}
+	// return exists; 
+	coldatfilepath = Glib + "ColumnDataSets.txt";
+	coldatini = App.OpenIniFile(coldatfilepath);
+	//App.ErrMsg(0,0,colset)
+	if (coldatini.SectionExists(colset)==true)
+	{
+		return 1
+	}
+
 }
 
 function LastDatasettoColset()
@@ -588,7 +594,6 @@ function StepsizeDwelltime(i,GUIflag, bcreadflag) //GUIflag = 0 means only beams
 
 	//minstepsize = App.GetVariable("Beamcontrol.MetricBasicStepSize")*Math.pow(10,3); //Min stepsize in [nm]
 	minstepsize = parseFloat(App.GetVariable("VARIABLES.MetricStepX"))*Math.pow(10,3); //For some reason this works, not MetricBasicStepSize
-	App.ErrMsg(0,0,'minstep' + minstepsize)
 
 	advisedbeamspeed = 11*Math.pow(beamcurrent,0.5)+7;       //Sets the advised beamspeed in [mm/s]
     areaminstepsize = Math.ceil(beamcurrent/((advisedbeamspeed*Math.pow(10,-5)*App.GetVariable("Exposure.ResistSensitivity")*minstepsize)))*minstepsize; //Calculates advised beamspeed [nm]
@@ -608,10 +613,10 @@ function StepsizeDwelltime(i,GUIflag, bcreadflag) //GUIflag = 0 means only beams
 
 	if (GUIflag == 2)
 	{
-		stepsize = App.InputMsg(msg_setareastepsize, msg_rounding + minstepsize + msg_higherthan + areaminstepsize + "nm)", areaminstepsize).toString(); //Asks user to set stepsize for patterning
+		stepsize = App.InputMsg(msg_setareastepsize, msg_rounding + PreciseRound(minstepsize,1) + msg_higherthan + PreciseRound(areaminstepsize,1) + "nm)", areaminstepsize).toString(); //Asks user to set stepsize for patterning
     
     	if (stepsize < minstepsize) stepsize=minstepsize; //If the user set stepsize is smaller than the minimum stepsize, it is return to this minimum value
-    	stepsizeline=(minstepsize*Math.ceil(App.InputMsg(msg_setlinestepsize, msg_rounding + minstepsize + "nm:", minstepsize)/(minstepsize))).toString(); //Asks user to set stepsize for patterning
+    	stepsizeline=(minstepsize*Math.ceil(App.InputMsg(msg_setlinestepsize, msg_rounding + PreciseRound(minstepsize,1) + "nm:", minstepsize)/(minstepsize))).toString(); //Asks user to set stepsize for patterning
     	if (stepsizeline < minstepsize) stepsizeline = minstepsize; 		//If the user set stepsize is smaller than the minimum stepsize, it is returned to this minimum value
     	stepsizecurve = stepsize;   	        
 	}
@@ -630,7 +635,7 @@ function StepsizeDwelltime(i,GUIflag, bcreadflag) //GUIflag = 0 means only beams
    		
    		if (beamspeed[0] > criticalbeamspeed) 
       	{
-      		App.Errmsg(EC_INFO ,0 , "WARNING! Line beam speed greater than 10mm/s:    " + Math.ceil(beamspeed[2]*10)/10 + "mm/s."); 
+      		App.Errmsg(EC_INFO ,0 , "WARNING! Line beam speed greater than 30mm/s:    " + Math.ceil(beamspeed[2]*30)/10 + "mm/s."); 
       		bflag = 1;
       	}      	
    		if (beamspeed[1] > criticalbeamspeed) 
@@ -936,11 +941,12 @@ function Load(SDflag)
 			}
 			colmode = inifile.ReadString("GS", "ColMode", "");
 			S[2][5][i] = ReplaceAtbymu(colmode);
+			//App.ErrMsg(0,0,S[2][5][i])
 			cce = CheckColumnExists(S[2][5][i]);
 			if (cce == -1)
 			{
 				App.ErrMsg(0,0,"Error 'ColMode' in 'GS' does not exist, check /Lib/Columndatasets.txt");
-				//Abort();  //Fix this
+				Abort();  //Fix this
 			}
 
 			GDSIIpath = inifile.ReadString("GS", "GDSII", "err");
