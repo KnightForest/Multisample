@@ -533,14 +533,14 @@ function SetStepsizeDwelltime(i)
 	{
 		linedwelltime = 0.0003
 		stepsizeline_um = Math.pow(10,4)*beamcurrent*linedwelltime/(linedose)// Math.ceil()*minsteps
-		App.ErrMsg(0,0,'stepsizeline_um' + stepsizeline_um)
+		//App.ErrMsg(0,0,'stepsizeline_um' + stepsizeline_um)
 		minstepsize_um = parseFloat(App.GetVariable("VARIABLES.MetricStepX"))// um in this case *Math.pow(10,3)
 		stepsizeline_um = minstepsize_um*(Math.ceil(stepsizeline_um/minstepsize_um)) //Ensures multiple of minstepsize
 		linedwelltime = Math.pow(10,-4)*linedose*stepsizeline_um/(beamcurrent); //recalculate correct linedwelltime...
 		App.SetVariable("BeamControl.SplStepSize", stepsizeline_um.toString());  
 		S[1][6][i] = Math.pow(10,3)*stepsizeline_um; //re-add line stepsize
 		linebeamspeed = beamcurrent*Math.pow(10,4)/(App.GetVariable("Exposure.LineDose")) //recalculate and add new linebeamspeed
-		App.ErrMsg(0,0,linebeamspeed)
+		//App.ErrMsg(0,0,linebeamspeed)
 		S[4][6][i] = PreciseRound(linebeamspeed,3)
 
 	}
@@ -2680,14 +2680,14 @@ function Start()
     {
 		Column.HTOnOff = false;
 		App.ProtocolEvent(30, 0, 0, "Beam shutdown.");
-		//Stage.X = 72.868;	//Needs new values for Elphy 											//Sets stage coörds to 30,30 (saves time when driving back)
-		//Stage.Y = -8.166;
-		//Stage.Z = 10.5;
+		Stage.X = 65.5;	//Needs new values for Elphy 											//Sets stage coörds to 30,30 (saves time when driving back)
+		Stage.Y = 56;
+		Stage.Z = 0.5;
     }
     else
     {
-    	//Stage.X = -39.0; 	//Needs new values for Elpy										//Sets stage coörds to 30,30 (saves time when driving back)
-		//Stage.Y = 35.0;
+    	Stage.X = 66.6; 	//Needs new values for Elpy, drive to Faraday										//Sets stage coörds to 30,30 (saves time when driving back)
+	Stage.Y = 45.0;
     }
 }
 
