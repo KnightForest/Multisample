@@ -2067,7 +2067,7 @@ function LoadGDSIIMarkers()
 	GDSmarkertypes = createArray(loadlist.length,20);
 	for (q = 0; q < loadlist.length; q ++) 
 	{
-		parlist = new Array("ScanpointsLength","ScanpointsWidth","Averaging","MarkerWidth","WidthTolerance","ContrastThresholdLow","ContrastThresholdHigh","Profile", "Log");
+		parlist = new Array("ScanpointsLength","ScanpointsWidth","Averaging","MarkerWidth","WidthTolerance","ContrastThresholdLow","ContrastThresholdHigh","Profile", "Log", "UnusedLeft", "UnusedRight");
 		markerdata = new Array(parlist.length);
 		for (p = 0; p < parlist.length; p ++) 
 		{
@@ -2087,7 +2087,7 @@ function LoadGDSIIMarkers()
 		GDSmarkertypes[q][4] = markerdata[3]; //Markerwidth
 		GDSmarkertypes[q][5] = Math.ceil((markerdata[3]*1 - markerdata[4]*markerdata[3])*1000);//Profile min
 		GDSmarkertypes[q][6] = Math.ceil((markerdata[3]*1 + markerdata[4]*markerdata[3])*1000);//Profile max
-		GDSmarkertypes[q][7] = "Mode:0,L1:" + markerdata[5] + ",L2:" + markerdata[6] + ",Profile:" + markerdata[7] + ",Min:" + GDSmarkertypes[q][5] + ",Max:" + GDSmarkertypes[q][6] + ",LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:0,ZR:0";//threshold
+		GDSmarkertypes[q][7] = "Mode:0,L1:" + markerdata[5] + ",L2:" + markerdata[6] + ",Profile:" + markerdata[7] + ",Min:" + GDSmarkertypes[q][5] + ",Max:" + GDSmarkertypes[q][6] + ",LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:" + markerdata[9]+ ",ZR:" + markerdata[10]+ "";//threshold
 		GDSmarkertypes[q][8] = markerdata[8];
 	}
 	return GDSmarkertypes;
@@ -2530,8 +2530,21 @@ function ActivateColdata(colset)
 		Column.ApertureY = (col[3][0]);
 		Column.StigmatorX = (col[4][0]);
 		Column.StigmatorY = (col[5][0]);
+		App.ErrMsg(0,0,Column.HighTension+ 'sdf' + col[7][0])
 		//Column.Magnification = (col[6][0]);
-		Column.HighTension = (col[7][0]);
+		if (Column.HighTension != col[7][0])
+		{
+			Column.HighTension = (col[7][0]);
+			s = 25; //n-seconds for app to wait for EHT
+			for (n = 0; n <= s; n++)
+    		{
+    			a = s-n;
+    			App.Lock("Waiting "+a+" seconds for EHT to reach setpoint");
+    			App.Wait(1, 0); 
+    		}
+			App.Unlock();
+
+		}
 		Column.HTOnOff = true
 		//Column.HighTension = 30;
 	}
@@ -2614,6 +2627,7 @@ function Start()
 			case 2:
 				colset = App.InputMsg("Select column dataset","Enter the name of the saved column dataset to activate:","x kV; y um aperture")
 				ActivateColdata(colset);
+				App.ErrMsg(0,0,'Column parameters set.')
 				Abort()
 				break;
 			break;
