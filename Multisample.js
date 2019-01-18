@@ -20,25 +20,20 @@
 //    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
 // Future plans (- = open, V = fixed, T = needs testing):
+// - Add activate WF by name instead of size, prevents ambiguous WFs
 // - Add WF min/max to markers
-// T Add option to change working area per sample
 // - Build in 'back' functionality
 // - Add comments :)
 // - Add initialisation to check if all files are present
-// T Add ability to do only a GDSII scan on the first device on a sample (one UV alignment)
 // - Add ability to load writematrix from file (for unevenly spaced devices on a sample)
-// 		-> Combine this with loading different designs/layers per UV alignment
-// V Add procedure for manual alignment per chip --> Grab UV/WF 
-// - Add no-GUI mode for using patterning in Plist
+// 		-> Combine this with loading different designs/layers per UV alignment 
+// X Add no-GUI mode for using patterning in Plist
 // - Put Markers/procedures etc (user editable files) in a separate folder
 // 	- > Add separate procedure for manual alignment on images.
 // - Expand on alignprocedures syntax
 // - Redo sampledefinitions in multisample/sdvars. Make them not rely on numbers but use loadlist maybe.
-// V Check if GDS Markertype is valid
 
 // BUGS:
-// - Fixed, needs a test: Manual BC measurement in script does not work, double menu + value is not recorded.
-// - Fixed, needs a test: Sergey: Bug report: sd vars works strange with use preseted beam current? - > no - > measure current - >  no
 // - Improssibru: Manual alignment on dot within script not possible
 // 		-> Needs added routine during UV alignment. <- if possible :/
 // - Stepsize bug? 2nd sample has 1 mm/sec lower beamspeed allowance, at least stepsize is higher. Test this.
@@ -1737,7 +1732,7 @@ function CollectUV(st, GUIflag)
 
 		if (GUIflag == 1)
 		{
-			S[1][5][i] = parseInt(App.GetVariable("Variables.WritefieldHeight"));
+			S[1][5][i] = parseFloat(App.GetVariable("Variables.WritefieldHeight"));
 			S[2][5][i] = LastDatasettoColset();
 			S[3][5][i] = App.GetVariable("GDSII.Database");
 			S[4][5][i] = App.GetVariable("Variables.StructureName");
@@ -2530,12 +2525,12 @@ function ActivateColdata(colset)
 		Column.ApertureY = (col[3][0]);
 		Column.StigmatorX = (col[4][0]);
 		Column.StigmatorY = (col[5][0]);
-		App.ErrMsg(0,0,Column.HighTension+ 'sdf' + col[7][0])
 		//Column.Magnification = (col[6][0]);
 		if (Column.HighTension != col[7][0])
 		{
 			Column.HighTension = (col[7][0]);
-			s = 25; //n-seconds for app to wait for EHT
+			Column.HTOnOff = true
+   s = 35; //n-seconds for app to wait for EHT
 			for (n = 0; n <= s; n++)
     		{
     			a = s-n;
@@ -2545,7 +2540,6 @@ function ActivateColdata(colset)
 			App.Unlock();
 
 		}
-		Column.HTOnOff = true
 		//Column.HighTension = 30;
 	}
 
