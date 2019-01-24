@@ -42,7 +42,7 @@
 // - nothing atm
 
 var Gsn = "Multisample";
-var Gsharedfolder = "\\\\phys-mekhong.physik.unibas.ch\\meso-share\\Elphy_Multisample_Logs";
+var Gsharedfolder = "\\\\phys-mekhong.physik.unibas.ch\\meso-share\\Group\\Elphy_Multisample_Logs";
 //var Gsnl = parseInt(Gsn.length, 8);
 var Gfilepath = ExpandPath("%userroot%\Script\\" + Gsn + "\\");
 var Glogfilename = createArray(3);
@@ -244,6 +244,36 @@ function TimestampUTC()
 	return(ms);
 }
 
+function ReplaceMSwithLog()
+{
+    var bline1, bline2, file;
+    var fso = new ActiveXObject("Scripting.FileSystemObject");
+    if (FileExists(Gfilepath + "Lib\\CopyLogMS.bat") == 1)
+    {
+    	file = fso.GetFile(Gfilepath + "Lib\\CopyLogMS.bat");
+    	file.Delete();
+    }
+	//if (FileExists(Gfilepath + "Multisample.txt") == 1)
+    //{
+    //	file = fso.GetFile(Gfilepath + "Multisample.txt");
+    // 	file.Delete();
+    //}
+	// Create the file, and obtain a file object for the file.
+	var filename = Gfilepath + "Lib\\CopyLogMS.bat";
+	//fso.CreateTextFile(Gfilepath + "Lib\\CopyLog.bat");
+	fso.CreateTextFile(filename);
+	file = fso.GetFile(filename);
+
+	// Open a text stream for output.
+	var ts = file.OpenAsTextStream(2, -2);
+
+	// Write to the text stream.
+	bline1 = "xcopy \"" + Glogfilename[1] + Glogfilename[2] + "\"" + " " + "\"" + Gfilepath + "Multisample.txt" + "\"" + " "+ "/y";
+	ts.WriteLine(bline1);
+	ts.Close();
+	ExecFile(Gfilepath + "Lib\\CopyLogMS.bat");
+}
+
 function GenerateBatchFile()
 {
     var bline1, bline2, file;
@@ -263,8 +293,8 @@ function GenerateBatchFile()
 	var ts = file.OpenAsTextStream(2, -2);
 
 	// Write to the text stream.
-	bline1 = "xcopy \"" + Glogfilename[1] + Glogfilename[2] + "\"" + " " + "\"" + Gsharedfolder + "\"" + " /y";
-	bline2 = "xcopy \"" + Glogfilename[1] + Gprogressfilename + "\"" + " " + "\"" + Gsharedfolder + "\"" + " /y";
+	bline1 = "xcopy \"" + Glogfilename[1] + Glogfilename[2] + "\"" + " " + "\"" + Gsharedfolder + "\"" + " /y /i";
+	bline2 = "xcopy \"" + Glogfilename[1] + Gprogressfilename + "\"" + " " + "\"" + Gsharedfolder + "\"" + " /y /i";
 	ts.WriteLine(bline1);
 	ts.WriteLine(bline2);
 	ts.Close();
@@ -309,12 +339,29 @@ function ReadLsc(filename)
 
 function GetActiveWorkingArea(gdsfile, structure)
 {
-	var workingareafile, workingareaini, activewa, activewastring, workingarea;
+	var workingareafile, workingareaini, activewa, activewastring, workingarea, workingareastring;
 	workingareafile = gdsfile.substring(0,gdsfile.length-3)+"wor";
-	workingareaini = App.OpenInifile(workingareafile);
-	activewa = workingareaini.ReadString(structure, "ActiveWA", "");
-	activewastring = "WorkingArea" + activewa;
-	workingareastring = workingareaini.ReadString(structure,activewastring,"");
+	
+	workingareastring = "nowa";
+	while (workingareastring == "nowa")
+	{	
+		workingareaini = App.OpenInifile(workingareafile);
+		activewa = workingareaini.ReadString(structure, "ActiveWA", "");
+		activewastring = "WorkingArea" + activewa;
+		workingareastring = workingareaini.ReadString(structure,activewastring,"nowa");
+		//App.ErrMsg(0,0,activewastring + "......" + workingareastring + '.....' + activewa)
+		if (workingareastring=="nowa")
+		{
+			if (App.ErrMsg(8,0,"No working area defined for structure, please add one.")==2)
+			{
+				Abort();
+			}
+			else
+			{
+				App.Exec("Halt()");
+			}
+		}
+	}
 	workingarea = workingareastring.split(",");
 	wa = workingarea[0] + ","+ workingarea[1] + "," + workingarea[2] + ","+ workingarea[3];
 	return wa;
@@ -489,7 +536,7 @@ function MeasBeamCurrent()	//Not available on elphy											//Measures beam cu
  //        	App.SetVariable("BeamCurrent.BeamCurrent", bcf);
  //        }
  //    }
- 	bcf = App.InputMsg("Enter beamcurrent in nA for currently activated aperture/voltage", 0, 0).toString();
+ 	bcf = App.InputMsg("Enter beamcurrent for currently activated aperture/voltage", "Enter beamcurrent in nA", 0).toString();
  	App.SetVariable("BeamCurrent.BeamCurrent", bcf);
 }
 
@@ -709,6 +756,7 @@ function Abort()                                                        //-- Abo
    Stage.JoystickEnabled = true;
    App.SetVariable("Adjust.MinAutoMarks","3");
    App.SetVariable("Exposure.ExposureLoops","1"); 						//Let's be nice to the default settings
+   Stage.GlobalAlignment();												//Switch to global alignment after panic or abort
    if (collectinguvflag == 1)
    {
    		Logdata();
@@ -1264,7 +1312,7 @@ function CollectSD(st, GUIflag)
 				}
 				else
 				{
-					App.ErrMsg(0,0,"Nonvalid entry.");
+					App.ErrMsg(0,0,"Invalid entry.");
 					check = -1;
 				}
 				
@@ -1529,7 +1577,7 @@ function CollectSD(st, GUIflag)
 				check = -1;
 				while (check != 1)
 				{
-					S86 = App.InputMsg("Writefield overpattern (only used in global alignment)", "Percentage of overpattern (prevents stitching errors, recommended values 0-0.5)", "0.2");
+					S86 = App.InputMsg("Writefield overpattern (only used in global alignment)", "Percentage of overpattern (prevents stitching errors, recommended values 0-0.5)", "0.0");
 					if (S86 == "") 
 					{
 						Logdata();
@@ -2588,8 +2636,6 @@ function SaveColumnparam(col)
 	coldatini.WriteString(col[0][0], "HighTension", col[7][0]);
 }	
 
-
-
 function Start()
 {
 	var GUIflag, beamoffflag, testmode, starttime;
@@ -2597,7 +2643,8 @@ function Start()
 	App.Exec("BeamOff()");
 	Stage.GlobalAlignment();
     //LoadWFAlignProcedures();
-	var switchvar = App.InputMsg("What are you up to? Select '1' to start normally,'2' to do ","rough WF alignment,'3' to grab UV/WF alignment., '4' to save or activate Column settings", "1")
+
+	var switchvar = App.InputMsg("What are you up to?", "'1' start normal, '2' stage WF align, '3' grab curr. UV/WF, '4' act./save Column.", "1")
 	switch(parseInt(switchvar))
 	{
 		case 1:
@@ -2629,12 +2676,12 @@ function Start()
 	}
 	if (switchvar == "") Abort();
 
-	var as = App.InputMsg("Select sample data source","Select '1' to collect sample data or select '2' to read 'Multisample.txt'.", "1");
+	var as = App.InputMsg("Select sampledata source","Select '1' to collect sample data or select '2' to read 'Multisample.txt'.", "1");
 	if (as!=1 && as!=2) Abort();  
 	
 	if (as == 1)
 	{
-		st = App.InputMsg("Select procedure","1: Single-settings Mode, 2: Per-sample-settings mode, 3: Load from SDvars.txt", "1");
+		st = App.InputMsg("Select procedure","1: Single-settings batch mode, 2: Per-sample-settings mode, 3: Load SDvars.txt.", "1");
 		if (st!=1 && st!=2 && st!=3) Abort();  
 		if (st == 1 || st == 2)	
 		{
@@ -2656,14 +2703,15 @@ function Start()
 	}
 	Glogfilename = Logdata();
 	beamoffflag = 0;
-
+	replacemsflag = 0;
 	if (App.Errmsg(EC_YESNO, 0 , "Run in test mode? (No exposure)") == EA_YES)
 	{
 		testmode = 1;
-		//if (App.Errmsg(EC_YESNO, 0 , "Overwrite Multisample.txt with logfile for easy loading of paramters?") == EA_YES)
-		//{
-		//	App.ErrMsg(0,0,"Function not yet implemented")
-		//}
+		if (App.Errmsg(EC_YESNO, 0 , "Overwrite Multisample.txt with latest logfile for easy loading of parameters?") == EA_YES)
+		{
+			replacemsflag = 1;
+			ReplaceMSwithLog();
+		}
 	}
 	else
 	{
@@ -2674,6 +2722,13 @@ function Start()
 	
 	if (App.ErrMsg(EC_YESNO,0,"Writing now commences.") == EA_NO)
 	{
+		if (replacemsflag == 0)
+		{
+			if (App.Errmsg(EC_YESNO, 0 , "Overwrite Multisample.txt with latest logfile for easy loading of parameters?") == EA_YES)
+			{
+				ReplaceMSwithLog();
+			}
+		}
 		Abort();
 	}
 	starttime = TimestampUTC();
