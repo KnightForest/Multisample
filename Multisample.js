@@ -1618,7 +1618,7 @@ function CollectSD(st, GUIflag)
 		S[10][4][i] = S104;
 		S[12][4][i] = S124 + "";
 		S[13][4][i] = S134 + "";
-		S[1][5][i] = S15 + "";	
+		S[1][5][i] = parseFloat(S15);	
 		S[14][4][i] = parseInt(S144);
 		S[8][6][i] = parseFloat(S86);
 		//Add a list of parameter that are always applicable to all loaded samples.
@@ -1631,7 +1631,7 @@ function CollectSD(st, GUIflag)
 			
 		if (GUIflag == 2)
 		{
-		S[1][5][i] = S15 + "";
+		S[1][5][i] = parseFloat(S15);	
 		S[2][5][i] = S25 + "";
 		S[3][5][i] = S35;
 		S[4][5][i] = S45;
@@ -1669,9 +1669,6 @@ function CollectUV(st, GUIflag)
 	Panicbutton();
 	for (i = 1; i <= Gnums; i++)
     {
-		Stage.GlobalAlignment();
-		if (i != 1) Stage.ResetAlignment();
-
 	    if (GUIflag == 1)
 		{
 			if (App.ErrMsg(8,0,"Perform UV alignment on sample " + i + " of " + Gnums + ". The now opened GDSII file and structure are logged and used for exposure.") == 2)
@@ -1695,16 +1692,24 @@ function CollectUV(st, GUIflag)
 			}
 			Panicbutton();		
 		}
-
+		Stage.GlobalAlignment();
+		if (i != 1)
+		{
+			if (App.ErrMsg(4,0,"Do you want to reset the current UV alignment?")==6)
+			{
+				Stage.ResetAlignment();
+			}
+		}
+	    
 	    App.Exec("Halt()");
 	    App.Exec("BeamOff()");
 	    Panicbutton();
-	    if (S[13][4][i] == 1 || S[13][4][i] == 2)
+	    if (S[13][4][i] == 1 || S[13][4][i] == 2) 
 		{
 			
-			while (userinput != 7)
+			while (userinput != 7) //While less than three marks found, do alignment
 			{
-				awfvars = AlignWF(S[10][4][i], 0, 1, 1, 1); //align a writefield or not depending on S[10][4][i]
+				awfvars = AlignWF(S[10][4][i], 0, 1, 1, 1); //align a writefield or not depending on S[10][4][i] (markprocedure)
 				amf = awfvars[1];
 				if (amf <= 1) break;
 				if (amf >= 2)
@@ -1913,7 +1918,7 @@ function Logdata()
 			Glogini.Writestring(it,"Markprocedure", S[10][4][i]);	
 			Glogini.Writestring(it, "L61", S[12][4][i]);
 			Glogini.Writestring(it, "Exposureloops", S[14][4][i]);	
-			Glogini.WriteString(it,"WF", S[1][5][i] + "");
+			Glogini.WriteString(it,"WF", S[1][5][i]);
 			Glogini.WriteString(it,"ColMode", S[2][5][i] + "");
 			Glogini.WriteString(it, "SSLine", S[1][6][i] + "");
 			Glogini.WriteString(it, "SSArea", S[2][6][i] + "");
@@ -2398,9 +2403,9 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th sample, type of writi
 	var N, meander, k, j, mj, l61, l61exp, exposure, currentsampletime, awfvars;
 	N = WriteMatrix(S, i);
 	meander = 1;
-	for (k = 0; k <= S[3][4][i]-1; k++)
+	for (k = 0; k <= S[3][4][i]-1; k++) // y-direction on sample
 	{
-		for (j = 0; j <= S[2][4][i]-1; j++)
+		for (j = 0; j <= S[2][4][i]-1; j++) // x-direction on sample
 		{	
 			if (isEven(k) == 0 && meander == 1)
 			{
@@ -2414,7 +2419,17 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th sample, type of writi
 			TimeandProgress(i, j, mj, k, starttime, currentsampletime, 1);
 			Panicbutton();
 			Stage.GlobalAlignment();
-			Stage.DriveUV(N[mj+1][k+1][1], N[mj+1][k+1][2]);
+			scu = parseFloat(Stage.U)
+			ul = scu-0.0005
+			uh = scu+0.0005
+			scv = parseFloat(Stage.U)
+			vl = scv-0.0005
+			vh = scv+0.0005			
+			if (N[mj+1][k+1][1]<ul || N[mj+1][k+1][1]>uh || N[mj+1][k+1][2]<vl || N[mj+1][k+1][2]>vh)
+			{
+				//App.ErrMsg(0,0,'STAGE DRVINGIN OMGG!!!')
+				Stage.DriveUV(N[mj+1][k+1][1], N[mj+1][k+1][2]);
+			}
 			//Stage.W = 
 			Stage.LocalAlignment();
 			OriginCorrection();
