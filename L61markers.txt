@@ -22,5 +22,7 @@ MarkerWidth = 0.07
 WidthTolerance = 0.8
 ContrastThresholdLow = 10.0
 ContrastThresholdHigh = 40.0
+UnusedLeft = 100
+UnusedRight = 100
 Profile = 0
 Log = 1
