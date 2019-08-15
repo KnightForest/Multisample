@@ -163,7 +163,7 @@ function Progbarstring(percentage, length)
 	barstring += "]";
 	return(barstring);
 }
-			//TimeandProgress(i, j, mj, k, starttime, currentsampletime, 1);
+
 function TimeandProgress(sample, nydir, meanderxdir, nxdir, starttime, currentsampletime, beforepattswitch)
 {
 	var prog, elapsedtime, sampletimeint, timetogo, endtime, finishtime, progresslogfile, actualfinishtime;
@@ -183,7 +183,7 @@ function TimeandProgress(sample, nydir, meanderxdir, nxdir, starttime, currentsa
 	progresslogfile = App.OpenInifile(Glogfilename[1] + Gprogressfilename);
 	progresslogfile.Writestring("Total progress", "Starting time ", " " + locstarttime[1] + " on " + locstarttime[0]);
 	progresslogfile.Writestring("Now patterning", "Sample ", " " + sample + " (" + S[8][4][i] + ")");
-	progresslogfile.Writestring("Now patterning", "Structure ", " " + "nx/ny["  + parseInt(meanderxdir + 1) + ";" + parseInt(nydir + 1) + "]");
+	progresslogfile.Writestring("Now patterning", "Structure ", " " + "nx/ny[" + parseInt(nxdir + 1) + ";" + parseInt(meanderxdir + 1) + "]");
 	progresslogfile.Writestring("Now patterning", "Patterning started ", " " + locsamplestarttime[1]);	
 
 	if (beforepattswitch == 0)
@@ -211,7 +211,7 @@ function TimeandProgress(sample, nydir, meanderxdir, nxdir, starttime, currentsa
 		progresslogfile.Writestring("Total progress", "Elapsed time ", " " + helapsedtime[0]);
 		progresslogfile.Writestring("Total progress", "Remaining time (estimate) ", " " + htimetogo[0]);
 		progresslogfile.Writestring("Total progress", "ETA (estimate) ", " " + locfinishtime[1] + " on " + locfinishtime[0]);
-		progresslogfile.Writestring("Timelog Sample " + sample + " (" + S[8][4][i] + ")", "Structure nx/ny[" + parseInt(meanderxdir + 1) + ";" + parseInt(nydir + 1) + "] ", " Duration: " + hsampletimeint[0]+ ", Start: " + locsamplestarttime[1] );
+		progresslogfile.Writestring("Timelog Sample " + sample + " (" + S[8][4][i] + ")", "Structure nx/ny[" + parseInt(nxdir + 1) + ";" + parseInt(nydir + 1) + "] ", " Duration: " + hsampletimeint[0]+ ", Start: " + locsamplestarttime[1] );
 
 		if (prog[0] == 1)
 		{	
@@ -2245,7 +2245,10 @@ function LoadWFAlignProcedures()
 				for (qp = 0; qp < markerarray.length; qp++)
 				{
 					markerloadlist = GMarkertypes.ReadString("LoadList", "load", "0").split(";");
-					if (SearchArray(markerloadlist,markerarray[qp]) == -1)
+					//App.ErrMsg(0,0,markerloadlist)
+					//App.ErrMsg(0,0,qp)
+					//App.ErrMsg(0,0,markerarray[qp])
+     if (SearchArray(markerloadlist,markerarray[qp]) == -1)
 					{
 						App.ErrMsg(0,0,"Marker '" + markerarray [qp] + "' in alignprocedure " + loadlist[q] + " not found in Markers.txt" );
 						Abort();
@@ -2419,18 +2422,13 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th sample, type of writi
 			TimeandProgress(i, j, mj, k, starttime, currentsampletime, 1);
 			Panicbutton();
 			Stage.GlobalAlignment();
-			scu = parseFloat(Stage.U)
-			ul = scu-0.0005
-			uh = scu+0.0005
-			scv = parseFloat(Stage.V)
-			vl = scv-0.0005
-			vh = scv+0.0005			
-			if (N[mj+1][k+1][1]<ul || N[mj+1][k+1][1]>uh || N[mj+1][k+1][2]<vl || N[mj+1][k+1][2]>vh)
+			tolerance = 0.0005;			
+			scu = parseFloat(Stage.U);
+			scv = parseFloat(Stage.V);
+			if (Math.abs(N[mj+1][k+1][1]-scu)>tolerance || Math.abs(N[mj+1][k+1][2]-scv)>tolerance)
 			{
-				//App.ErrMsg(0,0,'STAGE DRVINGIN OMGG!!!')
 				Stage.DriveUV(N[mj+1][k+1][1], N[mj+1][k+1][2]);
 			}
-			//Stage.W = 
 			Stage.LocalAlignment();
 			OriginCorrection();
 			if (S[12][4][i] != -1) //Checks if layer 61 is enabled
@@ -2444,8 +2442,14 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th sample, type of writi
 				if (S[13][4][i] == 2 && k == 0 && j == 0)
 				{	
 					AlignWF(S[10][4][i], 1, i, mj, k);
-				}	
-				
+				}
+			tolerance = 0.0005;			
+			scu = parseFloat(Stage.U);
+			scv = parseFloat(Stage.V);
+			if (Math.abs(scu)>tolerance || Math.abs(scv)>tolerance)
+			{
+				Stage.DriveUV(N[mj+1][k+1][1], N[mj+1][k+1][2]);
+			}
 				InstallGDSmarker(l61[0], k, mj);
 				App.Exec("UnSelectAllExposedLayer()");                      //Deselects al exposed layers
 				CopyLog();
@@ -2469,18 +2473,18 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th sample, type of writi
 					if (l61[1] == 1)
 					{
 						l61exp = 61 + ";" + l61[2];
-      					App.Exec("SelectExposedLayer(61)"); 
-  						App.Exec("Exposure");
-					 	App.Exec("UnSelectAllExposedLayer()");
-      					App.Exec("SelectExposedLayer(" + l61[2] + ")");	
+      App.Exec("SelectExposedLayer(61)"); 
+  				App.Exec("Exposure");
+					 App.Exec("UnSelectAllExposedLayer()");
+      App.Exec("SelectExposedLayer(" + l61[2] + ")");	
 					}
 					else if (l61[1] == 2 && k == 0 && mj == 0)
 					{
 						l61exp = 61 + ";" + l61[2]; 
-      					App.Exec("SelectExposedLayer(61)"); 
-  						App.Exec("Exposure");
-					 	App.Exec("UnSelectAllExposedLayer()");
-      					App.Exec("SelectExposedLayer(" + l61[2] + ")");	
+      App.Exec("SelectExposedLayer(61)"); 
+  				App.Exec("Exposure");
+					 App.Exec("UnSelectAllExposedLayer()");
+      App.Exec("SelectExposedLayer(" + l61[2] + ")");	
 					}
 					else
 					{
@@ -2507,10 +2511,10 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th sample, type of writi
 					exposure = awfvars[0];
 				}
 				if (S[13][4][i] == 3 || S[13][4][i] == 4) exposure = 1;							
-					CopyLog();
-					WFOverpattern(1);
-					App.Exec("UnSelectAllExposedLayer()");                      //Deselects al exposed layers
-					App.Exec("SelectExposedLayer(" + S[1][4][i] + ")");
+				CopyLog();
+				WFOverpattern(1);
+				App.Exec("UnSelectAllExposedLayer()");                      //Deselects al exposed layers
+				App.Exec("SelectExposedLayer(" + S[1][4][i] + ")");
 				if (testmode != 1 && exposure == 1) App.Exec("Exposure");
 				WFOverpattern(0);
 				CopyLog();
