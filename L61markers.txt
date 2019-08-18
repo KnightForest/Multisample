@@ -13,6 +13,7 @@ UnusedLeft = 100
 UnusedRight = 100
 Profile = 0
 Log = 1
+Alwayswrite = 0
 
 [GDS2]
 ScanpointsLength = 2000
@@ -26,3 +27,4 @@ UnusedLeft = 100
 UnusedRight = 100
 Profile = 0
 Log = 1
+Alwayswrite = 0

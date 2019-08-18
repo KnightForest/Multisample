@@ -2078,7 +2078,7 @@ function InstallGDSmarker(markertype, k, mj) //Installs GDSII marker properties 
         iniTest.DeleteKey("Threshold", "Align write field"); 
         iniTest.WriteString("Threshold", "Align write field", GDSmarkertypes[m][7]);//The new values are entered from string 'threshold'  
     }
-
+    return GDSmarkertypes[m][9] //return alwayswrite parameter
 }
 
 function InstallWFAlign(threshold) //Installs markerproperties into systems Scan.ini, called from AutoWFAlign
@@ -2115,7 +2115,7 @@ function LoadGDSIIMarkers()
 	GDSmarkertypes = createArray(loadlist.length,20);
 	for (q = 0; q < loadlist.length; q ++) 
 	{
-		parlist = new Array("ScanpointsLength","ScanpointsWidth","Averaging","MarkerWidth","WidthTolerance","ContrastThresholdLow","ContrastThresholdHigh","Profile", "Log", "UnusedLeft", "UnusedRight");
+		parlist = new Array("ScanpointsLength","ScanpointsWidth","Averaging","MarkerWidth","WidthTolerance","ContrastThresholdLow","ContrastThresholdHigh","Profile", "Log", "UnusedLeft", "UnusedRight", "Alwayswrite");
 		markerdata = new Array(parlist.length);
 		for (p = 0; p < parlist.length; p ++) 
 		{
@@ -2137,6 +2137,7 @@ function LoadGDSIIMarkers()
 		GDSmarkertypes[q][6] = Math.ceil((markerdata[3]*1 + markerdata[4]*markerdata[3])*1000);//Profile max
 		GDSmarkertypes[q][7] = "Mode:0,L1:" + markerdata[5] + ",L2:" + markerdata[6] + ",Profile:" + markerdata[7] + ",Min:" + GDSmarkertypes[q][5] + ",Max:" + GDSmarkertypes[q][6] + ",LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:" + markerdata[9]+ ",ZR:" + markerdata[10]+ "";//threshold
 		GDSmarkertypes[q][8] = markerdata[8];
+		GDSmarkertypes[q][8] = markerdata[9]
 	}
 	return GDSmarkertypes;
 }
@@ -2248,7 +2249,7 @@ function LoadWFAlignProcedures()
 					//App.ErrMsg(0,0,markerloadlist)
 					//App.ErrMsg(0,0,qp)
 					//App.ErrMsg(0,0,markerarray[qp])
-     if (SearchArray(markerloadlist,markerarray[qp]) == -1)
+     			if (SearchArray(markerloadlist,markerarray[qp]) == -1)
 					{
 						App.ErrMsg(0,0,"Marker '" + markerarray [qp] + "' in alignprocedure " + loadlist[q] + " not found in Markers.txt" );
 						Abort();
@@ -2403,7 +2404,7 @@ function WriteMatrix(S, i)
 
 function Write(S, i, testmode, starttime) //S-matrix, n-th sample, type of writing (single,multiple..etc), testmode ornot
 {
-	var N, meander, k, j, mj, l61, l61exp, exposure, currentsampletime, awfvars;
+	var N, meander, k, j, mj, l61, l61exp, exposure, currentsampletime, awfvars, donothing;
 	N = WriteMatrix(S, i);
 	meander = 1;
 	for (k = 0; k <= S[3][4][i]-1; k++) // y-direction on sample
@@ -2450,49 +2451,63 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th sample, type of writi
 			{
 				Stage.DriveUV(N[mj+1][k+1][1], N[mj+1][k+1][2]);
 			}
-				InstallGDSmarker(l61[0], k, mj);
+				alwayswrite = InstallGDSmarker(l61[0], k, mj);
 				App.Exec("UnSelectAllExposedLayer()");                      //Deselects al exposed layers
 				CopyLog();
-				if (testmode == 1) 
+
+				if (l61[1] == 1)
 				{
-					if (l61[1] == 1)
-					{
-						App.Exec("SelectExposedLayer(61)");
-					}
-					else if (l61[1] == 2 && k == 0 && mj == 0)
-					{
-						App.Exec("SelectExposedLayer(61)");
-					}
-					else
-					{
-						App.Exec("UnSelectAllExposedLayer()"); 
-					}
+					App.Exec("SelectExposedLayer(61)");
+					App.Exec("Exposure")
 				}
-				else 
+				else if (l61[1] == 2 && k == 0 && mj == 0)
 				{
-					if (l61[1] == 1)
+					App.Exec("SelectExposedLayer(61)");
+					App.Exec("Exposure")
+				}
+				else
+				{
+					App.Exec("UnSelectAllExposedLayer()"); 
+				}
+				//App.ErrMsg(0,0,App.GetFloatVariable("AlignWriteField.AutoMarksFailed"));
+				//App.ErrMsg(0,0,'testmode'+testmode)
+				if (testmode == false)
+				{
+					//App.ErrMsg(0,0,'notestmode')
+					if (l61[1] != -1) // Only L61 is exposed here, the actual patterning is done below
 					{
-						l61exp = 61 + ";" + l61[2];
-      App.Exec("SelectExposedLayer(61)"); 
-  				App.Exec("Exposure");
-					 App.Exec("UnSelectAllExposedLayer()");
-      App.Exec("SelectExposedLayer(" + l61[2] + ")");	
-					}
-					else if (l61[1] == 2 && k == 0 && mj == 0)
-					{
-						l61exp = 61 + ";" + l61[2]; 
-      App.Exec("SelectExposedLayer(61)"); 
-  				App.Exec("Exposure");
-					 App.Exec("UnSelectAllExposedLayer()");
-      App.Exec("SelectExposedLayer(" + l61[2] + ")");	
+   						App.Exec("UnSelectAllExposedLayer()");
+   						App.Exec("SelectExposedLayer(" + l61[2] + ")");	
 					}
 					else
 					{
 						l61exp = l61[2]; 
 						App.Exec("SelectExposedLayer(" + l61exp + ")");	
 					}				
+					// Attempt at fixing 79x mag bug
+					if (Column.Magnification == 79)
+					{
+						App.ErrMsg(0,0,'Warning: Magnification stuck at 79, trying to apply fix now.');
+						Column.SetWriteField(S[1][5][i], false);
+					}
+					if (Column.Magnification == 79)
+					{
+						App.ErrMsg(0,0,'Warning: Magnification stuck at 79, fix didnt not work, aboring.');
+						Abort();
+					}
+					// Actual patterning, added alwayswrite for L61
+					//App.ErrMsg(0,0,alwayswrite);
+					//App.ErrMsg(0,0,App.GetFloatVariable("AlignWriteField.AutoMarksFailed"));
+					if (alwayswrite == false && App.GetFloatVariable("AlignWriteField.AutoMarksFailed")>1)
+					{
+						donothing = 1;
+						//App.ErrMsg(0,0,App.GetFloatVariable("AlignWriteField.AutoMarksFailed"));
+					}
+					else
+					{
+						App.Exec("Exposure");
+					}
 				}
-				App.Exec("Exposure");
 				CopyLog();
 				Panicbutton();
 				RemoveGDSlogflag();
