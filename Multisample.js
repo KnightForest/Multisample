@@ -952,7 +952,9 @@ function Load(SDflag)
 			}
 
 			S[10][4][i] = inifile.ReadString("GS", "Markprocedure", "err");
-			wfprocedureloadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
+			wfprocedureload = GAlignprocedures.ReadString("LoadList", "load", "0").replace(/\s/g,'')
+			wfprocedureload = wfprocedureload.replace(/,/g,';');
+			wfprocedureloadlist = wfprocedureload.split(";");
 			if (SearchArray(wfprocedureloadlist,S[10][4][i]) == -1 && S[10][4][i] != -1)
 			{
 				App.ErrMsg(0,0,"Value under 'Markprocedure' not found in Loadlist of Alignprocedures.txt.");
@@ -961,7 +963,8 @@ function Load(SDflag)
 
 			S[12][4][i] = inifile.ReadString("GS", "L61", "err"); 
 			GDSmarkstring = S[12][4][i].split("-");
-			GDSmarklist = GGDSIImarkertypes.ReadString("LoadList", "load", "0");
+			GDSmarklist = GGDSIImarkertypes.ReadString("LoadList", "load", "0").replace(/\s/g,'');
+			GDSmarklist = GDSmarklist.replace(/,/g,';');
 			GDSarray = GDSmarklist.split(";");
 			if (SearchArray(GDSarray, GDSmarkstring[0]) == -1 && S[12][4][i] != -1)
 			{
@@ -1071,7 +1074,9 @@ function Load(SDflag)
 			}
 
 			S[10][4][i] = inifile.ReadString(it, "Markprocedure", "err");
-			wfprocedureloadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
+			wfprocedureload = GAlignprocedures.ReadString("LoadList", "load", "0").replace(/\s/g,'')
+			wfprocedureload = wfprocedureload.replace(/,/g,';');
+			wfprocedureloadlist = wfprocedureload.split(";");
 			if (SearchArray(wfprocedureloadlist,S[10][4][i]) == -1 && S[10][4][i] != -1)
 			{
 				App.ErrMsg(0,0,"Value under 'Markprocedure' for sample " + i + " not found in Loadlist of Alignprocedures.txt.");
@@ -1080,7 +1085,8 @@ function Load(SDflag)
 
 			S[12][4][i] = inifile.ReadString(it, "L61", "err"); 
 			GDSmarkstring = S[12][4][i].split("-");
-			GDSmarklist = GGDSIImarkertypes.ReadString("LoadList", "load", "0");
+			GDSmarklist = GGDSIImarkertypes.ReadString("LoadList", "load", "0").replace(/\s/g,'');
+			GDSmarklist = GDSmarklist.replace(/,/g,';');
 			GDSarray = GDSmarklist.split(";");
 			if (SearchArray(GDSarray, GDSmarkstring[0]) == -1 && S[12][4][i] != -1)
 			{
@@ -1323,7 +1329,9 @@ function CollectSD(st, GUIflag)
 			{
 				if (S134 ==  1 || S134 == 2 )
 				{
-					wfprocedureloadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
+					wfprocedureload = GAlignprocedures.ReadString("LoadList", "load", "0").replace(/\s/g,'')
+					wfprocedureload = wfprocedureload.replace(/,/g,';');
+					wfprocedureloadlist = wfprocedureload.split(";");
 					S104 = App.InputMsg("Select rough WF align scanmark procedure", "Select: " + wfprocedureloadlist, wfprocedureloadlist[0]);
 					if (S104 == "") 
 					{
@@ -1357,8 +1365,8 @@ function CollectSD(st, GUIflag)
 					Abort();
 				}
 				Panicbutton();
-				GDSmarklist = GGDSIImarkertypes.ReadString("LoadList", "load", "0");
-				
+				GDSmarklist = GGDSIImarkertypes.ReadString("LoadList", "load", "0").replace(/\s/g,'');
+				GDSmarklist = GDSmarklist.replace(/,/g,';');
 				check = -1;
 				while (check != 1)
 				{
@@ -1404,7 +1412,7 @@ function CollectSD(st, GUIflag)
 				if (App.ErrMsg(4,0,"Do you want to write other layers in a global alignment?")==EA_YES)
 				{
 					S14 = App.InputMsg("Choose layers", "Select (separate by ';') ", "0");
-					S14 = S14.replace(",",";");
+					S14 = S14.replace(/,/g,';');
 					if (S14 == "") 
 					{
 						Logdata();
@@ -1421,7 +1429,7 @@ function CollectSD(st, GUIflag)
 			{
 				S124 = -1;
 				S14 = App.InputMsg("Choose layers", "Select layers to write (separate by ';') ", "0");
-				S14 = S14.replace(",",";");
+				S14 = S14.replace(/,/g,';');
 				if (S14 == "") 
 				{
 					Logdata();
@@ -2111,7 +2119,9 @@ function InstallWFAlign(threshold) //Installs markerproperties into systems Scan
 function LoadGDSIIMarkers()
 {
 	var GDSmarkertypes, loadlist, q, p, parlist, markerdata;
-	loadlist = GGDSIImarkertypes.ReadString("LoadList", "load", "0").split(";");
+	load = GGDSIImarkertypes.ReadString("LoadList", "load", "0").replace(/\s/g,'');
+	load = load.replace(/,/g,';');
+	loadlist = load.split(";");
 	GDSmarkertypes = createArray(loadlist.length,20);
 	for (q = 0; q < loadlist.length; q ++) 
 	{
@@ -2145,7 +2155,9 @@ function LoadGDSIIMarkers()
 function LoadMarkers()
 {
 	var Markertypes, loadlist, q, p, parlist, markerdata;
-	loadlist = GMarkertypes.ReadString("LoadList", "load", "0").split(";");
+	load = GMarkertypes.ReadString("LoadList", "load", "0").replace(/\s/g,'');
+	load = load.replace(/,/g,';');
+	loadlist = load.split(";");
 	Markertypes = createArray(loadlist.length,20);
 
 	for (q = 0; q < loadlist.length; q ++) 
@@ -2162,28 +2174,31 @@ function LoadMarkers()
     			Abort();
 			}
 		}
+		minstepsize_um = parseFloat(App.GetVariable("VARIABLES.MetricStepX"))
+		markerdata[6] = minstepsize_um*(Math.ceil(markerdata[6]/minstepsize_um))
+		markerdata[7] = minstepsize_um*(Math.ceil(markerdata[7]/minstepsize_um))
 		Markertypes[q][0] = loadlist[q]; 
 		Markertypes[q][1] = markerdata[0]; //Upos
 		Markertypes[q][2] = markerdata[1]; //Vpos
 		Markertypes[q][3] = markerdata[6]; //SizeU (actually ScanLength)
 		Markertypes[q][4] = markerdata[7]; //SizeV (actually ScanWidth)
 
-		if (markerdata[6]*markerdata[8]/App.GetVariable("Beamcontrol.MetricBasicStepSize") >= 4080) //StepU
+		if (markerdata[6]*markerdata[8]/minstepsize_um >= 4080) //StepU
 		{
-			Markertypes[q][5] = Math.ceil((markerdata[6]/4080)/App.GetVariable("Beamcontrol.MetricBasicStepSize"))*App.GetVariable("Beamcontrol.MetricBasicStepSize");
+			Markertypes[q][5] = Math.ceil((markerdata[6]/4080)/minstepsize_um)*minstepsize_um;
 		}
 		else
 		{
-			Markertypes[q][5] = Math.ceil(App.GetVariable("Beamcontrol.MetricBasicStepSize")/(markerdata[8]*App.GetVariable("Beamcontrol.MetricBasicStepSize")))*App.GetVariable("Beamcontrol.MetricBasicStepSize");
+			Markertypes[q][5] = Math.ceil(minstepsize_um/(markerdata[8]*minstepsize_um))*minstepsize_um;
 		
 		}
-		if (markerdata[7]*markerdata[8]/App.GetVariable("Beamcontrol.MetricBasicStepSize") >= 4080) //StepV
+		if (markerdata[7]*markerdata[8]/minstepsize_um >= 4080) //StepV
 		{
-			Markertypes[q][6] = Math.ceil((markerdata[7]/4080)/App.GetVariable("Beamcontrol.MetricBasicStepSize"))*App.GetVariable("Beamcontrol.MetricBasicStepSize");
+			Markertypes[q][6] = Math.ceil((markerdata[7]/4080)/minstepsize_um)*minstepsize_um;
 		}
 		else
 		{
-			Markertypes[q][6] = Math.ceil(App.GetVariable("Beamcontrol.MetricBasicStepSize")/(markerdata[8]*App.GetVariable("Beamcontrol.MetricBasicStepSize")))*App.GetVariable("Beamcontrol.MetricBasicStepSize");
+			Markertypes[q][6] = Math.ceil(minstepsize_um/(markerdata[8]*minstepsize_um))*minstepsize_um;
 		}
 		Markertypes[q][7] = parseInt(markerdata[6]/Markertypes[q][5]); //PointsU
 		Markertypes[q][8] = parseInt(markerdata[7]/Markertypes[q][6]); //PointsV
@@ -2224,12 +2239,16 @@ function LoadMarkers()
 function LoadWFAlignProcedures() 
 {
 	var loadlist, Alignprocedures, q, p, entries, markerstring;
-	loadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
+	load = GAlignprocedures.ReadString("LoadList", "load", "0").replace(/\s/g,'')
+	load = load.replace(/,/g,';');
+	loadlist = load.split(";");
 	Alignprocedures = createArray(loadlist.length,20);
 
 	for (q = 0; q < loadlist.length; q ++) 
 	{
-		entries = GAlignprocedures.ReadSection(loadlist[q]).split(",");
+		entr = GAlignprocedures.ReadSection(loadlist[q]).replace(/\s/g,'')
+		entr = entr.replace(/,/g,';');
+		entries = entr.split(";");
 		if (entries[entries.length-2] != "log" || entries[entries.length-1] != "alwayswrite")
 		{
     		App.ErrMsg(0,0,"Align procedure '" + loadlist[q] + "' not configured properly. Add 'log' and 'alwayswrite' switch to Alignprocedures.txt and restart script.");
@@ -2242,10 +2261,14 @@ function LoadWFAlignProcedures()
 			Alignprocedures[q][p+2] = GAlignprocedures.ReadString(loadlist[q], entries[p], "undefined");
 			if (p < entries.length-2)
 			{
-				markerarray = Alignprocedures[q][p+2].split(";");
+				alignproc = Alignprocedures[q][p+2].replace(/\s/g,'')
+				alignproc = alignproc.replace(/,/g,';');
+				markerarray = alignproc.split(";");
 				for (qp = 0; qp < markerarray.length; qp++)
 				{
-					markerloadlist = GMarkertypes.ReadString("LoadList", "load", "0").split(";");
+					mll = GMarkertypes.ReadString("LoadList", "load", "0").replace(/\s/g,'')
+					mll = mll.replace(/,/g,';');
+					markerloadlist = mll.split(";");
 					//App.ErrMsg(0,0,markerloadlist)
 					//App.ErrMsg(0,0,qp)
 					//App.ErrMsg(0,0,markerarray[qp])
@@ -2323,7 +2346,9 @@ function AlignWF(markprocedure, logWFflag, i, j, k) //Main function to start aut
 		//App.ErrMsg(0,0,WFAlignprocedures[b][engtries+1])
 		for (c = 0; c < entries-2; c++)
 		{
-			markers = WFAlignprocedures[b][c+2].split(";");
+			mark = WFAlignprocedures[b][c+2].replace(/\s/g,'')
+			mark = mark.replace(/,/g,';');
+			markers = mark.split(";");
 			logstring = " ";
 
 			for (d = 0; d < markers.length; d++)
@@ -2492,7 +2517,7 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th sample, type of writi
 					}
 					if (Column.Magnification == 79)
 					{
-						App.ErrMsg(0,0,'Warning: Magnification stuck at 79, fix didnt not work, aboring.');
+						App.ErrMsg(0,0,'Warning: Magnification stuck at 79, fix didnt not work, aborting.');
 						Abort();
 					}
 					// Actual patterning, added alwayswrite for L61
@@ -2573,7 +2598,9 @@ function WFOverpattern(instswitch)
 function FirstWFAlign()
 {
     var wfprocedureloadlist, markprocedure;
-    wfprocedureloadlist = GAlignprocedures.ReadString("LoadList", "load", "0").split(";");
+    wfprocedureload = GAlignprocedures.ReadString("LoadList", "load", "0").replace(/\s/g,'')
+	wfprocedureload = wfprocedureload.replace(/,/g,';');
+	wfprocedureloadlist = wfprocedureload.split(";");
     markprocedure = App.InputMsg("Select AutoWFAlign scan procedure", "Select: " + wfprocedureloadlist, wfprocedureloadlist[0]);
 	AlignWF(markprocedure, 0, 1, 1, 1);
 }
