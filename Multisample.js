@@ -2023,6 +2023,7 @@ function Install(restoreflag)
 		fso.CopyFile(Glib + "AlignWForg\\AlignWFAuto.js", p2, true);
 		App.SetVariable("ScanManager.LaserStage", "OFF")
 		App.Exec("ResetModule(Scan Manager)");
+		Fixbacklash(true)
 	}
 	else
 	{
@@ -2380,6 +2381,7 @@ function SetSvars(i, WFflag, msflag) //msflag?
 	{
 		Column.SetWriteField(S[1][5][i], true);	
 	}
+	Fixbacklash(false) //This prevents the 'stuck on 79 magnification' bug
 	ActivateColdata(S[2][5][i]);
 	App.Exec("OpenDatabase(" + S[3][5][i] + ")");
 	App.Exec("ViewStructure(" + S[4][5][i] + ")");
@@ -2509,17 +2511,6 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th sample, type of writi
 						l61exp = l61[2]; 
 						App.Exec("SelectExposedLayer(" + l61exp + ")");	
 					}				
-					// Attempt at fixing 79x mag bug
-					if (Column.Magnification == 79)
-					{
-						App.ErrMsg(0,0,'Warning: Magnification stuck at 79, trying to apply fix now.');
-						Column.SetWriteField(S[1][5][i], false);
-					}
-					if (Column.Magnification == 79)
-					{
-						App.ErrMsg(0,0,'Warning: Magnification stuck at 79, fix didnt not work, aborting.');
-						Abort();
-					}
 					// Actual patterning, added alwayswrite for L61
 					//App.ErrMsg(0,0,alwayswrite);
 					//App.ErrMsg(0,0,App.GetFloatVariable("AlignWriteField.AutoMarksFailed"));
@@ -2703,6 +2694,24 @@ function SaveColumnparam(col)
 	coldatini.WriteString(col[0][0], "HighTension", col[7][0]);
 }	
 
+function Fixbacklash(resetflag)
+{
+	if (resetflag == true)
+	{
+		App.SetVariable('Microscope.FocusBacklashposition','1.0');
+		App.Exec("ResetModule(Writefield Manager)");
+	}
+	if (parseFloat(S[1][5][i])>500 || parseFloat(S[1][5][i])<=1000) //Check if WF size if larger than 500
+	{
+		App.SetVariable('Microscope.FocusBacklashposition','10.0');
+		App.Exec("ResetModule(Writefield Manager)");
+	}
+	if (parseFloat(S[1][5][i])>1000) //Check if WF size if larger than 500
+	{
+		App.SetVariable('Microscope.FocusBacklashposition','19.0');
+		App.Exec("ResetModule(Writefield Manager)");
+	}
+}
 function Start()
 {
 	var GUIflag, beamoffflag, testmode, starttime;
