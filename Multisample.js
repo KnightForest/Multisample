@@ -1358,7 +1358,7 @@ function CollectSD(st, GUIflag)
 			if (App.ErrMsg(4,0,"Use fine WF alignment using L61 GDSII auto linescans?")==EA_YES)
 			{
 				tl = App.InputMsg("Select layer", "Select layer(s) to use together with layer 61 (separate by ';')","");
-				tl = tl.replace(",", ";");
+				tl = tl.replace(/,/g,';');
 				if (tl == "") 
 				{
 					Logdata();
@@ -2014,7 +2014,9 @@ function Install(restoreflag)
 		fso.CreateFolder(Gfilepath);
 	}
 	p1 = ExpandPath("%userroot%\\Record\\ScanMacros\\");
+	p2 = ExpandPath("%userroot%\\Script\\");
 	fso.CopyFile(Glib + "Multisample WF align.rec", p1, true);
+	fso.CopyFile(Glib + "BeginPatterning.js", p2, true);
 	p2 = ExpandPath("%root%\\Lib\\System\\");
 	if (restoreflag == 1)
 	{
@@ -2068,6 +2070,7 @@ function InstallGDSmarker(markertype, k, mj) //Installs GDSII marker properties 
 		scanini.WriteString("Automatic procedure during exposure", parlist[q], par);
 	}
 	scanini.WriteString("Interact", "log", GDSmarkertypes[m][8]);
+	scanini.WriteString("Interact", "alwayswrite", GDSmarkertypes[m][9]);
 	scanini.WriteString("Interact", "path", Gfilepath);
 	scanini.WriteString("Interact", "logfile", Glogfilename[1] + Gprogressfilename);
 	scanini.WriteString("Interact", "sample_n", i);
@@ -2087,8 +2090,44 @@ function InstallGDSmarker(markertype, k, mj) //Installs GDSII marker properties 
         iniTest.DeleteKey("Threshold", "Align write field"); 
         iniTest.WriteString("Threshold", "Align write field", GDSmarkertypes[m][7]);//The new values are entered from string 'threshold'  
     }
-    return GDSmarkertypes[m][9] //return alwayswrite parameter
 }
+
+function LoadGDSIIMarkers()
+{
+	var GDSmarkertypes, loadlist, q, p, parlist, markerdata;
+	load = GGDSIImarkertypes.ReadString("LoadList", "load", "0").replace(/\s/g,'');
+	load = load.replace(/,/g,';');
+	loadlist = load.split(";");
+	GDSmarkertypes = createArray(loadlist.length,20);
+	for (q = 0; q < loadlist.length; q ++) 
+	{
+		parlist = new Array("ScanpointsLength","ScanpointsWidth","Averaging","MarkerWidth","WidthTolerance","ContrastThresholdLow","ContrastThresholdHigh","Profile", "UnusedLeft", "UnusedRight", "Log", "Alwayswrite");
+		markerdata = new Array(parlist.length);
+		for (p = 0; p < parlist.length; p ++) 
+		{
+			markerdata[p] = GGDSIImarkertypes.ReadFloat(loadlist[q], parlist[p], -9999);
+
+			if (markerdata[p] == -9999) 
+			{
+    			App.ErrMsg(0,0,"Markertype '" + loadlist[q] + "' not configured properly. Check Markers.txt and restart script.");
+    			Abort();
+			}
+			markerdata[p] = markerdata[p].toString();
+		}
+		GDSmarkertypes[q][0] = loadlist[q]; 
+		GDSmarkertypes[q][1] = markerdata[0]; //ScanpointsLength
+		GDSmarkertypes[q][2] = markerdata[1]; //ScanpointsWidth
+		GDSmarkertypes[q][3] = markerdata[2]; //Averaging
+		GDSmarkertypes[q][4] = markerdata[3]; //Markerwidth
+		GDSmarkertypes[q][5] = Math.ceil((markerdata[3]*1 - markerdata[4]*markerdata[3])*1000);//Profile min
+		GDSmarkertypes[q][6] = Math.ceil((markerdata[3]*1 + markerdata[4]*markerdata[3])*1000);//Profile max
+		GDSmarkertypes[q][7] = "Mode:0,L1:" + markerdata[5] + ",L2:" + markerdata[6] + ",Profile:" + markerdata[7] + ",Min:" + GDSmarkertypes[q][5] + ",Max:" + GDSmarkertypes[q][6] + ",LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:" + markerdata[8]+ ",ZR:" + markerdata[9]+ "";//threshold
+		GDSmarkertypes[q][8] = markerdata[10];
+		GDSmarkertypes[q][9] = markerdata[11];
+	}
+	return GDSmarkertypes;
+}
+
 
 function InstallWFAlign(threshold) //Installs markerproperties into systems Scan.ini, called from AutoWFAlign
 {	
@@ -2115,42 +2154,6 @@ function InstallWFAlign(threshold) //Installs markerproperties into systems Scan
     }
 	
 	App.Exec("ResetModule(Scan Manager)");
-}
-
-function LoadGDSIIMarkers()
-{
-	var GDSmarkertypes, loadlist, q, p, parlist, markerdata;
-	load = GGDSIImarkertypes.ReadString("LoadList", "load", "0").replace(/\s/g,'');
-	load = load.replace(/,/g,';');
-	loadlist = load.split(";");
-	GDSmarkertypes = createArray(loadlist.length,20);
-	for (q = 0; q < loadlist.length; q ++) 
-	{
-		parlist = new Array("ScanpointsLength","ScanpointsWidth","Averaging","MarkerWidth","WidthTolerance","ContrastThresholdLow","ContrastThresholdHigh","Profile", "Log", "UnusedLeft", "UnusedRight", "Alwayswrite");
-		markerdata = new Array(parlist.length);
-		for (p = 0; p < parlist.length; p ++) 
-		{
-			markerdata[p] = GGDSIImarkertypes.ReadFloat(loadlist[q], parlist[p], -9999);
-
-			if (markerdata[p] == -9999) 
-			{
-    			App.ErrMsg(0,0,"Markertype '" + loadlist[q] + "' not configured properly. Check Markers.txt and restart script.");
-    			Abort();
-			}
-			markerdata[p] = markerdata[p].toString();
-		}
-		GDSmarkertypes[q][0] = loadlist[q]; 
-		GDSmarkertypes[q][1] = markerdata[0]; //ScanpointsLength
-		GDSmarkertypes[q][2] = markerdata[1]; //ScanpointsWidth
-		GDSmarkertypes[q][3] = markerdata[2]; //Averaging
-		GDSmarkertypes[q][4] = markerdata[3]; //Markerwidth
-		GDSmarkertypes[q][5] = Math.ceil((markerdata[3]*1 - markerdata[4]*markerdata[3])*1000);//Profile min
-		GDSmarkertypes[q][6] = Math.ceil((markerdata[3]*1 + markerdata[4]*markerdata[3])*1000);//Profile max
-		GDSmarkertypes[q][7] = "Mode:0,L1:" + markerdata[5] + ",L2:" + markerdata[6] + ",Profile:" + markerdata[7] + ",Min:" + GDSmarkertypes[q][5] + ",Max:" + GDSmarkertypes[q][6] + ",LFL:0,RFL:1,LNo:1,RNo:1,LeftE:0.5,RightE:0.5,DIS:0,ZL:" + markerdata[9]+ ",ZR:" + markerdata[10]+ "";//threshold
-		GDSmarkertypes[q][8] = markerdata[8];
-		GDSmarkertypes[q][8] = markerdata[9]
-	}
-	return GDSmarkertypes;
 }
 
 function LoadMarkers()
@@ -2463,7 +2466,7 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th sample, type of writi
 			{
 				l61 = S[12][4][i].split("-");
 				CopyLog();
-				if (S[13][4][i] == 1)
+				if (S[13][4][i] == 1) //Checks if a rough stage alignment should be performed first.
 				{
 					AlignWF(S[10][4][i], 1, i, mj, k);
 				}	
@@ -2471,59 +2474,30 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th sample, type of writi
 				{	
 					AlignWF(S[10][4][i], 1, i, mj, k);
 				}
-			tolerance = 0.0005;			
-			scu = parseFloat(Stage.U);
-			scv = parseFloat(Stage.V);
-			if (Math.abs(scu)>tolerance || Math.abs(scv)>tolerance)
-			{
-				Stage.DriveUV(N[mj+1][k+1][1], N[mj+1][k+1][2]);
-			}
-				alwayswrite = InstallGDSmarker(l61[0], k, mj);
+				tolerance = 0.0005;	//5 um stage drive		
+				scu = parseFloat(Stage.U);
+				scv = parseFloat(Stage.V);
+				if (Math.abs(scu)>tolerance || Math.abs(scv)>tolerance)
+				{
+					Stage.DriveUV(N[mj+1][k+1][1], N[mj+1][k+1][2]);
+				}
 				App.Exec("UnSelectAllExposedLayer()");                      //Deselects al exposed layers
 				CopyLog();
 
 				if (l61[1] == 1)
 				{
 					App.Exec("SelectExposedLayer(61)");
-					App.Exec("Exposure")
 				}
 				else if (l61[1] == 2 && k == 0 && mj == 0)
 				{
 					App.Exec("SelectExposedLayer(61)");
-					App.Exec("Exposure")
 				}
-				else
-				{
-					App.Exec("UnSelectAllExposedLayer()"); 
-				}
-				//App.ErrMsg(0,0,App.GetFloatVariable("AlignWriteField.AutoMarksFailed"));
-				//App.ErrMsg(0,0,'testmode'+testmode)
 				if (testmode == false)
 				{
-					//App.ErrMsg(0,0,'notestmode')
-					if (l61[1] != -1) // Only L61 is exposed here, the actual patterning is done below
-					{
-   						App.Exec("UnSelectAllExposedLayer()");
-   						App.Exec("SelectExposedLayer(" + l61[2] + ")");	
-					}
-					else
-					{
-						l61exp = l61[2]; 
-						App.Exec("SelectExposedLayer(" + l61exp + ")");	
-					}				
-					// Actual patterning, added alwayswrite for L61
-					//App.ErrMsg(0,0,alwayswrite);
-					//App.ErrMsg(0,0,App.GetFloatVariable("AlignWriteField.AutoMarksFailed"));
-					if (alwayswrite == false && App.GetFloatVariable("AlignWriteField.AutoMarksFailed")>1)
-					{
-						donothing = 1;
-						//App.ErrMsg(0,0,App.GetFloatVariable("AlignWriteField.AutoMarksFailed"));
-					}
-					else
-					{
-						App.Exec("Exposure");
-					}
-				}
+   					App.Exec("SelectExposedLayer(" + l61[2] + ")");	
+				}			
+				
+				App.Exec("Exposure");
 				CopyLog();
 				Panicbutton();
 				RemoveGDSlogflag();

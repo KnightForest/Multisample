@@ -68,7 +68,8 @@ function PreciseRound(num, decimals)
 
 p3 = ExpandPath("%userroot%\\System\\");
 scanini = App.OpenIniFile(p3 + "Scan.ini");
-logflag = scanini.ReadString("Interact","log","0");
+logflag = scanini.ReadString("Interact","log","1");
+alwayswriteflag = scanini.ReadString("Interact","alwayswrite","1");
 logpath = scanini.ReadString("Interact","logfile", "");
 //Gfilepath = scanini.ReadString("Interact", "path", "")
 i = scanini.ReadString("Interact", "sample_n", "");
@@ -83,5 +84,7 @@ if (logflag == 1)
 	vcoord = parseInt(ny)+1;
 	dinges.WriteString("Failed GDSII markers S" + i, "Structure nx/ny[" + ucoord + ";" + vcoord +  "] - Local Stage Coord[" + su + ";" + sv + "]", AutoMarksFailed);
 }
-
-
+if (alwayswriteflag == 0 && AutoMarksStored < 3)
+{
+	App.Exec("UnSelectAllExposedLayer()"); 
+}
