@@ -2481,6 +2481,7 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th sample, type of writi
 				{
 					Stage.DriveUV(N[mj+1][k+1][1], N[mj+1][k+1][2]);
 				}
+				InstallGDSmarker(l61[0], k, mj);
 				App.Exec("UnSelectAllExposedLayer()");                      //Deselects al exposed layers
 				CopyLog();
 
