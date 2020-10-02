@@ -1219,7 +1219,7 @@ function CollectSD(st, GUIflag)
 	var GDSmarklist, GDSmark;
 	check = -1;
 	collectinguvflag = 1;
-	Gnums = App.InputMsg("Select amount of UV alignments (one additional alignment requirement per column change)", "Select a number 1-99", "1");
+	Gnums = App.InputMsg("Select number of UV alignments (i.e. for different chips or column settings)", "Select a number 1-99", "1");
 	if (Gnums == "") Abort();
     S = createArray(99,7,Gnums+1);
 
@@ -1305,7 +1305,7 @@ function CollectSD(st, GUIflag)
 			check = -1;
 			while (check != 1)			
 			{
-				S134 = App.Inputmsg("Select type of rough WF alignment","1: All structures, 2: First structure per sample, 3: Manual per sample, 4: No alignment", "1");
+				S134 = App.Inputmsg("Select rough (stage based) alignment","1: All structures, 2: First structure per sample, 3: Manual per sample, 4: No alignment", "1");
 				Panicbutton();
 				if (S134 == "") 
 				{
@@ -1332,7 +1332,7 @@ function CollectSD(st, GUIflag)
 					wfprocedureload = GAlignprocedures.ReadString("LoadList", "load", "0").replace(/\s/g,'')
 					wfprocedureload = wfprocedureload.replace(/,/g,';');
 					wfprocedureloadlist = wfprocedureload.split(";");
-					S104 = App.InputMsg("Select rough WF align scanmark procedure", "Select: " + wfprocedureloadlist, wfprocedureloadlist[0]);
+					S104 = App.InputMsg("Select rough (stage based) WF align scanmark procedure", "Select: " + wfprocedureloadlist, wfprocedureloadlist[0]);
 					if (S104 == "") 
 					{
 						Logdata();
@@ -1585,7 +1585,7 @@ function CollectSD(st, GUIflag)
 				check = -1;
 				while (check != 1)
 				{
-					S86 = App.InputMsg("Writefield overpattern (only used in global alignment)", "Percentage of overpattern (prevents stitching errors, recommended values 0-0.5)", "0.0");
+					S86 = App.InputMsg("Writefield overpattern (only use when stitching WFs)", "Percentage of overpattern (prevents stitching errors, recommended 0-0.5)", "0.0");
 					if (S86 == "") 
 					{
 						Logdata();
@@ -2736,7 +2736,8 @@ function Start()
 		if (st!=1 && st!=2 && st!=3) Abort();  
 		if (st == 1 || st == 2)	
 		{
-			GUIflag = App.InputMsg("Select data aquiring procedure","1: Easy automatic collection during UV alignment, 2: Manual collection using GUI","1");
+			//GUIflag = App.InputMsg("Select data aquiring procedure","1: Easy automatic collection during UV alignment, 2: Manual collection using GUI","1");
+			GUIflag = 1;
 			if (GUIflag == "") Abort();
 			S = CollectSD(st, GUIflag);
 		}
