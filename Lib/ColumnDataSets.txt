@@ -64,11 +64,11 @@ Magnification=80
 HighTension=30
 [30 kV; 30 um aperture]
 Aperture=30
-ApertureShiftX=-2.99
-ApertureShiftY=1.52
-StigmatorShiftX=1.396
-StigmatorShiftY=1.388
-Magnification=79
+ApertureShiftX=-1.76
+ApertureShiftY=-7.9
+StigmatorShiftX=4.973
+StigmatorShiftY=2.045
+Magnification=600
 HighTension=30
 [test]
 Aperture=10

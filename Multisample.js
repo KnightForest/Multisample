@@ -2016,7 +2016,7 @@ function Install(restoreflag)
 	p1 = ExpandPath("%userroot%\\Record\\ScanMacros\\");
 	p2 = ExpandPath("%userroot%\\Script\\");
 	fso.CopyFile(Glib + "Multisample WF align.rec", p1, true);
-	fso.CopyFile(Glib + "BeginPatterning.js", p2, true);
+	fso.CopyFile(Glib + "EndPLSScan.js", p2, true);
 	p2 = ExpandPath("%root%\\Lib\\System\\");
 	if (restoreflag == 1)
 	{

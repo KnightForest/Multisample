@@ -1,8 +1,8 @@
 //-------------------------------------------------------------------
-//    SCRIPT NAME:      BeginPatterning.js
+//    SCRIPT NAME:      EndPLSScan.js
 //    VERSION:          6.00
-//    FUNCTIONALITY:    running before an exposure
+//    FUNCTIONALITY:    running after PLS scan
 //-------------------------------------------------------------------
 
 // place your commands below
-Column.Extern()
+Column.Extern();
