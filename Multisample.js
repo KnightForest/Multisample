@@ -1857,7 +1857,7 @@ function GetUVWF()
 		}
 		
 		//WriteWFData
-		GUVini.WriteString("Sx", "WF", S[1][5][1] + "");
+		//GUVini.WriteString("Sx", "WF", S[1][5][1] + "");
 		GUVini.WriteString("Sx", "WFZoomU", S[5][5][1] + "");
 		GUVini.WriteString("Sx", "WFZoomV", S[6][5][1] + "");
 		GUVini.WriteString("Sx", "WFShiftU", S[7][5][1] + "");
@@ -2020,7 +2020,7 @@ function Install(restoreflag)
 	p2 = ExpandPath("%root%\\Lib\\System\\");
 	if (restoreflag == 1)
 	{
-		App.SetVariable("Exposure.SingleField", "ON") //Software needs restart for option to work.
+		//App.SetVariable("Exposure.SingleField", "ON") //Software needs restart for option to work.
 		//App.SetVariable("JoinElements.DosePercent", "10")
 		fso.CopyFile(Glib + "AlignWForg\\AlignWFAuto.js", p2, true);
 		App.SetVariable("ScanManager.LaserStage", "OFF")
