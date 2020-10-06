@@ -48,9 +48,9 @@ var Gfilepath = ExpandPath("%userroot%\Script\\" + Gsn + "\\");
 var Glogfilename = createArray(3);
 Glogfilename[1] = Gfilepath + "Logs\\";
 var Gdatesp = GetLogDate();
-Glogfilename[2] = Gdatesp + " " + App.GetVariable("Variables.LastUser") + " Log.txt";
+Glogfilename[2] = ""//Gdatesp + " " + App.GetVariable("Variables.LastUser") + " Log.txt";
 var Gprogressfilename = [];
-Gprogressfilename = Gdatesp + " " +  App.GetVariable("Variables.LastUser") + " Progress.txt";
+Gprogressfilename = ""//Gdatesp + " " +  App.GetVariable("Variables.LastUser") + " Progress.txt";
 var Glib = Gfilepath + "\\Lib\\";
 var Gsampleini = App.OpenInifile(Gfilepath + "Multisample.txt");
 var GSDini = App.OpenInifile(Gfilepath + "SDvars.txt");
@@ -1240,11 +1240,24 @@ function CollectSD(st, GUIflag)
 			if (st == 1) App.Errmsg(0,0, "Enter data for all used samples in the following dialogue boxes.");
 			if (st == 2) App.Errmsg(0,0, "Enter data for " + it + " in the following dialogue boxes.");
 			Panicbutton();
-			S84 = App.InputMsg("Sample name","Enter name for sample(s) (for log)","");
-			if (S84 == "") 
+			check = -1;
+			while (check != 1)	
 			{
-				Logdata();
-				Abort();
+				S84 = App.InputMsg("Sample name","Enter name for sample(s) (for log)","");
+				if (S84 == "") 
+				{
+					App.ErrMsg(0,0,"Please enter sample name")
+					check = -1
+				}
+				else if (S84.length > 30)
+				{
+					App.ErrMsg(0,0,"Sample name too long, restricted to 30 chars.")
+					check = -1
+				}
+				else
+				{
+					check = 1
+				}
 			}
 			if (GUIflag == 2)
 			{
@@ -1391,7 +1404,8 @@ function CollectSD(st, GUIflag)
 				check = -1;
 				while (check == -1)
 				{
-					GDSproc = App.InputMsg("Select GDSII procedure when stitching", "Choose: '1' for scanning all writefields, '2' for scanning only the first.", "1");
+					//GDSproc = App.InputMsg("Select GDSII procedure when stitching", "Choose: '1' for scanning all writefields, '2' for scanning only the first.", "1");
+					GDSproc = 1;
 					if (GDSproc == "")
 					{
 						Logdata();
@@ -1873,6 +1887,9 @@ function Logdata()
 	var Glogini, it, j; 
 
 	st = S[9][4][1];
+	Glogfilename[2] = Gdatesp + " " + App.GetVariable("Variables.LastUser") + " Log " + S[8][4][1] + ".txt";
+	//var Gprogressfilename = [];
+	Gprogressfilename = Gdatesp + " " +  App.GetVariable("Variables.LastUser") + " Progress " + S[8][4][1] + ".txt";
     Glogini = App.OpenInifile(Glogfilename[1] + Glogfilename[2]);
 	Glogini.WriteString("GS","Procedure", S[9][4][1]);
 	Glogini.WriteString("GS","n-Samples", S[11][4][1]);
