@@ -2452,6 +2452,7 @@ function WriteMatrix(S, i)
 function Write(S, i, testmode, starttime) //S-matrix, n-th sample, type of writing (single,multiple..etc), testmode ornot
 {
 	var N, meander, k, j, mj, l61, l61exp, exposure, currentsampletime, awfvars, donothing;
+	Stage.JoystickEnabled = False; 
 	N = WriteMatrix(S, i);
 	meander = 1;
 	for (k = 0; k <= S[3][4][i]-1; k++) // y-direction on sample
