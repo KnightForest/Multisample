@@ -43,7 +43,7 @@
 
 var Gsn = "Multisample";
 var Gsharedfolder = "\\\\131.152.108.94\\meso-share\\Group\\Elphy_Multisample_Logs";
-//var Gsharedfolder = "\\\\phys-mekhong.physik.unibas.ch\\meso-share\\Group\\Elphy_Multisample_Logs";
+//var Gsharedfolder = "\\\\131.152.108.94\\meso-share\\Group\\Elphy_Multisample_Logs";
 //var Gsnl = parseInt(Gsn.length, 8);
 var Gfilepath = ExpandPath("%userroot%\Script\\" + Gsn + "\\");
 var Glogfilename = createArray(3);
@@ -1303,7 +1303,7 @@ function CollectSD(st, GUIflag)
 				var cce = CheckColumnExists(S25);
 				if (cce == -1)
 				{
-					App.ErrMsg(0,0,"Error 'ColMode' in 'GS' does not exist, check /Lib/Columndatasets.txt");
+					App.ErrMsg(0,0,"Error 'ColMode' does not exist, check /Lib/Columndatasets.txt");
 					Abort();
 				}
 
@@ -2019,7 +2019,7 @@ function AlignUV(i)
 
 function Install(restoreflag)
 {
-	var fso, p1 , p2;
+	var fso, p1, p2, p3;
 	GenerateBatchFile();
 	//App.Exec("SetLaserStageCtrl(LASER)"); //Turn on laser stage control, just to be sure, not for Elphy unfortunately :*(
 	App.SetVariable("Automation/Links.0",Gfilepath + Gsn + ".js");
@@ -2033,23 +2033,24 @@ function Install(restoreflag)
 	}
 	p1 = ExpandPath("%userroot%\\Record\\ScanMacros\\");
 	p2 = ExpandPath("%userroot%\\Script\\");
+	p3 = ExpandPath("%root%\\Lib\\System\\");
 	fso.CopyFile(Glib + "Multisample WF align.rec", p1, true);
-	fso.CopyFile(Glib + "EndPLSScan.js", p2, true);
-	p2 = ExpandPath("%root%\\Lib\\System\\");
+	fso.CopyFile(Glib + "EndPLSScan.js", p3, true);
+
 	if (restoreflag == 1)
 	{
 		//App.SetVariable("Exposure.SingleField", "ON") //Software needs restart for option to work.
 		//App.SetVariable("JoinElements.DosePercent", "10")
-		fso.CopyFile(Glib + "AlignWForg\\AlignWFAuto.js", p2, true);
+		fso.CopyFile(Glib + "AlignWForg\\AlignWFAuto.js", p3, true);
 		App.SetVariable("ScanManager.LaserStage", "OFF")
 		App.Exec("ResetModule(Scan Manager)");
-		Fixbacklash(true)
+		//Fixbacklash(true)
 	}
 	else
 	{
 		App.SetVariable("Exposure.SingleField", "OFF") //Software needs restart for option to work.
 		//App.SetVariable("JoinElements.DosePercent", "20") //Experimental!!
-		fso.CopyFile(Glib + "AlignWFAuto.js", p2, true);
+		fso.CopyFile(Glib + "AlignWFAuto.js", p3, true);
 		App.SetVariable("ScanManager.LaserStage", "ON")
 		App.Exec("ResetModule(Scan Manager)");
 	}
@@ -2620,17 +2621,28 @@ function ActivateColdata(colset)
 		var col = LoadColumnparam(colset)
 		//if (float(col[1][0]) != 7.5)
 		//App.ErrMsg(0,0,"activerendiehandel" + col)
-		Column.ApertureSize = (col[1][0]);
-		Column.ApertureX = (col[2][0]);
-		Column.ApertureY = (col[3][0]);
-		Column.StigmatorX = (col[4][0]);
-		Column.StigmatorY = (col[5][0]);
+		if (Column.ApertureSize != (col[1][0]))
+		{
+			Column.ApertureSize = (col[1][0]);	
+		}
+		if (Column.ApertureX != (col[2][0]))
+		{
+			Column.ApertureSize = (col[2][0]);	
+		}
+		if (Column.ApertureY != (col[3][0]))
+		{
+			Column.ApertureSize = (col[3][0]);	
+		}
+		if (Column.StigmatorX != (col[4][0]))
+		{
+			Column.StigmatorY = (col[5][0]);	
+		}
 		//Column.Magnification = (col[6][0]);
-		if (Column.HighTension != col[7][0])
+		if (Column.HighTension != (col[7][0]))
 		{
 			Column.HighTension = (col[7][0]);
 			Column.HTOnOff = true
-   s = 35; //n-seconds for app to wait for EHT
+   			s = 35; //n-seconds for app to wait for EHT
 			for (n = 0; n <= s; n++)
     		{
     			a = s-n;
