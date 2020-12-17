@@ -42,7 +42,8 @@
 // - nothing atm
 
 var Gsn = "Multisample";
-var Gsharedfolder = "\\\\phys-mekhong.physik.unibas.ch\\meso-share\\Group\\Elphy_Multisample_Logs";
+var Gsharedfolder = "\\\\131.152.108.94\\meso-share\\Group\\Elphy_Multisample_Logs";
+//var Gsharedfolder = "\\\\phys-mekhong.physik.unibas.ch\\meso-share\\Group\\Elphy_Multisample_Logs";
 //var Gsnl = parseInt(Gsn.length, 8);
 var Gfilepath = ExpandPath("%userroot%\Script\\" + Gsn + "\\");
 var Glogfilename = createArray(3);
