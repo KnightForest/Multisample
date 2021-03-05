@@ -739,11 +739,11 @@ function FileExists(filespec)
    return(s);
 }
 
-function OriginCorrection()                                             //-- Sets current location as local origin
+function OriginCorrection(x,y)                                             //-- Sets current location as local origin
 {
    Stage.LocalAlignment();                       //Switch to local UVW
    Stage.ResetAlignment();                  //Delete previous alignments
-   Stage.SetAlignPointUV(1, true, 0, 0);                       //Set UV to 0,0
+   Stage.SetAlignPointUV(1, true, x, y);                       //Set UV to 0,0
    Stage.SetAlignPointXY(1, Stage.X, Stage.Y);                       //Define current location in X and Y as alignment point
    App.SetVariable("Autofocus.MarkValid1", "1");
    App.SetVariable("Autofocus.MarkValid2", "1");
@@ -1220,7 +1220,7 @@ function CollectSD(st, GUIflag)
 	var GDSmarklist, GDSmark;
 	check = -1;
 	collectinguvflag = 1;
-	Gnums = App.InputMsg("Select number of UV alignments (i.e. for different chips or column settings)", "Select a number 1-99", "1");
+	Gnums = App.InputMsg("Select \'n\' 3-point alignments (i.e. multiple samples / column settings)", "Select a number 1-99", "1");
 	if (Gnums == "") Abort();
     S = createArray(99,7,Gnums+1);
 
@@ -1238,21 +1238,21 @@ function CollectSD(st, GUIflag)
 		{
 				
 			//if (mflag == 1) break;
-			if (st == 1) App.Errmsg(0,0, "Enter data for all used samples in the following dialogue boxes.");
-			if (st == 2) App.Errmsg(0,0, "Enter data for " + it + " in the following dialogue boxes.");
+			if (st == 1) App.Errmsg(0,0, "Begin collection of sample parameters..");
+			if (st == 2) App.Errmsg(0,0, "Collect sample parameters for 3-point alignment " + i + " of " + Gnums + "...");
 			Panicbutton();
 			check = -1;
 			while (check != 1)	
 			{
-				S84 = App.InputMsg("Sample name","Enter name for sample(s) (for log)","");
+				S84 = App.InputMsg("Name for sample (or 3-point alignment)","Enter name for log","");
 				if (S84 == "") 
 				{
-					App.ErrMsg(0,0,"Please enter sample name")
+					App.ErrMsg(0,0,"Name cannot be empty")
 					check = -1
 				}
 				else if (S84.length > 30)
 				{
-					App.ErrMsg(0,0,"Sample name too long, restricted to 30 chars.")
+					App.ErrMsg(0,0,"Name too long, restricted to 30 chars.")
 					check = -1
 				}
 				else
@@ -1319,14 +1319,14 @@ function CollectSD(st, GUIflag)
 			check = -1;
 			while (check != 1)			
 			{
-				S134 = App.Inputmsg("Select rough (stage based) alignment","1: All structures, 2: First structure per sample, 3: Manual per sample, 4: No alignment", "1");
+				S134 = App.Inputmsg("Select rough (stage based) alignment","1: All structures, 2: First structure per sample, 3: No alignment", "3");
 				Panicbutton();
 				if (S134 == "") 
 				{
 					Logdata();
 					Abort();
 				}
-				if (S134 == 1 || S134 == 2 || S134 == 3 || S134 == 4)
+				if (S134 == 1 || S134 == 2 || S134 == 3)
 				{
 					check = 1;
 				}
@@ -1369,7 +1369,7 @@ function CollectSD(st, GUIflag)
 				}	
 			}
 			
-			if (App.ErrMsg(4,0,"Use fine WF alignment using L61 GDSII auto linescans?")==EA_YES)
+			if (App.ErrMsg(4,0,"Use fine WF alignment using Layer61 auto linescans?")==EA_YES)
 			{
 				tl = App.InputMsg("Select layer", "Select layer(s) to use together with layer 61 (separate by ';')","");
 				tl = tl.replace(/,/g,';');
@@ -1384,7 +1384,7 @@ function CollectSD(st, GUIflag)
 				check = -1;
 				while (check != 1)
 				{
-					GDSmark = App.InputMsg("Select GDSII marker corresponding to scans drawn in design", "Choose: " + GDSmarklist, GDSmarklist[0]);
+					GDSmark = App.InputMsg("Select Layer61 marker corresponding to scans drawn in design", "Choose: " + GDSmarklist, GDSmarklist[0]);
 					Panicbutton();
 					if (GDSmark == "") 
 					{
@@ -1394,7 +1394,7 @@ function CollectSD(st, GUIflag)
 					GDSarray = GDSmarklist.split(";");
 					if (SearchArray(GDSarray, GDSmark) == -1)
 					{
-						App.ErrMsg(0,0,"Non-existing GDS markers. Check GDSmarkers.txt and re-enter");
+						App.ErrMsg(0,0,"Non-existing Layer61 marker. Check GDSmarkers.txt and re-enter");
 					}
 					else
 					{
@@ -1424,7 +1424,7 @@ function CollectSD(st, GUIflag)
 				}
 				
 
-				if (App.ErrMsg(4,0,"Do you want to write other layers in a global alignment?")==EA_YES)
+				if (App.ErrMsg(4,0,"Write other layers in global alignment? (e.g. crossing WFs)")==EA_YES)
 				{
 					S14 = App.InputMsg("Choose layers", "Select (separate by ';') ", "0");
 					S14 = S14.replace(/,/g,';');
@@ -1455,7 +1455,7 @@ function CollectSD(st, GUIflag)
 			check = -1;
 			while (check != 1)
 			{
-				S24 = App.InputMsg("Define sample dimensions in x (U)", "Select number of structures: x (U)", "2");
+				S24 = App.InputMsg("Select design repetition in x (U)", "Repeating structures: x (U)", "1");
 				Panicbutton();
 				if (S24 == "") 
 				{
@@ -1475,7 +1475,7 @@ function CollectSD(st, GUIflag)
 			check = -1;
 			while (check != 1)
 			{
-				S34 = App.InputMsg("Define sample dimensions in y (V)", "Select number of structures: y (V)", "2");
+				S34 = App.InputMsg("Define design repetition in y (U)", "Repeating structures: y (U)", "1");
 				if (S34 == "") 
 				{
 					Logdata();
@@ -1670,9 +1670,10 @@ function CollectUV(st, GUIflag)
 {
 	var i, j, m, maf, wd, userinput, awfvars, amf, lastcolset;
 // Add loop so that this is only asked once if st == 1
+    Stage.GlobalAlignment();
     if (GUIflag == 1)
     {	
-    	if (App.ErrMsg(8,0,"Collecting three point alignments for all samples commences. Activate desired Column settings and WriteField. USE GLOBAL UV ALIGNMENT!") ==2 )
+    	if (App.ErrMsg(8,0,"Collecting 3-point alignments. Activate Column settings and WriteField. CHECK GLOBAL STAGE ALIGNMENT!") ==2 )
     	{
     		Logdata();
     		Abort();
@@ -1682,7 +1683,7 @@ function CollectUV(st, GUIflag)
 
 	if (GUIflag == 2)
     {	
-    	if (App.ErrMsg(8,0,"Collecting three point alignments for all samples commences. USE GLOBAL UV ALIGNMENT!") == 2)
+    	if (App.ErrMsg(8,0,"Collecting 3-point alignments. CHECK GLOBAL STAGE ALIGNMENT!") == 2)
     	{
     		Logdata();
     		Abort();
@@ -1694,7 +1695,7 @@ function CollectUV(st, GUIflag)
     {
 	    if (GUIflag == 1)
 		{
-			if (App.ErrMsg(8,0,"Perform UV alignment on sample " + i + " of " + Gnums + ". The now opened GDSII file and structure are logged and used for exposure.") == 2)
+			if (App.ErrMsg(8,0,"Perform 3-point alignment " + i + " of " + Gnums + ", open desired design file and structure for exposure.") == 2)
 			{
 				Logdata();
 				Abort();
@@ -1708,7 +1709,7 @@ function CollectUV(st, GUIflag)
 			//App.Exec("ViewStructure(" + S[4][5][i] + ")");
 			//App.Exec("SetWorkingArea(" + S[11][5][i] + ")")
 
-			if (App.ErrMsg(8,0,"Column and writefield set, now perform UV alignment on sample " + i + " of " + Gnums + ".") == 2)
+			if (App.ErrMsg(8,0,"Column and writefield set, perform 3-point alignment " + i + " of " + Gnums + ".") == 2)
 			{
 				Logdata();
 				Abort();
@@ -1718,7 +1719,7 @@ function CollectUV(st, GUIflag)
 		Stage.GlobalAlignment();
 		if (i != 1)
 		{
-			if (App.ErrMsg(4,0,"Do you want to reset the current UV alignment?")==6)
+			if (App.ErrMsg(4,0,"Do you want to reset the current 3-point alignment?")==6)
 			{
 				Stage.ResetAlignment();
 			}
@@ -1737,7 +1738,7 @@ function CollectUV(st, GUIflag)
 				if (amf <= 1) break;
 				if (amf >= 2)
 				{
-					userinput = App.ErrMsg(9,0,"Less than three Marks found during procedure. Try scanning again? (Change Markers.txt). No continues while Cancel quits the script.");
+					userinput = App.ErrMsg(9,0,"Less than three markers found during procedure. Try scanning again? (Change Markers.txt). No continues while Cancel quits the script.");
 					if (userinput == 2) 
 					{
 						Logdata();
@@ -1752,7 +1753,7 @@ function CollectUV(st, GUIflag)
 		 // fix this to be compatble with manual WF alignment	
 		}	    
 
-	    if (App.ErrMsg(8,0,"Check UV alignment + focus after WF change of sample " + i + " of " + Gnums + ". CORRECT DESIGN FILE / WORKINGAREA / WRITEFIELD / COLUMN ACTIVATED?") == 2)
+	    if (App.ErrMsg(8,0,"Check focus 3-point alignment " + i + " of " + Gnums + ". CHECK DESIGN / STRUCTURE / WORKINGAREA / WRITEFIELD / COLUMN!") == 2)
 	    	{
 	    		Logdata();
 	    		Abort();
@@ -1831,7 +1832,7 @@ function CollectUV(st, GUIflag)
 function GetUVWF()
 {
 		//GetUVdata
-		App.ErrMsg(0,0,"Make sure the Writefield is saved and the UV alignment is correct.");
+		App.ErrMsg(0,0,"Make sure the Writefield is saved and the 3-point alignment is correct.");
 		App.Exec("Halt()");
 		var m, maf, wd, j;
 		S = createArray(99,7,Gnums+1);
@@ -1880,7 +1881,7 @@ function GetUVWF()
 		GUVini.WriteString("Sx", "WFRotU", S[9][5][1] + "");
 		GUVini.WriteString("Sx", "WFRotV", S[10][5][1] + "");	
 
-		App.ErrMsg(0,0,"UV alignment and WF values succesfully copied to UVvars.txt");
+		App.ErrMsg(0,0,"3-point alignment and WF values succesfully copied to UVvars.txt");
 }
 
 function Logdata()
@@ -2454,7 +2455,7 @@ function WriteMatrix(S, i)
 function Write(S, i, testmode, starttime) //S-matrix, n-th sample, type of writing (single,multiple..etc), testmode ornot
 {
 	var N, meander, k, j, mj, l61, l61exp, exposure, currentsampletime, awfvars, donothing;
-	Stage.JoystickEnabled = False; 
+	//Stage.JoystickEnabled = false; 
 	N = WriteMatrix(S, i);
 	meander = 1;
 	for (k = 0; k <= S[3][4][i]-1; k++) // y-direction on sample
@@ -2473,15 +2474,9 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th sample, type of writi
 			TimeandProgress(i, j, mj, k, starttime, currentsampletime, 1);
 			Panicbutton();
 			Stage.GlobalAlignment();
-			tolerance = 0.0005;			
-			scu = parseFloat(Stage.U);
-			scv = parseFloat(Stage.V);
-			if (Math.abs(N[mj+1][k+1][1]-scu)>tolerance || Math.abs(N[mj+1][k+1][2]-scv)>tolerance)
-			{
-				Stage.DriveUV(N[mj+1][k+1][1], N[mj+1][k+1][2]);
-			}
 			Stage.LocalAlignment();
-			OriginCorrection();
+			Stage.ResetAlignment();		
+			OriginCorrection(Stage.U-N[mj+1][k+1][1],Stage.V-N[mj+1][k+1][2]);
 			if (S[12][4][i] != -1) //Checks if layer 61 is enabled
 			{
 				l61 = S[12][4][i].split("-");
@@ -2493,13 +2488,6 @@ function Write(S, i, testmode, starttime) //S-matrix, n-th sample, type of writi
 				if (S[13][4][i] == 2 && k == 0 && j == 0)
 				{	
 					AlignWF(S[10][4][i], 1, i, mj, k);
-				}
-				tolerance = 0.0005;	//5 um stage drive		
-				scu = parseFloat(Stage.U);
-				scv = parseFloat(Stage.V);
-				if (Math.abs(scu)>tolerance || Math.abs(scv)>tolerance)
-				{
-					Stage.DriveUV(N[mj+1][k+1][1], N[mj+1][k+1][2]);
 				}
 				InstallGDSmarker(l61[0], k, mj);
 				App.Exec("UnSelectAllExposedLayer()");                      //Deselects al exposed layers
@@ -2763,7 +2751,7 @@ function Start()
 	
 	if (as == 1)
 	{
-		st = App.InputMsg("Select procedure","1: Single-settings batch mode, 2: Per-sample-settings mode, 3: Load SDvars.txt.", "1");
+		st = App.InputMsg("Select exposure procedure","1: Single-settings batch mode, 2: Per-sample-settings mode, 3: Load SDvars.txt.", "2");
 		if (st!=1 && st!=2 && st!=3) Abort();  
 		if (st == 1 || st == 2)	
 		{
