@@ -1,9 +1,9 @@
 //-------------------------------------------------------------------
 //    SCRIPT NAME:      Multisample
-//    Internal version: 0.99
+//    Internal version: 1.00_elphyplus
 //    AUTHOR:           Joost Ridderbos
 // 	  Git hashkey: 		"value"
-//    Copyright 2013-2016 Joost Ridderbos
+//    Copyright 2013-2021 Joost Ridderbos
 //-------------------------------------------------------------------
 
 //    This program is free software: you can redistribute it and/or modify
@@ -42,7 +42,7 @@
 // - nothing atm
 
 var Gsn = "Multisample";
-var Gsharedfolder = "\\\\131.152.108.94\\meso-share\\Group\\Elphy_Multisample_Logs";
+var Gsharedfolder = "\\\\phys-mekhong.physik.unibas.ch\\meso-share\\Group\\Elphy_Multisample_Logs";
 //var Gsharedfolder = "\\\\131.152.108.94\\meso-share\\Group\\Elphy_Multisample_Logs";
 //var Gsnl = parseInt(Gsn.length, 8);
 var Gfilepath = ExpandPath("%userroot%\Script\\" + Gsn + "\\");
@@ -1979,6 +1979,7 @@ function Logdata()
 	CopyLog();
 	fso = new ActiveXObject("Scripting.FileSystemObject");
 	fso.CopyFile(Glogfilename[1] + Glogfilename[2], Glogfilename[1] + "LastLog.txt", true);
+    GenerateBatchFile();
     return(Glogfilename);
 }
 
@@ -2021,7 +2022,7 @@ function AlignUV(i)
 function Install(restoreflag)
 {
 	var fso, p1, p2, p3;
-	GenerateBatchFile();
+	//GenerateBatchFile();
 	//App.Exec("SetLaserStageCtrl(LASER)"); //Turn on laser stage control, just to be sure, not for Elphy unfortunately :*(
 	App.SetVariable("Automation/Links.0",Gfilepath + Gsn + ".js");
 	fso = new ActiveXObject("Scripting.FileSystemObject");
